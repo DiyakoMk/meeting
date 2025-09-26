@@ -1,192 +1,194 @@
 # bot/database.py
-import sqlite3
+"""
+PostgreSQL database layer for the bot (replacing the previous SQLite implementation).
+
+Key improvements:
+- Uses a real connection pool for concurrency and performance.
+- Clean PostgreSQL schema (identity columns, TIMESTAMPTZ, proper indexes).
+- No PK compaction or sequence hacks (avoid past DB mistakes).
+- Backward-compatible query adapter for existing "?" placeholders and
+  common SQLite-specific patterns used in handlers.
+
+Env configuration:
+- DATABASE_URL must be defined (e.g., postgresql://user:pass@host:5432/dbname)
+
+Note: This module provides a synchronous API to avoid refactoring all handlers.
+      For production at scale, consider moving to an async driver and making DB
+      calls non-blocking.
+"""
+
+from __future__ import annotations
+
 import logging
+import re
 from typing import Any, Iterable, Optional, Tuple
-from config import DB_NAME, MAIN_ADMIN_ID
+
+import psycopg
+from psycopg_pool import ConnectionPool
+
+from config import DATABASE_URL, MAIN_ADMIN_ID
 
 logger = logging.getLogger(__name__)
 
+_pool: Optional[ConnectionPool] = None
 
-def get_connection() -> sqlite3.Connection:
-    """Create a SQLite connection with sane defaults and enabled FK.
-    WAL mode improves concurrency for bots, and foreign_keys enforces integrity.
+
+def _ensure_pool() -> ConnectionPool:
+    global _pool
+    if _pool is not None:
+        return _pool
+    if not DATABASE_URL:
+        raise RuntimeError(
+            "DATABASE_URL is not set. Define DATABASE_URL in your environment or .env,\n"
+            "for example: postgresql://username:password@host:5432/database"
+        )
+    # Use a small pool by default; adjust via env if needed
+    _pool = ConnectionPool(conninfo=DATABASE_URL, min_size=1, max_size=10, timeout=10)
+    logger.info("PostgreSQL connection pool initialized")
+    return _pool
+
+
+def get_connection() -> psycopg.Connection:
+    """Get a pooled PostgreSQL connection (context manager).
+
+    Usage:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(...)
     """
-    conn = sqlite3.connect(DB_NAME)
-    # Apply pragmas for each connection
-    try:
-        conn.execute("PRAGMA foreign_keys = ON")
-        conn.execute("PRAGMA journal_mode = WAL")
-        conn.execute("PRAGMA synchronous = NORMAL")
-    except sqlite3.Error as e:
-        logger.warning(f"Failed to apply PRAGMA settings: {e}")
-    return conn
+    pool = _ensure_pool()
+    return pool.connection()
 
 
-def _table_columns(cur: sqlite3.Cursor, table: str) -> set:
-    cur.execute(f"PRAGMA table_info({table})")
-    return {row[1] for row in cur.fetchall()}
+# ---------- SQL normalization helpers (compat layer) ----------
+
+_qmark_re = re.compile(r"\?")
+_datetime_now_re = re.compile(r"datetime\('now'\)", re.IGNORECASE)
+_insert_or_replace_users = re.compile(r"^\s*INSERT\s+OR\s+REPLACE\s+INTO\s+users\s*\(([^)]+)\)\s*VALUES\s*\(([^)]*)\)", re.IGNORECASE)
+_insert_or_ignore_admins = re.compile(r"^\s*INSERT\s+OR\s+IGNORE\s+INTO\s+admins\s*\(([^)]+)\)\s*VALUES\s*\(([^)]*)\)", re.IGNORECASE)
 
 
-def init_db() -> None:
-    """Initialize database schema and perform light migrations.
-    Also ensure MAIN_ADMIN_ID is stored as the single main admin.
+def _adapt_sql(sql: str) -> str:
+    """Adapt a subset of SQLite-flavored SQL used in the codebase to PostgreSQL.
+
+    - Replace '?' placeholders with '%s'.
+    - Replace datetime('now') with now().
+    - Translate 'INSERT OR REPLACE INTO users (...) VALUES (...)' to
+      'INSERT ... ON CONFLICT (user_id) DO UPDATE ...'.
+    - Translate 'INSERT OR IGNORE INTO admins (...)' to '... ON CONFLICT DO NOTHING'.
     """
-    with get_connection() as conn:
-        cur = conn.cursor()
+    s = sql
 
-        # Core tables
-        cur.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS admins (
-                admin_id INTEGER PRIMARY KEY,
-                is_main INTEGER DEFAULT 0 CHECK(is_main IN (0,1))
-            );
+    # Specific statement rewrites first
+    m = _insert_or_replace_users.match(s)
+    if m:
+        cols = [c.strip() for c in m.group(1).split(',')]
+        placeholders = m.group(2)
+        # Conflict target is the PK of users: user_id
+        if 'user_id' not in [c.lower() for c in cols]:
+            # Fallback to basic replace
+            pass
+        else:
+            # Build update set for all non-PK columns
+            updates = [f"{c} = EXCLUDED.{c}" for c in cols if c.lower() != 'user_id']
+            s = _insert_or_replace_users.sub(
+                f"INSERT INTO users ({', '.join(cols)}) VALUES ({placeholders}) ON CONFLICT (user_id) DO UPDATE SET {', '.join(updates)}",
+                s,
+            )
 
-            -- Single main admin enforced by partial unique index
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_admins_single_main
-                ON admins(is_main) WHERE is_main = 1;
-
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY,
-                nickname TEXT,
-                created_at TEXT DEFAULT (datetime('now'))
-            );
-
-            CREATE TABLE IF NOT EXISTS meetings (
-                meeting_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                admin_id INTEGER,
-                group_id TEXT,
-                description TEXT,
-                is_active INTEGER DEFAULT 1 CHECK(is_active IN (0,1)),
-                FOREIGN KEY(admin_id) REFERENCES admins(admin_id)
-            );
-
-            CREATE TABLE IF NOT EXISTS meeting_admins (
-                admin_id INTEGER,
-                meeting_id INTEGER,
-                PRIMARY KEY (admin_id, meeting_id),
-                FOREIGN KEY (admin_id) REFERENCES admins(admin_id) ON DELETE CASCADE,
-                FOREIGN KEY (meeting_id) REFERENCES meetings(meeting_id) ON DELETE CASCADE
-            );
-
-            CREATE TABLE IF NOT EXISTS bits (
-                bit_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                meeting_id INTEGER,
-                beat_id TEXT,
-                vibe TEXT,
-                title TEXT,
-                battle_participation INTEGER DEFAULT 0 CHECK(battle_participation IN (0,1)),
-                freestyle_ability INTEGER DEFAULT 0 CHECK(freestyle_ability IN (0,1)),
-                created_at TEXT DEFAULT (datetime('now')),
-                FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-                FOREIGN KEY(meeting_id) REFERENCES meetings(meeting_id) ON DELETE CASCADE
-            );
-
-            CREATE TABLE IF NOT EXISTS battles (
-                battle_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                meeting_id INTEGER,
-                created_at TEXT DEFAULT (datetime('now')),
-                FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-                FOREIGN KEY(meeting_id) REFERENCES meetings(meeting_id) ON DELETE CASCADE
-            );
-
-            -- Pending group selection links (deep-link via startgroup)
-            CREATE TABLE IF NOT EXISTS pending_group_links (
-                token TEXT PRIMARY KEY,
-                admin_user_id INTEGER NOT NULL,
-                chat_id TEXT,
-                title TEXT,
-                username TEXT,
-                created_at TEXT DEFAULT (datetime('now'))
-            );
-            """
+    m = _insert_or_ignore_admins.match(s)
+    if m:
+        cols = [c.strip() for c in m.group(1).split(',')]
+        placeholders = m.group(2)
+        # Conflict target: PK admin_id
+        s = _insert_or_ignore_admins.sub(
+            f"INSERT INTO admins ({', '.join(cols)}) VALUES ({placeholders}) ON CONFLICT (admin_id) DO NOTHING",
+            s,
         )
 
-        # Migrations for older databases
-        try:
-            # meetings: ensure columns exist
-            meeting_cols = _table_columns(cur, "meetings")
-            if "group_id" not in meeting_cols:
-                cur.execute("ALTER TABLE meetings ADD COLUMN group_id TEXT")
-            if "description" not in meeting_cols:
-                cur.execute("ALTER TABLE meetings ADD COLUMN description TEXT")
-            if "admin_id" not in meeting_cols:
-                cur.execute("ALTER TABLE meetings ADD COLUMN admin_id INTEGER")
-            if "is_active" not in meeting_cols:
-                cur.execute("ALTER TABLE meetings ADD COLUMN is_active INTEGER DEFAULT 1")
+    # Generic replacements
+    s = _datetime_now_re.sub("now()", s)
+    # Replace positional placeholders last
+    s = _qmark_re.sub("%s", s)
+    return s
 
-            # Ensure meetings.admin_id DOES NOT have a foreign key to admins, so supervisors aren't forced to be system admins.
+
+# ---------- Schema management ----------
+
+def init_db() -> None:
+    """Initialize PostgreSQL schema and seed main admin.
+
+    This function is idempotent.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            # Core tables
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS admins (
+                    admin_id BIGINT PRIMARY KEY
+                );
+                """
+            )
+            # Ensure legacy column is removed if it existed
             try:
-                cur.execute("PRAGMA foreign_key_list(meetings)")
-                fk_rows = cur.fetchall()
-                has_admin_fk = any(row[2] == 'admins' for row in fk_rows)
-                if has_admin_fk:
-                    # Rebuild meetings table without FK constraint on admin_id
-                    cur.execute("PRAGMA foreign_keys = OFF")
-                    cur.executescript(
-                        """
-                        CREATE TABLE IF NOT EXISTS meetings_new (
-                            meeting_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            title TEXT NOT NULL,
-                            admin_id INTEGER,
-                            group_id TEXT,
-                            description TEXT,
-                            is_active INTEGER DEFAULT 1 CHECK(is_active IN (0,1))
-                        );
-                        INSERT INTO meetings_new (meeting_id, title, admin_id, group_id, description, is_active)
-                        SELECT meeting_id, title, admin_id, group_id, description, is_active FROM meetings;
-                        DROP TABLE meetings;
-                        ALTER TABLE meetings_new RENAME TO meetings;
-                        """
-                    )
-                    cur.execute("PRAGMA foreign_keys = ON")
-            except sqlite3.Error as m:
-                logger.error(f"Failed to adjust meetings FK: {m}")
+                cur.execute("ALTER TABLE admins DROP COLUMN IF EXISTS is_main")
+            except Exception:
+                pass
 
-            # bits: add missing columns if DB was created with a partial schema
-            bit_cols = _table_columns(cur, "bits")
-            expected_bit_cols = {
-                "beat_id": "TEXT",
-                "vibe": "TEXT",
-                "title": "TEXT",
-                "battle_participation": "INTEGER DEFAULT 0",
-                "freestyle_ability": "INTEGER DEFAULT 0",
-            }
-            for col, decl in expected_bit_cols.items():
-                if col not in bit_cols:
-                    cur.execute(f"ALTER TABLE bits ADD COLUMN {col} {decl}")
-        except sqlite3.Error as e:
-            logger.error(f"Migration step failed: {e}")
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id BIGINT PRIMARY KEY,
+                    nickname TEXT,
+                    created_at TIMESTAMPTZ DEFAULT now()
+                );
+                """
+            )
 
-        # Seed main admin from config and enforce single-main invariant
-        try:
-            if MAIN_ADMIN_ID and isinstance(MAIN_ADMIN_ID, int):
-                # Clear any other main admins
-                cur.execute(
-                    "UPDATE admins SET is_main = 0 WHERE is_main = 1 AND admin_id != ?",
-                    (MAIN_ADMIN_ID,),
-                )
-                # Ensure main admin row exists
-                cur.execute(
-                    "INSERT OR IGNORE INTO admins (admin_id, is_main) VALUES (?, 1)",
-                    (MAIN_ADMIN_ID,),
-                )
-                # Force main flag on the configured admin
-                cur.execute("UPDATE admins SET is_main = 1 WHERE admin_id = ?", (MAIN_ADMIN_ID,))
-            else:
-                logger.warning("MAIN_ADMIN_ID is not set to a valid integer; skipping main admin seeding.")
-        except sqlite3.Error as e:
-            logger.error(f"Failed to seed main admin: {e}")
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS meetings (
+                    meeting_id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    admin_id BIGINT,
+                    group_id TEXT,
+                    description TEXT,
+                    is_active INTEGER DEFAULT 1 CHECK(is_active IN (0,1)),
+                    bit_count INTEGER DEFAULT 0,
+                    battle_count INTEGER DEFAULT 0
+                );
+                """
+            )
+            # Add counter columns when migrating from older schema
+            try:
+                cur.execute("ALTER TABLE meetings ADD COLUMN IF NOT EXISTS bit_count INTEGER DEFAULT 0")
+                cur.execute("ALTER TABLE meetings ADD COLUMN IF NOT EXISTS battle_count INTEGER DEFAULT 0")
+            except Exception:
+                pass
 
-        logger.info("Database initialized and migrations applied")
+            
+            # Drop deprecated tables no longer used
+            cur.execute("DROP TABLE IF EXISTS meeting_admins")
+            cur.execute("DROP TABLE IF EXISTS battles")
+            cur.execute("DROP TABLE IF EXISTS pending_group_links")
+            cur.execute("DROP TABLE IF EXISTS recent_groups")
+            cur.execute("DROP TABLE IF EXISTS bits")
 
+            
+            
+            
+            # Do not store MAIN_ADMIN_ID in database as per requirements.
+
+        conn.commit()
+        logger.info("PostgreSQL database initialized")
+
+
+# ---------- Query execution API ----------
 
 def execute_query(
     query: str,
-    params: Iterable[Any] = (),
+    params: Iterable[Any] | None = (),
     fetch: bool = False,
     fetch_one: bool = False,
 ) -> Optional[Iterable[Tuple[Any, ...]]]:
@@ -196,86 +198,28 @@ def execute_query(
     - For INSERT/UPDATE/DELETE, leave both fetch flags False.
     - Returns fetched rows (list of tuples) for fetch, single tuple for fetch_one,
       or None for non-SELECT statements.
+
+    The function also adapts a subset of SQLite-specific syntax used by the
+    existing code to PostgreSQL-compatible SQL.
     """
+    sql = _adapt_sql(query)
     try:
         with get_connection() as conn:
-            cur = conn.cursor()
-            cur.execute(query, tuple(params) if params else ())
-            if fetch_one:
-                return cur.fetchone()
-            if fetch:
-                return cur.fetchall()
-            return None
-    except sqlite3.Error as e:
+            with conn.cursor() as cur:
+                cur.execute(sql, tuple(params) if params else ())
+                result: Optional[Iterable[Tuple[Any, ...]]] = None
+                if fetch_one:
+                    result = cur.fetchone()
+                elif fetch:
+                    result = cur.fetchall()
+                # Ensure transaction is closed (commit even after reads is safe)
+                try:
+                    conn.commit()
+                except Exception:
+                    pass
+                return result
+    except Exception as e:
         # Log the query partially to avoid leaking data
-        snippet = query.strip().split("\n", 1)[0]
+        snippet = sql.strip().split("\n", 1)[0]
         logger.error(f"DB error on query: {snippet}... | err: {e}")
-        raise
-
-
-def cleanup_meetings() -> None:
-    """Clean up deleted meetings and reuse IDs by compacting the meeting_id sequence.
-    This ensures that when meetings are deleted, their IDs can be reused for new meetings.
-    """
-    try:
-        with get_connection() as conn:
-            cur = conn.cursor()
-            
-            # Get all active meetings ordered by meeting_id
-            cur.execute("SELECT meeting_id, title, admin_id, group_id, description FROM meetings WHERE is_active = 1 ORDER BY meeting_id")
-            active_meetings = cur.fetchall()
-            
-            if not active_meetings:
-                return
-            
-            # Check if IDs are already sequential starting from 1
-            expected_ids = list(range(1, len(active_meetings) + 1))
-            actual_ids = [row[0] for row in active_meetings]
-            
-            if actual_ids == expected_ids:
-                # Already clean, no need to reorganize
-                return
-            
-            # Create a temporary table with new sequential IDs
-            cur.execute("DROP TABLE IF EXISTS meetings_temp")
-            cur.execute("""
-                CREATE TABLE meetings_temp (
-                    meeting_id INTEGER PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    admin_id INTEGER,
-                    group_id TEXT,
-                    description TEXT,
-                    is_active INTEGER DEFAULT 1
-                )
-            """)
-            
-            # Insert active meetings with new sequential IDs
-            for new_id, (old_id, title, admin_id, group_id, description) in enumerate(active_meetings, 1):
-                cur.execute("""
-                    INSERT INTO meetings_temp (meeting_id, title, admin_id, group_id, description, is_active)
-                    VALUES (?, ?, ?, ?, ?, 1)
-                """, (new_id, title, admin_id, group_id, description))
-            
-            # Update bits table to use new meeting IDs
-            for new_id, (old_id, *_) in enumerate(active_meetings, 1):
-                if old_id != new_id:
-                    cur.execute("UPDATE bits SET meeting_id = ? WHERE meeting_id = ?", (new_id, old_id))
-            
-            # Update meeting_admins table
-            for new_id, (old_id, *_) in enumerate(active_meetings, 1):
-                if old_id != new_id:
-                    cur.execute("UPDATE meeting_admins SET meeting_id = ? WHERE meeting_id = ?", (new_id, old_id))
-            
-            # Replace original table
-            cur.execute("DROP TABLE meetings")
-            cur.execute("ALTER TABLE meetings_temp RENAME TO meetings")
-            
-            # Reset the autoincrement counter
-            cur.execute("DELETE FROM sqlite_sequence WHERE name = 'meetings'")
-            cur.execute("INSERT INTO sqlite_sequence (name, seq) VALUES ('meetings', ?)", (len(active_meetings),))
-            
-            logger.info(f"Database cleanup completed. Reorganized {len(active_meetings)} meetings with sequential IDs.")
-            
-    except sqlite3.Error as e:
-        logger.error(f"Database cleanup failed: {e}")
         raise

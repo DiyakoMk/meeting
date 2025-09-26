@@ -29,7 +29,6 @@ from bot.handlers.admin_handlers import (
     admin_panel,
 )
 from bot.handlers.common_handlers import unknown_handler
-from bot.handlers.group_handlers import chat_member_handler
 
 # Structured logging
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -65,9 +64,6 @@ def main() -> None:
 
     # Unknown command catch-all (keep last)
     application.add_handler(unknown_handler)
-
-    # Track when the bot is added to groups to support "ثبت گروه اخیر"
-    application.add_handler(chat_member_handler)
 
     # Run bot
     application.run_polling(allowed_updates=None, stop_signals=None)

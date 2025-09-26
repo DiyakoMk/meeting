@@ -41,7 +41,11 @@ _load_env_from_dotenv()
 
 # Public settings consumed by the rest of the app
 BOT_TOKEN: str | None = os.getenv("BOT_TOKEN")
-DB_NAME: str = os.getenv("DB_NAME", "bot.db")
+
+# PostgreSQL connection string. Example:
+# postgresql://username:password@host:5432/database
+# You can also use DB_URL as an alias.
+DATABASE_URL: str | None = os.getenv("DATABASE_URL") or os.getenv("DB_URL")
 
 # MAIN_ADMIN_ID should be an integer or None
 _main_admin = os.getenv("MAIN_ADMIN_ID")

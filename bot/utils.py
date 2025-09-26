@@ -13,53 +13,6 @@ from bot.database import execute_query
 
 logger = logging.getLogger(__name__)
 
-
-# =============== Admin utilities ===============
-
-def is_admin(user_id: int) -> bool:
-    """Return True if the user_id is in admins table."""
-    row = execute_query("SELECT 1 FROM admins WHERE admin_id = ?", (user_id,), fetch_one=True)
-    return bool(row)
-
-
-def is_main_admin(user_id: int) -> bool:
-    """Return True if the user_id is marked as main admin."""
-    row = execute_query("SELECT is_main FROM admins WHERE admin_id = ?", (user_id,), fetch_one=True)
-    return bool(row and row[0] == 1)
-
-
-def require_admin(handler: Callable[[Update, ContextTypes.DEFAULT_TYPE], Awaitable[Any]]):
-    """Decorator to restrict handler access to admins only."""
-
-    @wraps(handler)
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
-        user_id = update.effective_user.id if update and update.effective_user else None
-        if not user_id or not is_admin(user_id):
-            target = update.effective_message or update.message
-            if target:
-                await target.reply_text("دسترسی غیر مجاز! ❌")
-            return
-        return await handler(update, context, *args, **kwargs)
-
-    return wrapper
-
-
-def require_main_admin(handler: Callable[[Update, ContextTypes.DEFAULT_TYPE], Awaitable[Any]]):
-    """Decorator to restrict handler access to the main admin only."""
-
-    @wraps(handler)
-    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE, *args, **kwargs):
-        user_id = update.effective_user.id if update and update.effective_user else None
-        if not user_id or not is_main_admin(user_id):
-            target = update.effective_message or update.message
-            if target:
-                await target.reply_text("دسترسی فقط برای ادمین اصلی مجاز است ❌")
-            return
-        return await handler(update, context, *args, **kwargs)
-
-    return wrapper
-
-
 # =============== Error handling ===============
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -74,21 +27,7 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.exception("Unhandled exception while handling update: %s", str(update))
 
     # Try to notify main admin non-blocking
-    admin_id = None
-    try:
-        admin_id = int(MAIN_ADMIN_ID) if MAIN_ADMIN_ID else None
-    except Exception:
-        admin_id = None
-
-    if admin_id:
-        try:
-            await context.bot.send_message(
-                chat_id=admin_id,
-                text="⚠️ خطای غیرمنتظره در ربات رخ داد. گزارش در لاگ‌ها ثبت شد.",
-            )
-        except Exception as e:
-            # Avoid cascading errors
-            logger.debug("Failed to notify main admin about error: %s", e)
+    # No automatic DM to main admin anymore
 
 
 # =============== Safe send helpers ===============

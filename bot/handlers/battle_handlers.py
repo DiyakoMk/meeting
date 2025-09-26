@@ -83,7 +83,7 @@ async def battle_select_meeting(update: Update, context: ContextTypes.DEFAULT_TY
         f"لقب: {context.user_data['bit_nickname']}\n"
         f"توانایی بداهه: {'دارد' if context.user_data['freestyle_ability'] else 'ندارد'}\n"
         f"میتینگ: {meeting_title}\n"
-        f"توضیحات میتینگ: {context.user_data['meeting_desc']}\n\n"
+        f"توضیحات میتینگ: \n{context.user_data['meeting_desc']}\n\n"
         "۴. ثبت نهایی انجام شود؟"
     )
     
@@ -104,17 +104,15 @@ async def confirm_battle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = context.user_data
         user_id = update.effective_user.id
 
-        # Save to database
+        # Save user only; do not store battle application details
         execute_query(
             "INSERT OR REPLACE INTO users (user_id, nickname) VALUES (?, ?)",
             (user_id, user_data['bit_nickname'])
         )
-        
+        # Increment only counter on meeting
         execute_query(
-            """INSERT INTO bits 
-            (user_id, meeting_id, battle_participation, freestyle_ability) 
-            VALUES (?, ?, ?, ?)""",
-            (user_id, user_data['bit_meeting_id'], 1, user_data['freestyle_ability'])
+            "UPDATE meetings SET battle_count = battle_count + 1 WHERE meeting_id = ?",
+            (user_data['bit_meeting_id'],)
         )
         
         # Notify group
@@ -160,10 +158,11 @@ async def confirm_battle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 logger.error(f"No valid group chat id for meeting {user_data['bit_meeting_id']} (stored: {group_id_raw})")
             
+            invite_link = await context.bot.export_chat_invite_link(group_id_raw)
             # Always notify meeting supervisor about new battle signup
             try:
-                supervisor_message = "🔔 ثبت نام جدید برای بتل در میتینگ شما! لطفاً گروه میتینگ را بررسی کنید."
-                await context.bot.send_message(admin_id, supervisor_message, parse_mode='Markdown')
+                supervisor_message = f"🔔 ثبت نام جدید برای بتل در میتینگ شما!\n [لطفاً گروه میتینگ را بررسی کنید.]({invite_link})"
+                await context.bot.send_message(admin_id, supervisor_message, parse_mode='Markdown', disable_web_page_preview=True)
             except Exception as e:
                 logger.error(f"Error notifying meeting supervisor: {e}")
         

@@ -49,10 +49,7 @@ async def bit_nickname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return BIT_BEAT
 
 async def bit_beat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.voice:
-        context.user_data['beat_id'] = update.message.voice.file_id
-        context.user_data['beat_type'] = 'voice'
-    elif update.message.audio:
+    if update.message.audio:
         context.user_data['beat_id'] = update.message.audio.file_id
         context.user_data['beat_type'] = 'audio'
     else:
@@ -108,7 +105,7 @@ async def bit_select_meeting(update: Update, context: ContextTypes.DEFAULT_TYPE)
         f"وایب: {context.user_data['vibe']}\n"
         f"عنوان: {context.user_data['title']}\n"
         f"میتینگ: {meeting_title}\n"
-        f"توضیحات میتینگ: {context.user_data['meeting_desc']}\n\n"
+        f"توضیحات میتینگ: \n{context.user_data['meeting_desc']}\n\n"
         "۶. ثبت نهایی انجام شود؟"
     )
     
@@ -129,18 +126,15 @@ async def confirm_bit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_data = context.user_data
         user_id = update.effective_user.id
 
-        # Save to database
+        # Save user only; do not store bit application details
         execute_query(
             "INSERT OR REPLACE INTO users (user_id, nickname) VALUES (?, ?)",
             (user_id, user_data['bit_nickname'])
         )
-        
+        # Increment only counter on meeting
         execute_query(
-            """INSERT INTO bits 
-            (user_id, meeting_id, beat_id, vibe, title, battle_participation, freestyle_ability) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (user_id, user_data['bit_meeting_id'], user_data['beat_id'], 
-             user_data['vibe'], user_data['title'], 0, 0)
+            "UPDATE meetings SET bit_count = bit_count + 1 WHERE meeting_id = ?",
+            (user_data['bit_meeting_id'],)
         )
         
         # Notify group
@@ -173,7 +167,7 @@ async def confirm_bit(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except Exception:
                     target_chat_id = None
 
-            # Create caption with beat info
+            # Simple announcement without sending media
             caption = (
                 f"🎵 بیت جدید!\n\n"
                 f"کاربر: {user_data['bit_nickname']}\n"
@@ -184,27 +178,22 @@ async def confirm_bit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             if target_chat_id is not None:
                 try:
-                    if user_data['beat_type'] == 'voice':
-                        await context.bot.send_voice(
-                            chat_id=target_chat_id,
-                            voice=user_data['beat_id'],
-                            caption=caption
-                        )
-                    else:
-                        await context.bot.send_audio(
-                            chat_id=target_chat_id,
-                            audio=user_data['beat_id'],
-                            caption=caption
-                        )
+                    await context.bot.send_audio(
+                        chat_id=target_chat_id,
+                        audio=user_data['beat_id'],
+                        caption=caption
+                    )
                 except Exception as e:
-                    logger.error(f"Error sending beat to group {target_chat_id}: {e}")
+                    logger.error(f"Error sending beat notice to group {target_chat_id}: {e}")
             else:
                 logger.error(f"No valid group chat id for meeting {user_data['bit_meeting_id']} (stored: {group_id_raw})")
             
+            invite_link = await context.bot.export_chat_invite_link(group_id_raw)
+
             # Always notify meeting supervisor about new signup (no links)
             try:
-                supervisor_message = "🔔 بیت جدید در میتینگ شما! لطفاً گروه میتینگ را بررسی کنید."
-                await context.bot.send_message(admin_id, supervisor_message)
+                supervisor_message = f"🔔 بیت جدید در میتینگ شما!\n [لطفاً گروه میتینگ را بررسی کنید.]({invite_link})"
+                await context.bot.send_message(admin_id, supervisor_message, disable_web_page_preview=True, parse_mode='Markdown')
             except Exception as e:
                 logger.error(f"Error notifying meeting supervisor: {e}")
         

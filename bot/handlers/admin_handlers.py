@@ -1,6 +1,7 @@
 # bot/handlers/admin_handlers.py
 import logging
-from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove, ReplyKeyboardMarkup
+from telegram import KeyboardButtonRequestChat, Update, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton, ChatAdministratorRights
+from telegram.error import ChatMigrated
 from telegram.ext import (
     ContextTypes, 
     MessageHandler, 
@@ -12,6 +13,42 @@ from telegram.ext import (
 from bot.keyboards import admin_keyboard, admin_management_keyboard, main_keyboard
 from bot.database import execute_query
 from config import MAIN_ADMIN_ID
+
+bot_rights = ChatAdministratorRights(
+    can_invite_users=True,           
+    can_manage_chat=True,            
+    can_delete_messages=True,        
+    can_manage_video_chats=True,     
+    can_restrict_members=True,       
+    can_promote_members=True,       
+    can_change_info=True,            
+    can_post_messages=True,        
+    can_edit_messages=True,         
+    can_pin_messages=True,           
+    can_manage_topics=True,          
+    is_anonymous=False,
+    can_post_stories=True,
+    can_edit_stories=True,
+    can_delete_stories=True
+)
+
+admin_rights = ChatAdministratorRights(
+    can_invite_users=True,           
+    can_manage_chat=True,            
+    can_delete_messages=True,        
+    can_manage_video_chats=True,     
+    can_restrict_members=True,       
+    can_promote_members=True,       
+    can_change_info=True,            
+    can_post_messages=True,        
+    can_edit_messages=True,         
+    can_pin_messages=True,           
+    can_manage_topics=True,          
+    is_anonymous=False,
+    can_post_stories=True,
+    can_edit_stories=True,
+    can_delete_stories=True
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +63,15 @@ ADD_ADMIN_ID = "ADD_ADMIN_ID"
 REMOVE_ADMIN = "REMOVE_ADMIN"
 
 def _is_admin(user_id: int) -> bool:
+    if user_id == MAIN_ADMIN_ID:
+        return True
     row = execute_query("SELECT 1 FROM admins WHERE admin_id = ?", (user_id,), fetch_one=True)
     return bool(row)
 
 
 def _is_main_admin(user_id: int) -> bool:
-    row = execute_query("SELECT is_main FROM admins WHERE admin_id = ?", (user_id,), fetch_one=True)
-    return bool(row and row[0] == 1)
+    if user_id == MAIN_ADMIN_ID:
+        return True
 
 async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -41,7 +80,8 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
         (user_id,),
         fetch_one=True
     )
-    
+    if user_id == MAIN_ADMIN_ID:
+        is_admin = True
     if not is_admin:
         await update.message.reply_text("دسترسی غیر مجاز! ❌")
         return
@@ -65,19 +105,16 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             return 0
 
-    # Key totals (minimal)
     users = _count("SELECT COUNT(*) FROM users")
     active_meetings = _count("SELECT COUNT(*) FROM meetings WHERE is_active = 1")
 
-    # Short list of active meetings (max 5)
+    # List at most 5 active meetings by title only
     meetings = execute_query(
         """
-        SELECT m.title,
-               (SELECT COUNT(*) FROM bits b WHERE b.meeting_id = m.meeting_id AND b.beat_id IS NOT NULL) AS beats,
-               (SELECT COUNT(*) FROM bits b WHERE b.meeting_id = m.meeting_id AND b.battle_participation = 1) AS battles
-        FROM meetings m
-        WHERE m.is_active = 1
-        ORDER BY m.meeting_id DESC
+        SELECT title
+        FROM meetings
+        WHERE is_active = 1
+        ORDER BY meeting_id DESC
         LIMIT 5
         """,
         fetch=True,
@@ -92,12 +129,11 @@ async def show_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if meetings:
         text_lines.append("")
         text_lines.append("📌 میتینگ‌های فعال:")
-    for title, mb, mt in meetings:
-        text_lines.append(f"• {title}")
+        for (title,) in meetings:
+            text_lines.append(f"• {title}")
 
-        # Indicate more meetings exist beyond the limit
         remaining_row = execute_query(
-            "SELECT MAX(0, (SELECT COUNT(*) FROM meetings WHERE is_active = 1) - 5)",
+            "SELECT GREATEST(0, (SELECT COUNT(*) FROM meetings WHERE is_active = 1) - 5)",
             fetch_one=True,
         )
         remaining = int(remaining_row[0]) if remaining_row else 0
@@ -157,139 +193,65 @@ async def meeting_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['meeting_admin'] = admin_id
         # Manual, reliable group selection instructions
         bot_username = getattr(context.bot, "username", None) or ""
-        group_add_url = f"https://t.me/{bot_username}?startgroup=meeting" if bot_username else "https://t.me/"
-        await update.message.reply_text(
-            "ابتدا ربات را به گروه اضافه کنید (در صورت نیاز):",
-            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("➕ افزودن ربات به گروه", url=group_add_url)]])
+        group_add_url = f"https://t.me/{bot_username}?startgroup" if bot_username else "https://t.me/"
+
+        request_chat_button = KeyboardButton(
+            text="یک گروه انتخاب کنید",
+            request_chat=KeyboardButtonRequestChat(
+                request_id=1,
+                chat_is_channel=False,
+                user_administrator_rights=bot_rights,
+                bot_administrator_rights=bot_rights,
+                bot_is_member=True,
+                chat_is_forum=False
+            )
         )
         instructions = (
-            "۳. یکی از روش‌های زیر را انجام دهید:\n"
-            "• یک پیام از گروه به من فوروارد کنید؛ یا\n"
-            "• آیدی گروه را به صورت عددی وارد کنید (مثل -100xxxxxxxxxx)؛ یا\n"
-            "• نام کاربری عمومی گروه را با @ وارد کنید (مثل @yourgroup)."
+            "۳. با استفاده از دکمه زیر یک گروه انتخاب کنید یا بسازید!"
         )
         await update.message.reply_text(
             instructions,
-            reply_markup=ReplyKeyboardMarkup([["🔙 بازگشت"]], resize_keyboard=True),
+            parse_mode='Markdown',
+            reply_markup=ReplyKeyboardMarkup([[request_chat_button],["🔙 بازگشت"]], resize_keyboard=True),
         )
         return ADD_MEETING_GROUP
     except ValueError:
         await update.message.reply_text("آیدی باید یک عدد باشد! لطفا مجددا وارد کنید:")
         return ADD_MEETING_ADMIN
 
-async def pick_group_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    chat_id = query.data.split('_', 2)[2]
-    # Find stored row for label/username
-    row = execute_query(
-        "SELECT title, username FROM recent_groups WHERE chat_id = ? AND adder_id = ?",
-        (str(chat_id), query.from_user.id),
-        fetch_one=True,
-    )
-    title, username = (row or (None, None))
-    group_value = f"@{username}" if username else str(chat_id)
-    context.user_data['meeting_group'] = group_value
-    await context.bot.send_message(
-        chat_id=query.message.chat_id,
-        text=(
-            f"✅ گروه انتخاب شده: {title or group_value}\n\n"
-            "۴. توضیحات تکمیلی را ارسال کنید:"
-        ),
-        reply_markup=ReplyKeyboardMarkup([["🔙 بازگشت"]], resize_keyboard=True)
-    )
-    return ADD_MEETING_DESC
-
-async def refresh_recent_groups(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    rows = execute_query(
-        "SELECT chat_id, title, username FROM recent_groups WHERE adder_id = ? ORDER BY added_at DESC LIMIT 10",
-        (query.from_user.id,),
-        fetch=True,
-    ) or []
-    keyboard = []
-    for chat_id, title, username in rows:
-        label = title or (f"@{username}" if username else str(chat_id))
-        keyboard.append([InlineKeyboardButton(label, callback_data=f"pick_group_{chat_id}")])
-    keyboard.append([InlineKeyboardButton("🔄 بروزرسانی", callback_data="refresh_recent_groups")])
-    await query.edit_message_reply_markup(reply_markup=InlineKeyboardMarkup(keyboard))
-    return ADD_MEETING_GROUP
 
 async def meeting_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Prefer forwarded message from the target group
-    if getattr(update.message, "forward_from_chat", None):
-        chat = update.message.forward_from_chat
-        chat_id = str(chat.id)
-        title = chat.title or chat.username or chat_id
-        context.user_data['meeting_group'] = chat_id
+    if getattr(update.message, "chat_shared", None):
+        shared = update.message.chat_shared
+        chat_id = shared.chat_id
+        chat = await context.bot.get_chat(chat_id)
+        title = chat.title
+        context.user_data['meeting_group'] = title
+        context.user_data['meeting_group_id'] = chat_id
         await update.message.reply_text(
             f"✅ گروه انتخاب شده: {title}\n\n۴. توضیحات تکمیلی را ارسال کنید:",
             reply_markup=ReplyKeyboardMarkup([["🔙 بازگشت"]], resize_keyboard=True)
         )
         return ADD_MEETING_DESC
 
-    # Otherwise parse text input
-    text = (update.message.text or "").strip()
-    if not text:
-        await update.message.reply_text("ورودی نامعتبر است. لطفاً فوروارد کنید یا آیدی/نام کاربری را ارسال کنید.")
-        return ADD_MEETING_GROUP
-
-    # @username
-    if text.startswith('@') and len(text) > 1:
-        context.user_data['meeting_group'] = text
-        await update.message.reply_text(
-            f"✅ گروه انتخاب شده: {text}\n\n۴. توضیحات تکمیلی را ارسال کنید:",
-            reply_markup=ReplyKeyboardMarkup([["🔙 بازگشت"]], resize_keyboard=True)
-        )
-        return ADD_MEETING_DESC
-
-    # Numeric chat id
-    try:
-        int(text)
-        context.user_data['meeting_group'] = text
-        await update.message.reply_text(
-            f"✅ گروه انتخاب شده: {text}\n\n۴. توضیحات تکمیلی را ارسال کنید:",
-            reply_markup=ReplyKeyboardMarkup([["🔙 بازگشت"]], resize_keyboard=True)
-        )
-        return ADD_MEETING_DESC
-    except ValueError:
-        pass
-
-    # Reject private invite links: bot cannot send via join links
-    low = text.lower()
-    if low.startswith('https://t.me/') or low.startswith('http://t.me/') or low.startswith('t.me/'):
-        # Try to extract public username
-        # Patterns like https://t.me/username or https://t.me/username/123
-        try:
-            after = low.split('t.me/', 1)[1]
-            first = after.split('/', 1)[0]
-            if first and not first.startswith('+') and first != 'joinchat':
-                context.user_data['meeting_group'] = f"@{first}"
-                await update.message.reply_text(
-                    f"✅ گروه انتخاب شده: @{first}\n\n۴. توضیحات تکمیلی را ارسال کنید:",
-                    reply_markup=ReplyKeyboardMarkup([["🔙 بازگشت"]], resize_keyboard=True)
-                )
-                return ADD_MEETING_DESC
-        except Exception:
-            pass
-        await update.message.reply_text(
-            "این لینک خ��وصی قابل استفاده برای ارسال پیام نیست. لطفاً یک پیام از گروه فوروارد کنید یا @username/آیدی عددی گروه را ارسال کنید.")
-        return ADD_MEETING_GROUP
-
-    await update.message.reply_text("ورودی نامعتبر است. لطفاً یک پیام از گروه فوروارد کنید یا @username/آیدی عددی گروه را ارسال کنید.")
-    return ADD_MEETING_GROUP
-
 async def meeting_desc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['meeting_desc'] = update.message.text
-    
+    try:
+        invite_link = await context.bot.export_chat_invite_link(context.user_data['meeting_group_id'])
+    except ChatMigrated as e:  
+        invite_link = await context.bot.export_chat_invite_link(e.new_chat_id)
+        context.user_data['meeting_group_id'] = e.new_chat_id
+        
     await update.message.reply_text(
         f"✅ اطلاعات میتینگ:\n\n"
         f"عنوان: {context.user_data['meeting_title']}\n"
         f"ناظر: {context.user_data['meeting_admin']}\n"
-        f"گروه: {context.user_data['meeting_group']}\n"
-        f"توضیحات: {context.user_data['meeting_desc']}\n\n"
+        f"گروه: [{context.user_data['meeting_group']}]({invite_link})\n"
+        f"توضیحات: \n{context.user_data['meeting_desc']}\n\n"
         "ثبت شود؟",
+        parse_mode="Markdown",
+        disable_web_page_preview=True,
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("ثبت ✅", callback_data="confirm_meeting")],
             [InlineKeyboardButton("🔙 بازگشت", callback_data="back_admin_desc")]
@@ -304,7 +266,7 @@ async def confirm_meeting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data == "confirm_meeting":
         title = context.user_data['meeting_title']
         admin_id = context.user_data['meeting_admin']
-        group_id = context.user_data['meeting_group']
+        group_id = context.user_data['meeting_group_id']
         desc = context.user_data['meeting_desc']
         
         # Don't add meeting supervisor as admin - they only get notifications
@@ -353,29 +315,31 @@ async def back_to_meeting_admin(update: Update, context: ContextTypes.DEFAULT_TY
 async def back_to_meeting_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
     bot_username = getattr(context.bot, "username", None) or ""
     group_add_url = f"https://t.me/{bot_username}?startgroup" if bot_username else "https://t.me/"
-    await update.message.reply_text(
-        "ابتدا ربات را به گروه اضافه کنید (در صورت نیاز):",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("➕ افزودن ربات به گروه", url=group_add_url)]])
+    
+    request_chat_button = KeyboardButton(
+        text="یک گروه انتخاب کنید",
+        request_chat=KeyboardButtonRequestChat(
+            request_id=1,
+            chat_is_channel=False,
+            user_administrator_rights=bot_rights,
+            bot_administrator_rights=bot_rights,
+            bot_is_member=True,
+            chat_is_forum=False
+        )
     )
     instructions = (
-        "۳. یکی از روش‌های زیر را انجام دهید:\n"
-        "• یک پیام از گروه به من فوروارد کنید؛ یا\n"
-        "• آیدی گروه را به صورت عددی وارد کنید (مثل -100xxxxxxxxxx)؛ یا\n"
-        "• نام کاربری عمومی گروه را با @ وارد کنید (مثل @yourgroup)."
+        "۳. با استفاده از دکمه زیر یک گروه انتخاب کنید یا بسازید!"
     )
     await update.message.reply_text(
         instructions,
-        reply_markup=ReplyKeyboardMarkup([["🔙 بازگشت"]], resize_keyboard=True),
+        parse_mode='Markdown',
+        reply_markup=ReplyKeyboardMarkup([[request_chat_button],["🔙 بازگشت"]], resize_keyboard=True),
     )
     return ADD_MEETING_GROUP
 
 async def back_from_confirm_meeting(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    try:
-        await query.edit_message_text("بازگشت به مرحله قبل. ۴. توضیحات تکمیلی را ارسال کنید:")
-    except Exception:
-        pass
     await context.bot.send_message(
         chat_id=query.message.chat_id,
         text="۴. توضیحات تکمیلی را ارسال کنید:",
@@ -446,9 +410,6 @@ async def confirm_remove_meeting(update: Update, context: ContextTypes.DEFAULT_T
         return ConversationHandler.END
     title = title_row[0]
     
-    # Delete all related data first (bits associated with this meeting)
-    execute_query("DELETE FROM bits WHERE meeting_id = ?", (meeting_id,))
-    
     # Then delete the meeting completely
     execute_query("DELETE FROM meetings WHERE meeting_id = ?", (meeting_id,))
 
@@ -473,7 +434,7 @@ async def list_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("دسترسی غیر مجاز! ❌")
         return ADMIN_MENU
     admins = execute_query(
-        "SELECT admin_id, is_main FROM admins",
+        "SELECT admin_id FROM admins",
         fetch=True
     )
     
@@ -482,8 +443,8 @@ async def list_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ADMIN_MENU
     
     text = "👑 ادمین های سیستم:\n\n"
-    for admin_id, is_main in admins:
-        text += f"• {admin_id} ({'اصلی' if is_main else 'عادی'})\n"
+    for admin_id, in admins:
+        text += f"• {admin_id}\n"
     
     await update.message.reply_text(text, reply_markup=admin_management_keyboard())
     return ADMIN_MENU
@@ -497,8 +458,9 @@ async def add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def save_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if not _is_main_admin(user_id):
-        await update.message.reply_text("دسترسی فقط برای ادمین اصلی مجاز است ❌")
+    # No concept of main admin anymore; allow any existing admin to add another admin
+    if not _is_admin(user_id):
+        await update.message.reply_text("دسترسی غیر مجاز! ❌")
         return ADMIN_MENU
     try:
         admin_id = int(update.message.text)
@@ -528,14 +490,15 @@ async def admin_management(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def remove_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if not _is_main_admin(user_id):
+    # No concept of main admin anymore; require admin rights
+    if not _is_admin(user_id):
         await update.message.reply_text(
-            "دسترسی فقط برای ادمین اصلی مجاز است ❌",
+            "دسترسی غیر مجاز! ❌",
             reply_markup=admin_management_keyboard()
         )
         return ADMIN_MENU
     admins = execute_query(
-        "SELECT admin_id FROM admins WHERE is_main = 0",
+        "SELECT admin_id FROM admins",
         fetch=True
     )
     
@@ -562,8 +525,8 @@ async def confirm_remove_admin(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.callback_query
     await query.answer()
     user_id = update.effective_user.id
-    if not _is_main_admin(user_id):
-        await query.edit_message_text("دسترسی فقط برای ادمین اصلی مجاز است ❌")
+    if not _is_admin(user_id):
+        await query.edit_message_text("دسترسی غیر مجاز! ❌")
         return ADMIN_MENU
     
     admin_id = int(query.data.split('_')[2])
@@ -584,7 +547,7 @@ async def confirm_remove_admin(update: Update, context: ContextTypes.DEFAULT_TYP
         )
     else:
         # Safe to delete
-        execute_query("DELETE FROM admins WHERE admin_id = ? AND is_main = 0", (admin_id,))
+        execute_query("DELETE FROM admins WHERE admin_id = ?", (admin_id,))
         await query.edit_message_text(
             f"✅ ادمین {admin_id} با موفقیت حذف شد!",
             reply_markup=None
@@ -611,7 +574,7 @@ admin_meeting_conv = ConversationHandler(
         ],
         ADD_MEETING_GROUP: [
             MessageHandler(filters.Regex("^🔙 بازگشت$"), back_to_meeting_admin),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, meeting_group),
+            MessageHandler(filters.StatusUpdate.CHAT_SHARED, meeting_group),
         ],
         ADD_MEETING_DESC: [
             MessageHandler(filters.Regex("^🔙 بازگشت$"), back_to_meeting_group),
@@ -662,7 +625,7 @@ admin_management_conv = ConversationHandler(
             MessageHandler(filters.Regex("^🔙 بازگشت$"), admin_panel)
         ],
         ADD_ADMIN_ID: [
-            MessageHandler(filters.Regex("^🔙 بازگشت$"), back_to_admin_management_menu),
+            MessageHandler(filters.Regex("^🔙 بازگ��ت$"), back_to_admin_management_menu),
             MessageHandler(filters.TEXT & ~filters.COMMAND, save_admin),
         ],
         REMOVE_ADMIN: [
