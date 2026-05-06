@@ -3010,7 +3010,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
                 <div class="greet-eyebrow">SIGNAL ACTIVE · <span id="heroLocation">SECTOR 7G</span></div>
 
-                <h1 class="greet-h" id="greetGreeting">GOOD EVENING, COOPER</h1>
+                <h1 class="greet-h" id="greetGreeting">GOOD EVENING</h1>
 
                 <p class="greet-sub">You have <b id="heroUnreadDM">5 unread transmissions</b>, <b id="heroReqs">3 friend requests</b>, and <b>1 legendary orb</b> just discovered.</p>
 
@@ -3284,7 +3284,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <div class="dm-input-wrap" id="dmInputWrap" style="display:none">
 
-              <div class="dm-ibox-label" id="dmIboxLabel">TRANSMITTING TO COOPER</div>
+              <div class="dm-ibox-label" id="dmIboxLabel">TRANSMITTING</div>
 
               <div class="dm-reply-bar" id="dmReplyBar" style="display:none">
 
@@ -3402,99 +3402,17 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <div class="ws-channel-strip" id="wsChannelStrip" style="display:none"></div>
 
-            <!-- DEFAULT WORLD VIEW (shown only if no server selected) -->
+            <!-- EMPTY STATE (shown when no server selected) -->
 
-            <div id="worldDefaultView" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
+            <div id="worldDefaultView" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;align-items:center;justify-content:center">
 
-              <div class="world-hero">
+              <div style="text-align:center;padding:40px 20px">
 
-                <div class="world-hero-emblem"><i data-lucide="globe" style="width:22px;height:22px"></i></div>
+                <div style="width:80px;height:80px;margin:0 auto 20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.15),rgba(120,120,140,0.3) 60%,rgba(30,30,40,0.8));box-shadow:0 0 40px rgba(120,120,140,0.2);display:flex;align-items:center;justify-content:center"><i data-lucide="globe" style="width:28px;height:28px;color:var(--t3)"></i></div>
 
-                <div class="world-hero-info">
+                <div style="font-family:'Space Grotesk','Vazirmatn',monospace;font-size:1.1rem;letter-spacing:2px;color:var(--t2);margin-bottom:8px">NO SERVER SELECTED</div>
 
-                  <div class="world-eyebrow"><span class="we-pulse"></span>BROADCASTING ON ALL FREQUENCIES</div>
-
-                  <h1 class="world-title">WORLD</h1>
-
-                </div>
-
-                <div class="world-stats">
-
-                  <div class="world-stat live"><div class="world-stat-n">1.2K</div><div class="world-stat-l">ONLINE</div></div>
-
-                  <div class="world-stat"><div class="world-stat-n">42</div><div class="world-stat-l">VOICE</div></div>
-
-                  <div class="world-stat"><div class="world-stat-n">8</div><div class="world-stat-l">CHANNELS</div></div>
-
-                </div>
-
-              </div>
-
-              <div class="world-pinned" id="worldPinned">
-
-                <i data-lucide="pin" style="width:13px;height:13px"></i>
-
-                <div class="world-pinned-text"><b>PINNED</b>WORLD WAVE: New legendary orb "SOLARIS" discovered — first sighting in sector 7G!</div>
-
-                <div class="world-pinned-by">— NEXUS</div>
-
-              </div>
-
-              <div class="world-filters" id="worldFilters">
-
-                <button class="wf-pill active" data-filter="all"><span class="wf-dot"></span>ALL</button>
-
-                <button class="wf-pill" data-filter="news"><i data-lucide="zap" style="width:9px;height:9px"></i>NEWS</button>
-
-                <button class="wf-pill" data-filter="discovery"><i data-lucide="sparkles" style="width:9px;height:9px"></i>DISCOVERY</button>
-
-                <button class="wf-pill" data-filter="voice"><i data-lucide="mic" style="width:9px;height:9px"></i>VOICE</button>
-
-                <button class="wf-pill" data-filter="media"><i data-lucide="image" style="width:9px;height:9px"></i>MEDIA</button>
-
-                <button class="wf-pill" data-filter="mention"><i data-lucide="at-sign" style="width:9px;height:9px"></i>MENTIONS</button>
-
-              </div>
-
-              <div class="world-chat">
-
-                <div class="world-msgs" id="worldMsgs"></div>
-
-                <div class="dm-input-wrap">
-
-                  <div class="dm-ibox-label">BROADCASTING TO WORLD</div>
-
-                  <div class="dm-attach-preview" id="worldAttachPreview" style="display:none">
-
-                    <img id="worldAttachThumb" src="" alt="" />
-
-                    <div class="ap-info">
-
-                      <div class="ap-n" id="worldAttachName">image.png</div>
-
-                      <div class="ap-s" id="worldAttachSize">128 KB</div>
-
-                    </div>
-
-                    <button class="ap-x" id="worldAttachClose"><i data-lucide="x" style="width:14px;height:14px"></i></button>
-
-                  </div>
-
-                  <div class="dm-ibox" id="worldIbox">
-
-                    <button class="dm-i-btn" id="worldAttachBtn" title="Attach image"><i data-lucide="image-plus" style="width:16px;height:16px"></i></button>
-
-                    <button class="dm-i-btn" data-popup="emojiPop" id="worldEmojiBtn" title="Emoji"><i data-lucide="smile" style="width:16px;height:16px"></i></button>
-
-                    <textarea class="dm-input" id="worldInput" placeholder="Broadcast to the world..." rows="1"></textarea>
-
-                    <button class="dm-i-btn send disabled" id="worldSend" title="Send"><i data-lucide="send" style="width:14px;height:14px"></i></button>
-
-                  </div>
-
-                  <input type="file" id="worldFileInput" accept="image/*" style="display:none" />
-
-                </div>
+                <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.65rem;color:var(--t3);letter-spacing:1px;line-height:1.6">Select a server from the rail or create a new one.</div>
 
               </div>
 
@@ -3664,9 +3582,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <div class="profile-head-info">
 
-              <div class="profile-name" id="modalName">Cooper</div>
+              <div class="profile-name" id="modalName">You</div>
 
-              <div class="profile-handle-row"><span class="profile-handle" id="modalHandle">@cooper</span><button class="profile-handle-copy" id="modalHandleCopy" title="Copy handle"><i data-lucide="copy" style="width:11px;height:11px"></i></button></div>
+              <div class="profile-handle-row"><span class="profile-handle" id="modalHandle">@user</span><button class="profile-handle-copy" id="modalHandleCopy" title="Copy handle"><i data-lucide="copy" style="width:11px;height:11px"></i></button></div>
 
             </div>
 
@@ -3798,7 +3716,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
               <label class="sm-label">USERNAME / HANDLE</label>
 
-              <div class="profile-handle-input"><span class="profile-handle-prefix">@</span><input class="sm-input" id="profileEditHandle" placeholder="cooper" /></div>
+              <div class="profile-handle-input"><span class="profile-handle-prefix">@</span><input class="sm-input" id="profileEditHandle" placeholder="username" /></div>
 
             </div>
 
@@ -4404,7 +4322,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <label class="sm-label">DISPLAY NAME</label>
 
-            <input type="text" class="sm-input" id="authName" placeholder="Cooper" />
+            <input type="text" class="sm-input" id="authName" placeholder="Your name" />
 
           </div>
 
@@ -4412,7 +4330,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <label class="sm-label">USERNAME</label>
 
-            <input type="text" class="sm-input" id="authHandle" placeholder="cooper" />
+            <input type="text" class="sm-input" id="authHandle" placeholder="username" />
 
           </div>
 
@@ -4912,27 +4830,26 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   const channelData = {
 
-    orbit:    { name:'ORBIT',    users:['Cooper','Brand','Doyle','Romilly'], color:'rgba(185,28,74,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#6366f1 60%,#1e1b4b)', atmoColor:'rgba(185,28,74,0.4)', orbiterColor:'rgba(185,28,74,0.7)', avBorder:'#818cf8', emoji:'🌌', tier:'epic' },
+    orbit:    { name:'ORBIT',    users:['Brand','Doyle','Romilly'], color:'rgba(185,28,74,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#6366f1 60%,#1e1b4b)', atmoColor:'rgba(185,28,74,0.4)', orbiterColor:'rgba(185,28,74,0.7)', avBorder:'#818cf8', emoji:'🌌', tier:'epic' },
 
     endurance:{ name:'ENDURANCE',users:['Case','TARS','Mann'],                color:'rgba(236,72,153,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#ec4899 60%,#831843)', atmoColor:'rgba(236,72,153,0.4)', orbiterColor:'rgba(236,72,153,0.7)', avBorder:'#f472b6', emoji:'🚀', tier:'rare' },
 
-    gargantua:{ name:'GARGANTUA',users:['Mann','CASE','KIPP','Cooper','Brand','Doyle','Romilly','Murph','Tom'], color:'rgba(190,18,60,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#a855f7 60%,#3b0764)', atmoColor:'rgba(190,18,60,0.4)', orbiterColor:'rgba(190,18,60,0.7)', avBorder:'#c084fc', emoji:'⚫', tier:'epic' },
+    gargantua:{ name:'GARGANTUA',users:['Mann','CASE','KIPP','Brand','Doyle','Romilly','Murph','Tom'], color:'rgba(190,18,60,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#a855f7 60%,#3b0764)', atmoColor:'rgba(190,18,60,0.4)', orbiterColor:'rgba(190,18,60,0.7)', avBorder:'#c084fc', emoji:'⚫', tier:'epic' },
 
     miller:   { name:'MILLER',   users:['Brand','Doyle'],                     color:'rgba(56,189,248,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.3),#0284c7 55%,#0c2951)', atmoColor:'rgba(56,189,248,0.28)', orbiterColor:'rgba(56,189,248,0.55)', avBorder:'#7dd3fc', emoji:'🌊', tier:'rare' },
 
-    solaris:  { name:'SOLARIS',  users:['NEXUS','TARS','Brand','Cooper'],     color:'rgba(245,158,11,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fef3c7 25%,#f59e0b 55%,#7c2d12)', atmoColor:'rgba(245,158,11,0.55)', orbiterColor:'rgba(245,158,11,0.7)', avBorder:'#fbbf24', emoji:'☀', tier:'legendary', skin:'fire' },
+    solaris:  { name:'SOLARIS',  users:['NEXUS','TARS','Brand'],     color:'rgba(245,158,11,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fef3c7 25%,#f59e0b 55%,#7c2d12)', atmoColor:'rgba(245,158,11,0.55)', orbiterColor:'rgba(245,158,11,0.7)', avBorder:'#fbbf24', emoji:'☀', tier:'legendary', skin:'fire' },
 
     glacius:  { name:'GLACIUS',  users:['CASE','Mann','Doyle','TARS','Brand'],color:'rgba(125,211,252,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.95),#e0f2fe 20%,#7dd3fc 55%,#0c4a6e)', atmoColor:'rgba(125,211,252,0.55)', orbiterColor:'rgba(125,211,252,0.7)', avBorder:'#bae6fd', emoji:'❄', tier:'legendary', skin:'ice' },
 
-    verdant:  { name:'VERDANT',  users:['Cooper','Murph','Tom','Brand','Doyle','Romilly'],color:'rgba(74,222,128,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.7),#bbf7d0 25%,#4ade80 55%,#14532d)', atmoColor:'rgba(74,222,128,0.55)', orbiterColor:'rgba(74,222,128,0.7)', avBorder:'#86efac', emoji:'🌳', tier:'legendary', skin:'tree' },
+    verdant:  { name:'VERDANT',  users:['Murph','Tom','Brand','Doyle','Romilly'],color:'rgba(74,222,128,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.7),#bbf7d0 25%,#4ade80 55%,#14532d)', atmoColor:'rgba(74,222,128,0.55)', orbiterColor:'rgba(74,222,128,0.7)', avBorder:'#86efac', emoji:'🌳', tier:'legendary', skin:'tree' },
 
-    inferno:  { name:'INFERNO',  users:['Mann','KIPP','TARS','Cooper','CASE','NEXUS','Doyle'],color:'rgba(249,115,22,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fed7aa 20%,#f97316 55%,#7c2d12)', atmoColor:'rgba(249,115,22,0.6)', orbiterColor:'rgba(249,115,22,0.7)', avBorder:'#fdba74', emoji:'🔥', tier:'legendary', skin:'flame' },
+    inferno:  { name:'INFERNO',  users:['Mann','KIPP','TARS','CASE','NEXUS','Doyle'],color:'rgba(249,115,22,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fed7aa 20%,#f97316 55%,#7c2d12)', atmoColor:'rgba(249,115,22,0.6)', orbiterColor:'rgba(249,115,22,0.7)', avBorder:'#fdba74', emoji:'🔥', tier:'legendary', skin:'flame' },
 
-    coop:     { name:'COOPER',   users:[],                                    color:'rgba(34,197,94,',  planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#22c55e 60%,#14532d)', atmoColor:'rgba(34,197,94,0.4)', orbiterColor:'rgba(34,197,94,0.7)', avBorder:'#4ade80', emoji:'🌱', tier:'common' }
 
   };
 
-  const allChannels = ['orbit','endurance','solaris','glacius','verdant','inferno','gargantua','miller','coop'];
+  const allChannels = ['orbit','endurance','solaris','glacius','verdant','inferno','gargantua','miller'];
 
   let favorites = ['orbit','endurance','solaris','glacius','verdant','inferno','gargantua'];
 
@@ -4964,7 +4881,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   const userVolumes = {}; // userName -> 0-200 (%) volume; default 100
 
-  let isAdmin = true; // Cooper is admin (toggleable for demo)
+  let isAdmin = true;
 
   // ============== SERVERS ==============
 
@@ -4974,15 +4891,15 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     endurance: {
 
-      id:'endurance', name:'ENDURANCE', initial:'E', desc:'Mission control for the Endurance crew. Coordinate jumps, share readings, debate the Cooper paradox.',
+      id:'endurance', name:'ENDURANCE', initial:'E', desc:'Mission control for the Endurance crew. Coordinate jumps, share readings, debate navigation paradoxes.',
 
       grad:'linear-gradient(135deg,#ec4899,#831843)', glow:'rgba(236,72,153,0.55)', bannerC1:'rgba(236,72,153,0.2)', bannerC2:'rgba(190,18,60,0.12)',
 
       cover:null, // user can paste an image data URL here
 
-      members:['Cooper','Brand','TARS','CASE','Murph','Doyle','Romilly'],
+      members:[selfProfile.name,'Brand','TARS','CASE','Murph','Doyle','Romilly'],
 
-      admins:['Cooper','Brand'],
+      admins:[selfProfile.name,'Brand'],
 
       textChannels:[
 
@@ -5004,49 +4921,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       ],
 
-      pinned:{ text:'Crew briefing tomorrow 14:00 UTC. Bring all telemetry from Miller pass.', by:'Cooper', time:'2h ago' },
+      pinned:{ text:'Crew briefing tomorrow 14:00 UTC. Bring all telemetry from Miller pass.', by:selfProfile.name, time:'2h ago' },
 
       categories:[
 
         { id:'cmd', name:'COMMAND CENTER', textChannels:['general','mission-log'], voiceChannels:['orbit'] },
 
         { id:'ops', name:'OPERATIONS', textChannels:['data-stream','lounge'], voiceChannels:['endurance-bridge'] }
-
-      ]
-
-    },
-
-    cooper: {
-
-      id:'cooper', name:'COOPER', initial:'C', desc:'Cooper\'s personal hub. Casual chat, planet observations, and the occasional emergency.',
-
-      grad:'linear-gradient(135deg,#22c55e,#14532d)', glow:'rgba(34,197,94,0.55)', bannerC1:'rgba(34,197,94,0.18)', bannerC2:'rgba(185,28,74,0.1)',
-
-      cover:null,
-
-      members:['Cooper','Murph','Tom','Donald'],
-
-      admins:['Cooper'],
-
-      textChannels:[
-
-        { id:'general', name:'general', style:'nature', unread:0 },
-
-        { id:'farm-log', name:'farm-log', style:'gold', unread:0 }
-
-      ],
-
-      voiceChannels:[
-
-        { id:'cooper-talk', name:'TALK', style:'green' }
-
-      ],
-
-      pinned:{ text:'Welcome to my hub. Pull up a chair, watch the corn grow.', by:'Cooper', time:'1d ago' },
-
-      categories:[
-
-        { id:'home', name:'THE FARM', textChannels:['general','farm-log'], voiceChannels:['cooper-talk'] }
 
       ]
 
@@ -5060,7 +4941,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       cover:null,
 
-      members:['NEXUS','Cooper','Brand','TARS','CASE','Murph','Doyle','Romilly','Mann','KIPP'],
+      members:['NEXUS',selfProfile.name,'Brand','TARS','CASE','Murph','Doyle','Romilly','Mann','KIPP'],
 
       admins:['NEXUS'],
 
@@ -5096,7 +4977,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   };
 
-  let myServers = ['endurance','cooper','nexus']; // ordered
+  let myServers = ['endurance','nexus']; // ordered
 
   let currentServer = null; // null = default world view
 
@@ -5262,7 +5143,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     { id:4, type:'discovery', icon:'sparkles', iconCls:'warn', title:'LEGENDARY orb SOLARIS discovered', desc:'First sighting in sector 7G — view in codex', time:'42m', unread:true },
 
-    { id:5, type:'mention', icon:'at-sign', iconCls:'warn', title:'Case mentioned you', desc:'in #endurance · "@cooper check the gravity readings"', time:'1h', unread:false },
+    { id:5, type:'mention', icon:'at-sign', iconCls:'warn', title:'Case mentioned you', desc:'in #endurance · "@user check the gravity readings"', time:'1h', unread:false },
 
     { id:6, type:'image', icon:'image', iconCls:'', title:'TARS shared an image', desc:'station-blueprint-v2.png', time:'3h', unread:false }
 
@@ -5302,7 +5183,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     murph: [
 
-      { id:'m1', sender:'them', text:'Cooper, the data stream is back online.', time:'18:04', day:'TODAY', status:'read' },
+      { id:'m1', sender:'them', text:'The data stream is back online.', time:'18:04', day:'TODAY', status:'read' },
 
       { id:'m2', sender:'them', text:'Quantum equation just sent — check it.', time:'18:04', day:'TODAY', status:'read' },
 
@@ -5358,13 +5239,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     { id:'w1', sender:'TARS', initial:'T', av:'linear-gradient(135deg,#22d3ee,#155e75)', role:'AI', roleCls:'bot', text:'Mission log: arrived at sector 7G. All systems nominal.', time:'19:02', cat:'news', reactions:{ '🤖':3, '👍':5 } },
 
-    { id:'w2', sender:'Cooper', initial:'C', av:'linear-gradient(135deg,#22c55e,#15803d)', role:'COMMANDER', text:'Anyone got eyes on the new orbit? Stunning auroras.', time:'19:08', cat:'discovery', reactions:{ '✨':8, '🌌':4 } },
+    { id:'w2', sender:selfProfile.name, initial:selfProfile.initial, av:selfAvStyle(), role:selfProfile.rank, text:'Anyone got eyes on the new orbit? Stunning auroras.', time:'19:08', cat:'discovery', reactions:{ '✨':8, '🌌':4 } },
 
     { id:'w3', sender:'NEXUS', initial:'N', av:'linear-gradient(135deg,#fbbf24,#ec4899)', role:'BROADCAST', roleCls:'legend', text:'WORLD WAVE: New legendary orb "SOLARIS" discovered!', time:'19:15', cat:'discovery', special:true, pinned:true, reactions:{ '🔥':24, '⭐':18, '🌟':12 } },
 
     { id:'w4', sender:'Brand', initial:'B', av:'linear-gradient(135deg,#818cf8,#581c87)', role:'SPECIALIST', type:'image', src:'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250"><defs><radialGradient id="g" cx="50%25" cy="50%25"><stop offset="0" stop-color="%23fef3c7"/><stop offset="0.5" stop-color="%23f59e0b"/><stop offset="1" stop-color="%23831843"/></radialGradient></defs><rect width="400" height="250" fill="%23030305"/><circle cx="200" cy="125" r="80" fill="url(%23g)"/><text x="200" y="225" font-family="monospace" font-size="11" fill="white" text-anchor="middle" opacity="0.6">SOLARIS — LEGENDARY</text></svg>', text:'First sighting of SOLARIS!', time:'19:18', cat:'media', reactions:{ '😍':14, '📸':9 } },
 
-    { id:'w5', sender:'Doyle', initial:'D', av:'linear-gradient(135deg,#fbbf24,#92400e)', role:'PILOT', text:'@cooper check the gravity readings on Miller\'s planet.', time:'19:20', cat:'mention', reactions:{ '👀':3 } },
+    { id:'w5', sender:'Doyle', initial:'D', av:'linear-gradient(135deg,#fbbf24,#92400e)', role:'PILOT', text:'@user check the gravity readings on Miller\'s planet.', time:'19:20', cat:'mention', reactions:{ '👀':3 } },
 
     { id:'w6', sender:'Romilly', initial:'R', av:'linear-gradient(135deg,#60a5fa,#1e3a8a)', role:'PHYSICIST', text:'Joining ORBIT voice channel — anyone want to discuss the equation?', time:'19:25', cat:'voice', reactions:{ '🎙':6 } },
 
@@ -5438,7 +5319,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     // Fallback: when nothing is marked, show favorites so the carousel never collapses.
 
-    if (out.length === 0) return [...favorites, ...allChannels.filter(c=>!favorites.includes(c))].filter(canSeeVoiceKey);
+    if (out.length === 0) return allChannels.filter(canSeeVoiceKey);
 
     return out;
 
@@ -5478,6 +5359,22 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const list = getAllChannels();
 
+    if (list.length === 0){
+
+      slides.innerHTML = '<div class="orb-slide default-channel" data-channel="__empty"><div class="badge-row"></div><div class="orb-wrap"><div class="atmo" style="background:radial-gradient(circle,rgba(120,120,140,0.2),transparent 70%)"></div><div class="otrack" style="border-color:rgba(120,120,140,0.15)"></div><div class="planet" style="background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.2),#333 60%,#111);box-shadow:0 0 40px rgba(120,120,140,0.2),inset 0 0 20px rgba(255,255,255,0.1)"></div></div><div class="vlabel" style="color:var(--t3)">EMPTY</div><div class="vstatus" style="color:var(--t3);font-size:0.55rem">No orbits available</div></div>';
+
+      dots.innerHTML = '<div class="orb-dot active"></div>';
+
+      slides.style.transform = 'translateX(0)';
+
+      currentSlideIndex = 0;
+
+      selectedSlideChannel = null;
+
+      return;
+
+    }
+
     let sHtml = '', dHtml = '';
 
     list.forEach((ch, i) => {
@@ -5506,7 +5403,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         let avBgExtra = '';
 
-        if (u === 'Cooper' && selfProfile.avImage){
+        if (u === selfProfile.name && selfProfile.avImage){
 
           avInner = '';
 
@@ -5644,7 +5541,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           if (av){
 
-            if (u === 'Cooper' && selfProfile.avImage){
+            if (u === selfProfile.name && selfProfile.avImage){
 
               av.textContent = '';
 
@@ -5814,11 +5711,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         (srv.voiceChannels||[]).forEach(v => {
 
-          const k = channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id);
+          const k = channelData[v.id] ? v.id : (v.id);
 
           if (seen.has(k) || !channelData[k]) return;
 
-          if (!memberCanSee(srv, 'Cooper', v)) return;
+          if (!memberCanSee(srv, selfProfile.name, v)) return;
 
           order.push(k); seen.add(k);
 
@@ -5856,13 +5753,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (isConn){
 
-        // include 'You' (Cooper) explicitly first
+        // include self explicitly first
 
-        html += '<div class="vu-item speaking" data-vu-user="Cooper" data-vu-ch="'+ch+'" data-name="You · '+data.name+'"><div class="vu-av" style="background:'+selfAvStyle()+';border-color:'+data.avBorder+'"><span>'+selfAvInner()+'</span><span class="vu-s '+(muted?'off':'on')+'"></span></div></div>';
+        html += '<div class="vu-item speaking" data-vu-user=""+selfProfile.name+"" data-vu-ch="'+ch+'" data-name="You · '+data.name+'"><div class="vu-av" style="background:'+selfAvStyle()+';border-color:'+data.avBorder+'"><span>'+selfAvInner()+'</span><span class="vu-s '+(muted?'off':'on')+'"></span></div></div>';
 
         data.users.forEach(u => {
 
-          if (u === 'Cooper') return;
+          if (u === selfProfile.name) return;
 
           const speaking = speakingUser === u;
 
@@ -6060,11 +5957,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     }
 
-    if (!channelData[ch].users.includes('Cooper')) channelData[ch].users = ['Cooper', ...channelData[ch].users];
+    if (!channelData[ch].users.includes(selfProfile.name)) channelData[ch].users = [selfProfile.name, ...channelData[ch].users];
 
     if (wasConnectedTo){
 
-      channelData[wasConnectedTo].users = channelData[wasConnectedTo].users.filter(u=>u!=='Cooper');
+      channelData[wasConnectedTo].users = channelData[wasConnectedTo].users.filter(u=>u!==selfProfile.name);
 
       showToast('Switched to '+channelData[ch].name,'success');
 
@@ -6110,7 +6007,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const ch = connectedChannel;
 
-    if (channelData[ch]) channelData[ch].users = channelData[ch].users.filter(u=>u!=='Cooper');
+    if (channelData[ch]) channelData[ch].users = channelData[ch].users.filter(u=>u!==selfProfile.name);
 
     inVoice = false;
 
@@ -6186,7 +6083,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (!inVoice || !connectedChannel) return;
 
-      const users = channelData[connectedChannel].users.filter(u=>u!=='Cooper' && !mutedUsersByMe.has(u));
+      const users = channelData[connectedChannel].users.filter(u=>u!==selfProfile.name && !mutedUsersByMe.has(u));
 
       if (users.length===0){ speakingUser = null; return; }
 
@@ -6354,9 +6251,23 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     sub.classList.toggle('offline', !conv.online);
 
-    document.getElementById('dmHeadSubText').textContent = conv.online ? 'ONLINE · ENCRYPTED CHANNEL' : 'OFFLINE · LAST SEEN '+conv.lastSeen.toUpperCase();
+    if (conv.isSaved){
 
-    document.getElementById('dmIboxLabel').textContent = 'TRANSMITTING TO '+conv.name.toUpperCase();
+      document.getElementById('dmHeadSubText').textContent = 'PERSONAL NOTES';
+
+      document.getElementById('dmIboxLabel').textContent = 'SAVE A NOTE';
+
+      document.getElementById('dmHeadPulse').style.opacity = '0';
+
+      document.getElementById('dmHeadAv').style.boxShadow = 'none';
+
+    } else {
+
+      document.getElementById('dmHeadSubText').textContent = conv.online ? 'ONLINE · ENCRYPTED CHANNEL' : 'OFFLINE · LAST SEEN '+conv.lastSeen.toUpperCase();
+
+      document.getElementById('dmIboxLabel').textContent = 'TRANSMITTING TO '+conv.name.toUpperCase();
+
+    }
 
     cancelReply(); cancelEdit(); clearDmAttach();
 
@@ -7054,7 +6965,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         conv.typing = false;
 
-        const replies = ["Acknowledged.","Copy that.","On it.","Got your transmission, Cooper.","Stay safe.","Roger."];
+        const replies = ["Acknowledged.","Copy that.","On it.","Got your transmission.","Stay safe.","Roger."];
 
         const reply = { id:uid(), sender:'them', text: replies[Math.floor(Math.random()*replies.length)], time:nowTime(), day:'TODAY', status:'read' };
 
@@ -7082,7 +6993,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const time = nowTime();
 
-    const msg = { id:uid(), sender:'Cooper', initial:'C', av:'linear-gradient(135deg,#22c55e,#15803d)', role:'COMMANDER', time, special:false, cat:'news', reactions:{} };
+    const msg = { id:uid(), sender:selfProfile.name, initial:selfProfile.initial, av:selfAvStyle(), role:selfProfile.rank, time, special:false, cat:'news', reactions:{} };
 
     if (worldAttachData){
 
@@ -7412,7 +7323,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         if ((sv.voiceChannels||[]).some(v => {
 
-          const k = channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id);
+          const k = channelData[v.id] ? v.id : (v.id);
 
           return k === ch;
 
@@ -7702,7 +7613,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   const activityFeed = [
 
-    { dot:'M', dotCls:'pink', title:'Murph sent you a transmission', desc:'"Cooper, the data stream is back online..."', time:'2m', action:{type:'conv',id:'murph'} },
+    { dot:'M', dotCls:'pink', title:'Murph sent you a transmission', desc:'"The data stream is back online..."', time:'2m', action:{type:'conv',id:'murph'} },
 
     { dot:'B', dotCls:'green', title:'Brand joined ORBIT', desc:'Voice channel · 4 members now active', time:'12m', action:{type:'voice',id:'orbit'} },
 
@@ -7710,7 +7621,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     { dot:'★', dotCls:'warm', title:'Legendary orb SOLARIS discovered', desc:'First sighting in sector 7G — visit codex', time:'42m', action:{type:'voice',id:'solaris'} },
 
-    { dot:'C', dotCls:'', title:'Case mentioned you in #endurance', desc:'"@cooper check the gravity readings"', time:'1h', action:{type:'conv',id:'case'} },
+    { dot:'C', dotCls:'', title:'Case mentioned you in #endurance', desc:'"@user check the gravity readings"', time:'1h', action:{type:'conv',id:'case'} },
 
     { dot:'T', dotCls:'pink', title:'TARS shared an image', desc:'station-blueprint-v2.png · 482 KB', time:'3h', action:{type:'conv',id:'tars'} }
 
@@ -7890,7 +7801,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       // We deliberately do NOT model 'Member' as a role - members without any role just get baseline access.
 
-      const owner = (s.admins && s.admins[0]) || 'Cooper';
+      const owner = (s.admins && s.admins[0]) || selfProfile.name;
 
       s.roles = [
 
@@ -7910,7 +7821,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!owner){
 
-      const ownerName = (s.admins && s.admins[0]) || 'Cooper';
+      const ownerName = (s.admins && s.admins[0]) || selfProfile.name;
 
       owner = { id:'owner', name:'Owner', color:'#fde68a', system:true, members:[ownerName], perms:Object.fromEntries(PERMISSIONS.map(p=>[p.key,true])) };
 
@@ -7922,7 +7833,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     owner.perms = Object.fromEntries(PERMISSIONS.map(p=>[p.key,true]));
 
-    if (!owner.members || owner.members.length !== 1) owner.members = [(owner.members && owner.members[0]) || (s.admins && s.admins[0]) || 'Cooper'];
+    if (!owner.members || owner.members.length !== 1) owner.members = [(owner.members && owner.members[0]) || (s.admins && s.admins[0]) || selfProfile.name];
 
     const ownerName = owner.members[0];
 
@@ -7974,7 +7885,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   }
 
-  // Find {server, vc} for a given voice channelData key (e.g. 'endurance', 'coop', 'custom-...').
+  // Find {server, vc} for a given voice channelData key (e.g. 'endurance', 'custom-...').
 
   function findVoiceChannelByKey(chKey){
 
@@ -7984,7 +7895,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       const vc = (s.voiceChannels||[]).find(v => {
 
-        const k = channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id);
+        const k = channelData[v.id] ? v.id : (v.id);
 
         return k === chKey;
 
@@ -8006,7 +7917,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!found) return true; // unowned/default channels are public
 
-    return memberCanSee(found.server, 'Cooper', found.vc);
+    return memberCanSee(found.server, selfProfile.name, found.vc);
 
   }
 
@@ -8168,7 +8079,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     s.textChannels.forEach(tc => {
 
-      if (!memberCanSee(s,'Cooper',tc)) return;
+      if (!memberCanSee(s,selfProfile.name,tc)) return;
 
       const active = tc.id === currentTextChannel;
 
@@ -8344,7 +8255,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (pm){
 
-        const xBtn = (isAdmin && memberHasPerm(s,'Cooper','managePins')) ? '<button class="ws-pin-x" data-ch-pin-x="'+pm.id+'" title="Unpin"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
+        const xBtn = (isAdmin && memberHasPerm(s,selfProfile.name,'managePins')) ? '<button class="ws-pin-x" data-ch-pin-x="'+pm.id+'" title="Unpin"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
 
         html += '<div class="ws-cat-pin" style="margin-bottom:12px"><div class="ws-cat-pin-i"><i data-lucide="pin" style="width:11px;height:11px"></i></div><div class="ws-cat-pin-info"><div class="ws-cat-pin-l">PINNED · '+escapeHtml(tc.pinnedBy||'')+'</div><div class="ws-cat-pin-text">'+escapeHtml((pm.text||'(image)').slice(0,200))+'</div></div>'+xBtn+'</div>';
 
@@ -8368,7 +8279,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         const av = c ? c.avColor : 'linear-gradient(135deg,#6366f1,#1e1b4b)';
 
-        const isMine = m.user === 'Cooper';
+        const isMine = m.user === selfProfile.name;
 
         let replyPrev = '';
 
@@ -8436,7 +8347,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             (m.type !== 'image' && !m.deleted ? '<button class="ws-msg-act" data-ch-action="copy" data-ch-id="'+m.id+'" title="Copy"><i data-lucide="copy" style="width:12px;height:12px"></i></button>' : '') +
 
-            (isAdmin && memberHasPerm(s,'Cooper','managePins') && !m.deleted ? '<button class="ws-msg-act" data-ch-action="pin" data-ch-id="'+m.id+'" title="'+(tc.pinnedMsgId===m.id?'Unpin':'Pin')+'"><i data-lucide="pin" style="width:12px;height:12px;color:'+(tc.pinnedMsgId===m.id?'var(--warn)':'')+'"></i></button>' : '') +
+            (isAdmin && memberHasPerm(s,selfProfile.name,'managePins') && !m.deleted ? '<button class="ws-msg-act" data-ch-action="pin" data-ch-id="'+m.id+'" title="'+(tc.pinnedMsgId===m.id?'Unpin':'Pin')+'"><i data-lucide="pin" style="width:12px;height:12px;color:'+(tc.pinnedMsgId===m.id?'var(--warn)':'')+'"></i></button>' : '') +
 
             (isMine && !m.deleted ? '<button class="ws-msg-act danger" data-ch-action="delete" data-ch-id="'+m.id+'" title="Delete"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>' : '') +
 
@@ -8542,7 +8453,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     // Banner top-right action cluster: share for everyone; leave only for non-owners; settings only for admins.
 
-    const isOwnerHere = s.admins.includes('Cooper');
+    const isOwnerHere = s.admins.includes(selfProfile.name);
 
     html += '<div class="ws-banner-actions">';
 
@@ -8584,11 +8495,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         '</div>'+
 
-        (isAdmin && memberHasPerm(s,'Cooper','managePins') ? '<button class="ws-pin-add" data-srv-action="addpin"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
+        (isAdmin && memberHasPerm(s,selfProfile.name,'managePins') ? '<button class="ws-pin-add" data-srv-action="addpin"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
 
       '</div>';
 
-    } else if (isAdmin && memberHasPerm(s,'Cooper','managePins')){
+    } else if (isAdmin && memberHasPerm(s,selfProfile.name,'managePins')){
 
       html += '<div class="ws-pinned-box" style="opacity:0.7">'+
 
@@ -8608,13 +8519,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       html += '<div class="ws-cats-grid">';
 
-      const canManageCat = memberHasPerm(s,'Cooper','manageCategory');
+      const canManageCat = memberHasPerm(s,selfProfile.name,'manageCategory');
 
-      const canManageTc  = memberHasPerm(s,'Cooper','manageTextCh');
+      const canManageTc  = memberHasPerm(s,selfProfile.name,'manageTextCh');
 
       s.categories.forEach(cat => {
 
-        if (!memberCanSee(s,'Cooper',cat)) return;
+        if (!memberCanSee(s,selfProfile.name,cat)) return;
 
         const span = cat.span || 1;
 
@@ -8626,7 +8537,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         html += '<div class="ws-cat-h"><div class="ws-cat-h-name" data-cat-glow>'+escapeHtml(cat.name)+'</div>'+
 
-          (isAdmin && memberHasPerm(s,'Cooper','manageCategory') ? '<button class="ws-cat-del" data-cat-delete="'+cat.id+'" title="Delete category"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>' : '')+
+          (isAdmin && memberHasPerm(s,selfProfile.name,'manageCategory') ? '<button class="ws-cat-del" data-cat-delete="'+cat.id+'" title="Delete category"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>' : '')+
 
         '</div>';
 
@@ -8640,11 +8551,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             '<div class="ws-cat-pin-info"><div class="ws-cat-pin-l">CATEGORY PIN</div><div class="ws-cat-pin-text">'+escapeHtml(cat.pinned.text)+'</div></div>'+
 
-            (isAdmin && memberHasPerm(s,'Cooper','managePins') ? '<button class="ws-cat-pin-edit" data-cat-pin-edit="'+cat.id+'"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
+            (isAdmin && memberHasPerm(s,selfProfile.name,'managePins') ? '<button class="ws-cat-pin-edit" data-cat-pin-edit="'+cat.id+'"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
 
           '</div>';
 
-        } else if (isAdmin && memberHasPerm(s,'Cooper','managePins')){
+        } else if (isAdmin && memberHasPerm(s,selfProfile.name,'managePins')){
 
           html += '<button class="ws-cat-add-pin" data-cat-pin-edit="'+cat.id+'"><i data-lucide="pin" style="width:9px;height:9px"></i>ADD CATEGORY PIN</button>';
 
@@ -8662,9 +8573,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             if (!tc) return;
 
-            if (!memberCanSee(s,'Cooper',tc)) return;
+            if (!memberCanSee(s,selfProfile.name,tc)) return;
 
-            const tcDel = (isAdmin && memberHasPerm(s,'Cooper','manageTextCh')) ? '<span class="ws-cat-tc-del" data-tc-delete="'+tc.id+'" title="Delete channel"><i data-lucide="x" style="width:10px;height:10px"></i></span>' : '';
+            const tcDel = (isAdmin && memberHasPerm(s,selfProfile.name,'manageTextCh')) ? '<span class="ws-cat-tc-del" data-tc-delete="'+tc.id+'" title="Delete channel"><i data-lucide="x" style="width:10px;height:10px"></i></span>' : '';
 
             const tcDrag = canManageTc ? ' draggable="true"' : '';
 
@@ -8688,11 +8599,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             if (!vc) return;
 
-            if (!memberCanSee(s,'Cooper',vc)) return;
+            if (!memberCanSee(s,selfProfile.name,vc)) return;
 
             const style = voiceStyles[vc.style] || voiceStyles.indigo;
 
-            const chKey = channelData[vc.id] ? vc.id : (vc.id==='endurance-bridge'?'endurance':vc.id==='cooper-talk'?'coop':vc.id);
+            const chKey = channelData[vc.id] ? vc.id : (vc.id);
 
             const data = channelData[chKey];
 
@@ -8736,7 +8647,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             }
 
-            const vcDel = (isAdmin && memberHasPerm(s,'Cooper','manageVoiceCh')) ? '<button class="ws-cat-vc-del" data-vc-delete="'+vc.id+'" title="Delete voice channel"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
+            const vcDel = (isAdmin && memberHasPerm(s,selfProfile.name,'manageVoiceCh')) ? '<button class="ws-cat-vc-del" data-vc-delete="'+vc.id+'" title="Delete voice channel"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
 
             html += '<div class="ws-cat-vc'+(isConn?' connected':'')+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
 
@@ -9062,7 +8973,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!inVoice){ showToast('You must be connected to a voice channel','warn'); return; }
 
-    if (userName === 'Cooper') return; // not yourself
+    if (userName === selfProfile.name) return; // not yourself
 
     if (channelKey !== connectedChannel){ showToast('You can only mute/manage members of the channel you are in','warn'); return; }
 
@@ -9098,7 +9009,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const ownerSrv = ownerInfo ? ownerInfo.server : null;
 
-    const canKick = ownerSrv ? memberHasPerm(ownerSrv, 'Cooper', 'kickFromVoice') : false;
+    const canKick = ownerSrv ? memberHasPerm(ownerSrv, selfProfile.name, 'kickFromVoice') : false;
 
     if (canKick){
 
@@ -9428,19 +9339,19 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   const selfProfile = {
 
-    name:'Cooper', initial:'C',
+    name:'You', initial:'Y',
 
-    avColor:'linear-gradient(135deg,#22c55e,#15803d)',
+    avColor:'linear-gradient(135deg,#a78bfa,#1e1b4b)',
 
-    orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#22c55e 55%,#14532d)',
+    orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#a78bfa 55%,#1e1b4b)',
 
-    orbColor:'#4ade80',
+    orbColor:'#a78bfa',
 
     avImage:null,
 
-    handle:'@cooper', rank:'COMMANDER',
+    handle:'@user', rank:'EXPLORER',
 
-    bio:'Pilot. Father. Survivor.',
+    bio:'',
 
     online:true, lastSeen:'just now'
 
@@ -9450,9 +9361,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   // Helpers to render the user's own avatar consistently everywhere.
 
-  function selfAvStyle(){ return selfProfile.avImage ? '#0a070f url('+selfProfile.avImage+') center/cover no-repeat' : (selfProfile.avColor||'linear-gradient(135deg,#22c55e,#15803d)'); }
+  function selfAvStyle(){ return selfProfile.avImage ? '#0a070f url('+selfProfile.avImage+') center/cover no-repeat' : (selfProfile.avColor||'linear-gradient(135deg,#a78bfa,#1e1b4b)'); }
 
-  function selfAvInner(){ return selfProfile.avImage ? '' : (selfProfile.initial||'C'); }
+  function selfAvInner(){ return selfProfile.avImage ? '' : (selfProfile.initial||'Y'); }
 
   // ============== AUTH (signup / login + splash) ==============
 
@@ -9490,7 +9401,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   function resetSelfProfileForSignup(user){
 
-    // Wipe out demo Cooper data so a brand-new account is its own person.
+    // Wipe out previous profile data so a brand-new account starts fresh.
 
     selfProfile.name    = user.name;
 
@@ -9640,7 +9551,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       writeAuth(user);
 
-      // Reset selfProfile from scratch (default Cooper persona is wiped).
+      // Reset selfProfile from scratch.
 
       resetSelfProfileForSignup(user);
 
@@ -9826,7 +9737,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     else document.getElementById('modalJoinedRow').style.display = 'none';
 
-    // Shared servers (only for OTHER users): every server where both Cooper and this user are members.
+    // Shared servers (only for OTHER users): every server where both you and this user are members.
 
     const sharedRow = document.getElementById('modalSharedRow');
 
@@ -9834,7 +9745,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!isSelf){
 
-      const shared = Object.values(servers).filter(srv => (srv.members||[]).includes('Cooper') && (srv.members||[]).includes(data.name));
+      const shared = Object.values(servers).filter(srv => (srv.members||[]).includes(selfProfile.name) && (srv.members||[]).includes(data.name));
 
       if (shared.length){
 
@@ -10082,7 +9993,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!ent){ showToast('That channel no longer exists','warn'); return; }
 
-    if (!memberCanSee(srv, 'Cooper', ent)){
+    if (!memberCanSee(srv, selfProfile.name, ent)){
 
       showToast('Restricted access - you do not have the required role','warn');
 
@@ -10096,7 +10007,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (card.kind === 'text'){ openTextChannel(card.channelId); return; }
 
-    const chKey = channelData[ent.id] ? ent.id : (ent.id==='endurance-bridge'?'endurance':ent.id==='cooper-talk'?'coop':ent.id);
+    const chKey = channelData[ent.id] ? ent.id : (ent.id);
 
     if (!channelData[chKey]){ showToast('Voice orb data missing','warn'); return; }
 
@@ -10310,7 +10221,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!memberHasPerm(s,'Cooper','manageRoles') && !memberHasPerm(s,'Cooper', target.type==='text'?'manageTextCh':target.type==='voice'?'manageVoiceCh':'manageCategory')){
+    if (!memberHasPerm(s,selfProfile.name,'manageRoles') && !memberHasPerm(s,selfProfile.name, target.type==='text'?'manageTextCh':target.type==='voice'?'manageVoiceCh':'manageCategory')){
 
       showToast('You do not have permission to edit this','warn'); return;
 
@@ -10420,7 +10331,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       const vc = s.voiceChannels.find(x => x.id === chId); if (!vc) return;
 
-      const chKey = channelData[vc.id] ? vc.id : (vc.id==="endurance-bridge"?"endurance":vc.id==="cooper-talk"?"coop":vc.id);
+      const chKey = channelData[vc.id] ? vc.id : (vc.id);
 
       const data = channelData[chKey] || {};
 
@@ -10632,7 +10543,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         const time = nowTime();
 
-        const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:'Cooper', text:src.text||'', time, forwarded:true };
+        const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:selfProfile.name, text:src.text||'', time, forwarded:true };
 
         if (src.type==='serverCard'){
 
@@ -10662,7 +10573,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         const time = nowTime();
 
-        const newMsg = { id:uid(), sender:'Cooper', initial:'C', av:'linear-gradient(135deg,#22c55e,#15803d)', role:'COMMANDER', time, special:false, cat:'news', reactions:{}, text:'[FWD] '+(src.text||src.caption||'') };
+        const newMsg = { id:uid(), sender:selfProfile.name, initial:selfProfile.initial, av:selfAvStyle(), role:selfProfile.rank, time, special:false, cat:'news', reactions:{}, text:'[FWD] '+(src.text||src.caption||'') };
 
         if (src.type==='serverCard'){ newMsg.type='serverCard'; newMsg.text=''; newMsg.serverCard = { id:src.serverId, name:src.serverName, desc:src.serverDesc, emblem:src.serverEmblem, grad:src.serverGrad, glow:src.serverGlow, initial:src.serverInitial, invite:src.serverInvite, members:src.serverMembers }; newMsg.cat='news'; }
 
@@ -10824,6 +10735,10 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     let newId;
 
+    const selCat = document.getElementById('ccCategorySelect').value;
+
+    if (!selCat){ showToast('Please select a category first','warn'); return; }
+
     if (ccActiveTab==='text'){
 
       newId = uid();
@@ -10970,7 +10885,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         grad:p.grad, glow:p.glow, bannerC1:p.glow.replace('0.55','0.18'), bannerC2:'rgba(185,28,74,0.1)',
 
-        members:['Cooper'], admins:['Cooper'],
+        members:[selfProfile.name], admins:[selfProfile.name],
 
         textChannels:[ { id:uid(), name:'general', style:'glow', unread:0 } ],
 
@@ -11434,7 +11349,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!memberHasPerm(s,'Cooper','manageRoles')){ showToast('You do not have permission to manage roles','warn'); return; }
+    if (!memberHasPerm(s,selfProfile.name,'manageRoles')){ showToast('You do not have permission to manage roles','warn'); return; }
 
     ensureRoles(s);
 
@@ -11588,7 +11503,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!memberHasPerm(s,'Cooper','managePins')){ showToast('You do not have permission to pin messages','warn'); return; }
+    if (!memberHasPerm(s,selfProfile.name,'managePins')){ showToast('You do not have permission to pin messages','warn'); return; }
 
     pinModalTarget = { type:'server', catId:null };
 
@@ -11606,7 +11521,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!memberHasPerm(s,'Cooper','managePins')){ showToast('You do not have permission to pin messages','warn'); return; }
+    if (!memberHasPerm(s,selfProfile.name,'managePins')){ showToast('You do not have permission to pin messages','warn'); return; }
 
     const cat = s.categories && s.categories.find(c => c.id === catId);
 
@@ -11638,13 +11553,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (!text){ cat.pinned = null; showToast('Category pin removed','warn'); }
 
-      else { cat.pinned = { text, by:'Cooper', time:'just now' }; showToast('Pinned to category','success'); }
+      else { cat.pinned = { text, by:selfProfile.name, time:'just now' }; showToast('Pinned to category','success'); }
 
     } else {
 
       if (!text){ s.pinned = null; showToast('Pin removed','warn'); }
 
-      else { s.pinned = { text, by:'Cooper', time:'just now' }; showToast('Pinned to server','success'); }
+      else { s.pinned = { text, by:selfProfile.name, time:'just now' }; showToast('Pinned to server','success'); }
 
     }
 
@@ -11662,7 +11577,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!s.admins.includes('Cooper')){ showToast('Only admins can edit identity','warn'); return; }
+    if (!s.admins.includes(selfProfile.name)){ showToast('Only admins can edit identity','warn'); return; }
 
     if (!s.inviteKey) s.inviteKey = 'NEX-'+Math.random().toString(36).slice(2,7).toUpperCase()+'-'+Math.random().toString(36).slice(2,7).toUpperCase();
 
@@ -11844,7 +11759,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!memberHasPerm(s,'Cooper','manageCategory')){ showToast('You do not have permission to add categories','warn'); return; }
+    if (!memberHasPerm(s,selfProfile.name,'manageCategory')){ showToast('You do not have permission to add categories','warn'); return; }
 
     document.getElementById('catNameInput').value = '';
 
@@ -12876,7 +12791,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         const isOurs = (s.voiceChannels||[]).some(v => {
 
-          const k = channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id);
+          const k = channelData[v.id] ? v.id : (v.id);
 
           return k === connectedChannel;
 
@@ -12885,6 +12800,21 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
         if (isOurs) endVoiceCall();
 
       }
+
+      // Clean up voice channels owned by this server
+      const srvVoiceKeys = (s.voiceChannels||[]).map(v => channelData[v.id] ? v.id : v.id);
+
+      srvVoiceKeys.forEach(k => {
+
+        marked = marked.filter(x => x !== k);
+
+        favorites = favorites.filter(x => x !== k);
+
+        allChannels.splice(allChannels.indexOf(k), allChannels.indexOf(k) >= 0 ? 1 : 0);
+
+        delete channelData[k];
+
+      });
 
       delete servers[sid];
 
@@ -12909,6 +12839,14 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       renderServerRails();
 
       renderMarkedPanel();
+
+      renderOrbSlides();
+
+      renderHomeMarkedOrbits();
+
+      if (voiceUsersSidebarOpen) renderVoiceUsers();
+
+      renderMarkedChannels();
 
       showToast('Server deleted','warn');
 
@@ -13196,7 +13134,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer]; if (!s) return;
 
-    const canManageRoles = memberHasPerm(s,'Cooper','manageRoles');
+    const canManageRoles = memberHasPerm(s,selfProfile.name,'manageRoles');
 
     if (tcEl){
 
@@ -13216,7 +13154,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       ];
 
-      if (memberHasPerm(s,'Cooper','manageTextCh') || canManageRoles){
+      if (memberHasPerm(s,selfProfile.name,'manageTextCh') || canManageRoles){
 
         items.push({ sep:true });
 
@@ -13244,7 +13182,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       ];
 
-      if (memberHasPerm(s,'Cooper','manageVoiceCh') || canManageRoles){
+      if (memberHasPerm(s,selfProfile.name,'manageVoiceCh') || canManageRoles){
 
         items.push({ sep:true });
 
@@ -13266,7 +13204,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       const items = [];
 
-      if (memberHasPerm(s,'Cooper','manageCategory') || canManageRoles){
+      if (memberHasPerm(s,selfProfile.name,'manageCategory') || canManageRoles){
 
         items.push({ icon:'settings', label:'Category settings', action:()=>{ openChanSettings({type:'category', id:catId}); } });
 
@@ -13320,7 +13258,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           const isOurs = (s.voiceChannels||[]).some(v => {
 
-            const k = channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id);
+            const k = channelData[v.id] ? v.id : (v.id);
 
             return k === connectedChannel;
 
@@ -13330,9 +13268,20 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         }
 
-        s.members = (s.members||[]).filter(m => m !== 'Cooper');
+        s.members = (s.members||[]).filter(m => m !== selfProfile.name);
 
-        s.admins = (s.admins||[]).filter(m => m !== 'Cooper');
+        s.admins = (s.admins||[]).filter(m => m !== selfProfile.name);
+
+        // Clean up voice channels owned by this server
+        const srvVcKeys = (s.voiceChannels||[]).map(v => channelData[v.id] ? v.id : v.id);
+
+        srvVcKeys.forEach(k => {
+
+          marked = marked.filter(x => x !== k);
+
+          favorites = favorites.filter(x => x !== k);
+
+        });
 
         myServers = myServers.filter(x => x !== sid);
 
@@ -13351,6 +13300,14 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
         renderServerRails();
 
         renderMarkedPanel();
+
+        renderOrbSlides();
+
+        renderHomeMarkedOrbits();
+
+        if (voiceUsersSidebarOpen) renderVoiceUsers();
+
+        renderMarkedChannels();
 
         showToast('Left '+s.name,'warn');
 
@@ -13458,7 +13415,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         (s.categories||[]).forEach(cat => { cat.voiceChannels = (cat.voiceChannels||[]).filter(x => x !== id); });
 
-        const chKey = channelData[vc.id] ? vc.id : (vc.id==='endurance-bridge'?'endurance':vc.id==='cooper-talk'?'coop':vc.id);
+        const chKey = channelData[vc.id] ? vc.id : (vc.id);
 
         if (connectedChannel === chKey) endVoiceCall();
 
@@ -13602,7 +13559,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     serverChannelMessages[key] = serverChannelMessages[key] || [];
 
-    const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:'Cooper', text:txt, time:'now' };
+    const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:selfProfile.name, text:txt, time:'now' };
 
     if (wsAttachImage){ newMsg.type = 'image'; newMsg.src = wsAttachImage; }
 
@@ -14224,7 +14181,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (chanSettingsTarget.type === 'voice'){
 
-        const chKey = channelData[ent.id] ? ent.id : (ent.id==='endurance-bridge'?'endurance':ent.id==='cooper-talk'?'coop':ent.id);
+        const chKey = channelData[ent.id] ? ent.id : (ent.id);
 
         if (channelData[chKey]) channelData[chKey].name = newName.toUpperCase();
 
@@ -15324,13 +15281,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const h = new Date().getHours();
 
-    let g = 'GOOD EVENING, COOPER';
+    let g = 'GOOD EVENING';
 
-    if (h<12) g = 'GOOD MORNING, COOPER';
+    if (h<12) g = 'GOOD MORNING, '+selfProfile.name.toUpperCase();
 
-    else if (h<18) g = 'GOOD AFTERNOON, COOPER';
+    else if (h<18) g = 'GOOD AFTERNOON, '+selfProfile.name.toUpperCase();
 
-    else if (h>=22 || h<5) g = 'GOOD NIGHT, COOPER';
+    else if (h>=22 || h<5) g = 'GOOD NIGHT, '+selfProfile.name.toUpperCase();
 
     const el = document.getElementById('greetGreeting'); if (el) el.textContent = g;
 
