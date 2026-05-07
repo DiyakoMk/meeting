@@ -21,7 +21,7 @@ const createServerSchema = z.object({
   isPrivate:   z.boolean().optional().default(false)
 });
 
-const patchServerSchema = createServerSchema.partial();
+const patchServerSchema = createServerSchema.partial().extend({ pinnedText: z.string().max(2000).nullable().optional() });
 
 const categorySchema = z.object({
   name: z.string().trim().min(1).max(80)
@@ -138,7 +138,7 @@ serversRouter.patch('/:id', async (req, res, next) => {
     const map = {
       name: 'name', desc: 'description', baseColor: 'base_color',
       grad: 'grad', glow: 'glow', cover: 'cover',
-      emblemImage: 'emblem_image', isPrivate: 'is_private'
+      emblemImage: 'emblem_image', isPrivate: 'is_private', pinnedText: 'pinned_text'
     };
     const sets = []; const args = [];
     for (const [k, col] of Object.entries(map)) {
