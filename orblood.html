@@ -4024,11 +4024,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <button class="sm-tab" data-cc-tab="voice">VOICE / ORB</button>
 
+            <button class="sm-tab" data-cc-tab="category">CATEGORY</button>
+
           </div>
 
           <div class="sm-field">
 
-            <label class="sm-label">CHANNEL NAME</label>
+            <label class="sm-label" id="ccNameLabel">CHANNEL NAME</label>
 
             <input class="sm-input" id="ccNameInput" placeholder="general" />
 
@@ -4039,6 +4041,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
             <label class="sm-label">CATEGORY</label>
 
             <select class="sm-input" id="ccCategorySelect"></select>
+
+            <div class="sm-hint" id="ccCategoryHint" style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;letter-spacing:1px;color:var(--danger);display:none;margin-top:2px">Select a category before creating a channel</div>
 
           </div>
 
@@ -4581,42 +4585,6 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
           <button class="sm-btn cancel" data-close-smodal="voiceSettingsBackdrop">CLOSE</button>
 
           <button class="sm-btn primary" id="vsSave"><i data-lucide="check" style="width:11px;height:11px"></i>SAVE</button>
-
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="modal-backdrop" id="addCategoryBackdrop">
-
-      <div class="smodal">
-
-        <div class="smodal-head">
-
-          <div class="smodal-title">// NEW CATEGORY</div>
-
-          <button class="smodal-close" data-close-smodal="addCategoryBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
-
-        </div>
-
-        <div class="smodal-body">
-
-          <div class="sm-field">
-
-            <label class="sm-label">CATEGORY NAME</label>
-
-            <input type="text" class="sm-input" id="catNameInput" placeholder="e.g. COMMAND CENTER" />
-
-          </div>
-
-        </div>
-
-        <div class="smodal-foot">
-
-          <button class="sm-btn cancel" data-close-smodal="addCategoryBackdrop">CANCEL</button>
-
-          <button class="sm-btn primary" id="catSubmit"><i data-lucide="plus" style="width:11px;height:11px"></i>CREATE</button>
 
         </div>
 
@@ -10720,8 +10688,6 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     document.getElementById('createChannelBackdrop').classList.add('show');
 
-    document.getElementById('ccTitle').textContent = '// CREATE '+(ccActiveTab==='voice'?'VOICE ORB':'TEXT CHANNEL');
-
     setTimeout(()=>document.getElementById('ccNameInput').focus(), 100);
 
   }
@@ -10736,19 +10702,17 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    let opts = '<option value="">(uncategorized)</option>';
+    const cats = (s.categories || []);
 
-    if (s.categories && s.categories.length){
+    let opts = '<option value="">— select a category —</option>';
 
-      s.categories.forEach(cat => {
+    cats.forEach(cat => {
 
-        const sel2 = (ccTargetCategory===cat.id) ? ' selected' : '';
+      const sel2 = (ccTargetCategory===cat.id) ? ' selected' : '';
 
-        opts += '<option value="'+cat.id+'"'+sel2+'>'+escapeHtml(cat.name)+'</option>';
+      opts += '<option value="'+cat.id+'"'+sel2+'>'+escapeHtml(cat.name)+'</option>';
 
-      });
-
-    }
+    });
 
     sel.innerHTML = opts;
 
@@ -10756,11 +10720,27 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   function showCcStyleField(){
 
-    // Only the voice-orb picker is gated by tab; the text style picker no longer exists.
+    // CATEGORY tab hides both the voice-style picker and the category select.
+
+    // TEXT/VOICE tabs require a category, so keep the select visible.
 
     const vf = document.getElementById('ccVoiceStyleField'); if (vf) vf.style.display = ccActiveTab==='voice'?'flex':'none';
 
-    document.getElementById('ccTitle').textContent = '// CREATE '+(ccActiveTab==='voice'?'VOICE ORB':'TEXT CHANNEL');
+    const cf = document.getElementById('ccCategoryField'); if (cf) cf.style.display = ccActiveTab==='category'?'none':'flex';
+
+    const hint = document.getElementById('ccCategoryHint'); if (hint) hint.style.display = 'none';
+
+    const lbl = document.getElementById('ccNameLabel');
+
+    if (lbl) lbl.textContent = ccActiveTab==='category' ? 'CATEGORY NAME' : 'CHANNEL NAME';
+
+    const input = document.getElementById('ccNameInput');
+
+    if (input) input.placeholder = ccActiveTab==='category' ? 'e.g. COMMAND CENTER' : 'general';
+
+    const title = ccActiveTab==='voice' ? 'VOICE ORB' : ccActiveTab==='category' ? 'CATEGORY' : 'TEXT CHANNEL';
+
+    document.getElementById('ccTitle').textContent = '// CREATE '+title;
 
   }
 
@@ -10818,9 +10798,53 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const name = document.getElementById('ccNameInput').value.trim();
 
+    const s = servers[currentServer];
+
+    if (ccActiveTab==='category'){
+
+      if (!name){ showToast('Enter a category name','warn'); return; }
+
+      if (!memberHasPerm(s,'Cooper','manageCategory')){ showToast('You do not have permission to add categories','warn'); return; }
+
+      s.categories = s.categories || [];
+
+      s.categories.push({ id:'cat-'+uid(), name:name.toUpperCase(), textChannels:[], voiceChannels:[] });
+
+      document.getElementById('createChannelBackdrop').classList.remove('show');
+
+      renderServerOverview();
+
+      showToast('Category "'+name+'" created','success');
+
+      return;
+
+    }
+
     if (!name){ showToast('Enter a channel name','warn'); return; }
 
-    const s = servers[currentServer];
+    // Channels MUST belong to a category.
+
+    const selCatId = (document.getElementById('ccCategorySelect') || {}).value || '';
+
+    const cat = (s.categories || []).find(c => c.id === selCatId);
+
+    if (!cat){
+
+      const hint = document.getElementById('ccCategoryHint'); if (hint) hint.style.display = 'block';
+
+      if (!(s.categories || []).length){
+
+        showToast('Create a category first','warn');
+
+      } else {
+
+        showToast('Select a category for this channel','warn');
+
+      }
+
+      return;
+
+    }
 
     let newId;
 
@@ -10829,6 +10853,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       newId = uid();
 
       s.textChannels.push({ id:newId, name, style: ccSelectedStyle, unread:0 });
+
+      cat.textChannels = cat.textChannels || []; cat.textChannels.push(newId);
 
       showToast('Text channel #'+name+' created','success');
 
@@ -10850,25 +10876,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       }
 
+      cat.voiceChannels = cat.voiceChannels || []; cat.voiceChannels.push(newId);
+
       showToast('Voice orb '+name+' created','success');
-
-    }
-
-    // Append to target category (read from select)
-
-    const selCatId = (document.getElementById('ccCategorySelect') || {}).value || '';
-
-    if (selCatId && s.categories){
-
-      const cat = s.categories.find(c => c.id === selCatId);
-
-      if (cat){
-
-        if (ccActiveTab==='text'){ cat.textChannels = cat.textChannels || []; cat.textChannels.push(newId); }
-
-        else { cat.voiceChannels = cat.voiceChannels || []; cat.voiceChannels.push(newId); }
-
-      }
 
     }
 
@@ -11342,11 +11352,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const items = [
 
-      { action:'addtext',     icon:'hash',         label:'New text channel' },
-
-      { action:'addvoice',    icon:'orbit',        label:'New voice orb' },
-
-      { action:'addcategory', icon:'folder-plus',  label:'New category' },
+      { action:'create',      icon:'plus-circle',  label:'Create channel or category' },
 
       { sep:true },
 
@@ -11404,11 +11410,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       closeBannerMenu();
 
-      if (a === 'addtext') openCreateChannel('text');
-
-      else if (a === 'addvoice') openCreateChannel('voice');
-
-      else if (a === 'addcategory') openAddCategoryModal();
+      if (a === 'create') openCreateChannel('text');
 
       else if (a === 'cover') openCoverModal();
 
@@ -11833,46 +11835,6 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     renderServerRails();
 
     showToast('Server identity updated','success');
-
-  }
-
-  // ============== ADD CATEGORY ==============
-
-  function openAddCategoryModal(){
-
-    if (!currentServer){ showToast('Open a server first','warn'); return; }
-
-    const s = servers[currentServer];
-
-    if (!memberHasPerm(s,'Cooper','manageCategory')){ showToast('You do not have permission to add categories','warn'); return; }
-
-    document.getElementById('catNameInput').value = '';
-
-    document.getElementById('addCategoryBackdrop').classList.add('show');
-
-    setTimeout(()=>document.getElementById('catNameInput').focus(), 100);
-
-  }
-
-  function submitAddCategory(){
-
-    if (!currentServer) return;
-
-    const name = document.getElementById('catNameInput').value.trim();
-
-    if (!name){ showToast('Enter a category name','warn'); return; }
-
-    const s = servers[currentServer];
-
-    s.categories = s.categories || [];
-
-    s.categories.push({ id:'cat-'+uid(), name:name.toUpperCase(), textChannels:[], voiceChannels:[] });
-
-    document.getElementById('addCategoryBackdrop').classList.remove('show');
-
-    renderServerOverview();
-
-    showToast('Category "'+name+'" created','success');
 
   }
 
@@ -12963,12 +12925,6 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     rd.readAsDataURL(f);
 
   });
-
-  // Add category
-
-  document.getElementById('catSubmit').addEventListener('click', submitAddCategory);
-
-  document.getElementById('catNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitAddCategory(); });
 
   // Roles modal
 
