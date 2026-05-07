@@ -3583,6 +3583,30 @@
 
     renderChannelView();
 
+    // Fetch the canonical message history from the backend so newly-joined
+
+    // members (or anyone who reloaded the tab) see what's already been said
+
+    // in this channel.
+
+    if (backend.isConfigured()){
+
+      const sid = currentServer, cid = tcId;
+
+      backend.servers.listChannelMessages(sid, cid).then(r => {
+
+        if (r && r.messages && Array.isArray(r.messages)){
+
+          serverChannelMessages[sid+'__'+cid] = r.messages;
+
+          if (currentServer === sid && currentTextChannel === cid) renderChannelView();
+
+        }
+
+      }).catch(()=>{});
+
+    }
+
   }
 
   function renderChannelStrip(){
@@ -11307,9 +11331,17 @@
 
       if (!cat) return;
 
-      appConfirm('Delete category "'+cat.name+'" and unlink its channels?', {title:'DELETE CATEGORY', confirmLabel:'DELETE', danger:true}).then(ok => {
+      appConfirm('Delete category "'+cat.name+'" and unlink its channels?', {title:'DELETE CATEGORY', confirmLabel:'DELETE', danger:true}).then(async ok => {
 
         if (!ok) return;
+
+        if (backend.isConfigured()){
+
+          const r = await backend.servers.delCategory(currentServer, id);
+
+          if (r && r.error){ showToast('Could not delete: '+r.error,'warn'); return; }
+
+        }
 
         s.categories = s.categories.filter(x => x.id !== id);
 
@@ -11335,9 +11367,17 @@
 
       if (!tc) return;
 
-      appConfirm('Delete text channel #'+tc.name+'?', {title:'DELETE CHANNEL', confirmLabel:'DELETE', danger:true}).then(ok => {
+      appConfirm('Delete text channel #'+tc.name+'?', {title:'DELETE CHANNEL', confirmLabel:'DELETE', danger:true}).then(async ok => {
 
         if (!ok) return;
+
+        if (backend.isConfigured()){
+
+          const r = await backend.servers.delTextChannel(currentServer, id);
+
+          if (r && r.error){ showToast('Could not delete: '+r.error,'warn'); return; }
+
+        }
 
         s.textChannels = s.textChannels.filter(x => x.id !== id);
 
@@ -11373,9 +11413,17 @@
 
       if (!vc) return;
 
-      appConfirm('Delete voice channel '+vc.name+'?', {title:'DELETE VOICE ORB', confirmLabel:'DELETE', danger:true}).then(ok => {
+      appConfirm('Delete voice channel '+vc.name+'?', {title:'DELETE VOICE ORB', confirmLabel:'DELETE', danger:true}).then(async ok => {
 
         if (!ok) return;
+
+        if (backend.isConfigured()){
+
+          const r = await backend.servers.delVoiceChannel(currentServer, id);
+
+          if (r && r.error){ showToast('Could not delete: '+r.error,'warn'); return; }
+
+        }
 
         s.voiceChannels = s.voiceChannels.filter(x => x.id !== id);
 
@@ -11523,7 +11571,7 @@
 
   }
 
-  function wsSendMessage(){
+  async function wsSendMessage(){
 
     const txt = wsCi.value.trim();
 
@@ -11535,21 +11583,61 @@
 
     serverChannelMessages[key] = serverChannelMessages[key] || [];
 
-    const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:selfProfile.name, text:txt, time:'now' };
+    const sid = currentServer, cid = currentTextChannel;
 
-    if (wsAttachImage){ newMsg.type = 'image'; newMsg.src = wsAttachImage; }
+    const replyToId = chReplyTo;
 
-    if (chReplyTo) newMsg.replyTo = chReplyTo;
+    // Optimistic local insert with a temporary id; replaced once the server
 
-    serverChannelMessages[key].push(newMsg);
+    // returns the canonical message.
+
+    const tempId = 'tmp-'+Date.now()+'-'+Math.floor(Math.random()*1000);
+
+    const optimistic = { id:tempId, user:selfProfile.name, text:txt, time:'now', _pending:true };
+
+    if (wsAttachImage){ optimistic.type = 'image'; optimistic.src = wsAttachImage; }
+
+    if (replyToId) optimistic.replyTo = replyToId;
+
+    serverChannelMessages[key].push(optimistic);
 
     wsCi.value = ''; wsCi.style.height = 'auto';
+
+    const sentImage = wsAttachImage;
 
     clearWsAttach();
 
     chReplyTo = null;
 
     renderChannelView();
+
+    if (backend.isConfigured()){
+
+      const payload = { text: txt };
+
+      if (sentImage){ payload.payload = { type:'image', src: sentImage }; }
+
+      if (replyToId && typeof replyToId !== 'string') payload.replyTo = replyToId;
+
+      const r = await backend.servers.sendChannelMessage(sid, cid, payload);
+
+      const idx = serverChannelMessages[key].findIndex(m => m.id === tempId);
+
+      if (r.error || r.offline){
+
+        if (idx >= 0) serverChannelMessages[key].splice(idx, 1);
+
+        showToast('Could not send: '+(r.error||'offline'),'warn');
+
+      } else if (r.message){
+
+        if (idx >= 0) serverChannelMessages[key][idx] = Object.assign({}, optimistic, r.message, { _pending:false });
+
+      }
+
+      if (sid === currentServer && cid === currentTextChannel) renderChannelView();
+
+    }
 
   }
 
