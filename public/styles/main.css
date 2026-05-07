@@ -2913,7 +2913,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
 .ws-cat-vc-av.speaking{box-shadow:0 0 0 2px var(--success),0 0 8px rgba(34,197,94,0.6)}
 
-/* DM bubble actions — show on hover */
+/* DM bubble actions — show on hover (desktop) or when explicitly opened by
+
+   tap (touch). The .show class is toggled by JS so iOS / Android users can
+
+   still reach Reply / Edit / Copy / Delete without needing a hover state. */
 
 .dm-msg .dm-bubble-hover-actions{position:absolute;top:-30px;display:none;background:var(--panel);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:3px;gap:1px;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:60;backdrop-filter:blur(20px)}
 
@@ -2921,7 +2925,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
 .dm-msg.you .dm-bubble-hover-actions{right:46px}
 
-.dm-msg:hover .dm-bubble-hover-actions{display:flex}
+.dm-msg:hover .dm-bubble-hover-actions,
+
+.dm-msg.actions-open .dm-bubble-hover-actions{display:flex}
 
 .dm-bubble-hover-actions .dm-bubble-action{width:26px;height:26px}
 

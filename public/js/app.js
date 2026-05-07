@@ -901,9 +901,11 @@
 
   function setVoiceUsers(open){
 
-    voiceUsersSidebarOpen = open;
+    voiceUsersSidebarOpen = !!open;
 
     const side = document.getElementById('voiceUsersSidebar');
+
+    if (!side) return;
 
     if (open){ side.classList.add('open'); renderVoiceUsers(); }
 
@@ -911,7 +913,25 @@
 
   }
 
-  function toggleVoiceUsers(){ setVoiceUsers(!voiceUsersSidebarOpen); }
+  // Read the actual DOM state so the toggle never desyncs from reality —
+
+  // we used to track the open/closed flag in a JS variable only, which would
+
+  // get stuck in the wrong position if any other code path moved the sidebar
+
+  // (e.g. a remote voice:join, channel switch, or sliding carousel) without
+
+  // going through setVoiceUsers().
+
+  function toggleVoiceUsers(){
+
+    const side = document.getElementById('voiceUsersSidebar');
+
+    const isOpenInDom = !!(side && side.classList.contains('open'));
+
+    setVoiceUsers(!isOpenInDom);
+
+  }
 
   function getOrderedVoiceChannels(){
 
@@ -13733,6 +13753,36 @@
 
     }
 
+    // Touch-friendly toggle: tapping the bubble body (not avatar / action
+
+    // button / image / link) opens the action toolbar. Tapping the same
+
+    // bubble again or anywhere else closes it. This makes Reply / Edit /
+
+    // Copy / Delete reachable on iOS / Android where :hover doesn't fire.
+
+    const bubbleTap = e.target.closest('.dm-bubble');
+
+    if (bubbleTap && !e.target.closest('.dm-bubble-hover-actions, .dm-bubble-img, .dm-msg-av, button, a, [data-jump-to]')){
+
+      const row = bubbleTap.closest('.dm-msg[data-msg-row]');
+
+      if (row){
+
+        e.stopPropagation();
+
+        const wasOpen = row.classList.contains('actions-open');
+
+        document.querySelectorAll('.dm-msg.actions-open').forEach(r => r.classList.remove('actions-open'));
+
+        if (!wasOpen) row.classList.add('actions-open');
+
+        return;
+
+      }
+
+    }
+
     // Hover actions click handler (delegated within dm-msgs)
 
     // Both hover-toolbar buttons and the X on the pinned banner share [data-msg-action]
@@ -13839,7 +13889,11 @@
 
   });
 
-  // Home marked orbits
+  // Home marked orbits — tap = join that voice channel (and slide it into
+
+  // view in the orb carousel). Tapping the card a second time while already
+
+  // connected acts as a disconnect via joinVoiceChannel's internal toggle.
 
   document.getElementById('homeMarkedOrbits').addEventListener('click', e => {
 
@@ -13847,9 +13901,15 @@
 
     const ch = c.dataset.markCard;
 
+    if (!channelData[ch]) return;
+
     const idx = getAllChannels().indexOf(ch);
 
-    if (idx>=0){ goToSlide(idx, true); setVoiceUsers(true); showToast('Selected '+channelData[ch].name); }
+    if (idx>=0) goToSlide(idx, true);
+
+    if (typeof joinVoiceChannel === 'function') joinVoiceChannel(ch);
+
+    else setVoiceUsers(true);
 
   });
 
@@ -13914,6 +13974,14 @@
     const insideBubble = e.target.closest('.dm-bubble');
 
     if (!insideBA && !insideBubble && document.getElementById('bubbleActions').classList.contains('show')) hideBubbleActions();
+
+    // Close any tap-opened DM action toolbar when clicking outside a bubble.
+
+    if (!insideBubble){
+
+      document.querySelectorAll('.dm-msg.actions-open').forEach(r => r.classList.remove('actions-open'));
+
+    }
 
     // Hide ctx menu
 
