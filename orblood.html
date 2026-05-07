@@ -1242,7 +1242,9 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .sc-card{width:280px;max-width:100%;background:radial-gradient(ellipse at 50% 0%,rgba(185,28,74,0.16),transparent 65%),rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
 
-.sc-eyebrow{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;letter-spacing:1.5px;color:var(--t3)}
+.sc-eyebrow{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;letter-spacing:1.5px;color:var(--t3);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+
+.sc-private-tag{display:inline-flex;align-items:center;gap:3px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.45rem;letter-spacing:1.4px;color:var(--warn);background:rgba(245,158,11,0.14);border:1px solid rgba(245,158,11,0.3);padding:2px 5px;border-radius:4px;font-weight:700}
 
 .sc-row{display:flex;align-items:center;gap:10px}
 
@@ -1289,6 +1291,8 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .sj-name{font-size:1.15rem;color:var(--t1);font-weight:700;margin-top:4px}
 
 .sj-meta{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1.4px;color:var(--t3);margin-top:2px}
+
+.sj-private-tag{display:inline-flex;align-items:center;gap:4px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;letter-spacing:1.5px;color:var(--warn);background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:4px 9px;border-radius:6px;margin-top:8px;font-weight:700}
 
 .sj-desc{font-size:0.82rem;color:var(--t2);line-height:1.55;margin-top:10px;padding:10px 12px;background:rgba(255,255,255,0.025);border:1px solid var(--gb);border-radius:9px}
 
@@ -2185,6 +2189,14 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 /* ============== MODALS ============== */
 
 .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity 0.25s}
+
+/* Modals that can open while another modal is already showing must sit on top.
+
+   Bumping z-index ensures the transfer-ownership and roles dialogs render
+
+   above the server-identity / settings modal that opened them. */
+
+#ownerTransferBackdrop,#rolesBackdrop,#confirmBackdrop{z-index:320}
 
 #authBackdrop{z-index:600}
 
@@ -4434,6 +4446,16 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           <div class="sm-field">
 
+            <label class="sm-label">VISIBILITY</label>
+
+            <label class="vs-toggle"><input type="checkbox" id="serverPrivateInput" /> Make this server private</label>
+
+            <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">Private servers reject all invite-key joins. People with the key see "this server is private — try again later" instead of the join button.</div>
+
+          </div>
+
+          <div class="sm-field">
+
             <label class="sm-label">INVITE / SHARE KEY</label>
 
             <div style="display:flex;gap:8px">
@@ -4444,7 +4466,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             </div>
 
-            <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">Anyone with this key can join the server.</div>
+            <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">Anyone with this key can join the server (unless visibility is set to private).</div>
 
           </div>
 
@@ -4597,6 +4619,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
           <div class="sj-name" id="sjName"></div>
 
           <div class="sj-meta" id="sjMeta"></div>
+
+          <div class="sj-private-tag" id="sjPrivateTag" style="display:none"><i data-lucide="lock" style="width:11px;height:11px"></i>PRIVATE SERVER</div>
 
           <div class="sj-desc" id="sjDesc"></div>
 
@@ -11228,13 +11252,49 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     }
 
-    // If user already a member of this server, switch label to OPEN.
+    // Private tag.
+
+    const isPrivate = !!card.isPrivate || (servers[card.id] && servers[card.id].isPrivate);
+
+    const tag = document.getElementById('sjPrivateTag');
+
+    if (tag) tag.style.display = isPrivate ? 'inline-flex' : 'none';
+
+    // Decide button state. Already-member users get an OPEN action regardless
+
+    // of privacy. Private servers block strangers (button disabled with hint).
 
     const exists = !!servers[card.id];
 
+    const alreadyIn = exists && (servers[card.id].members||[]).includes(selfProfile.name);
+
     const btn = document.getElementById('sjJoinBtn');
 
-    btn.innerHTML = exists ? '<i data-lucide="arrow-right" style="width:11px;height:11px"></i>OPEN SERVER' : '<i data-lucide="log-in" style="width:11px;height:11px"></i>JOIN SERVER';
+    if (alreadyIn){
+
+      btn.innerHTML = '<i data-lucide="arrow-right" style="width:11px;height:11px"></i>OPEN SERVER';
+
+      btn.classList.remove('disabled');
+
+      btn.disabled = false;
+
+    } else if (isPrivate){
+
+      btn.innerHTML = '<i data-lucide="lock" style="width:11px;height:11px"></i>PRIVATE — TRY LATER';
+
+      btn.classList.add('disabled');
+
+      btn.disabled = true;
+
+    } else {
+
+      btn.innerHTML = '<i data-lucide="log-in" style="width:11px;height:11px"></i>JOIN SERVER';
+
+      btn.classList.remove('disabled');
+
+      btn.disabled = false;
+
+    }
 
     document.getElementById('serverJoinBackdrop').classList.add('show');
 
@@ -11292,11 +11352,23 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const cardJson = encodeURIComponent(JSON.stringify(card));
 
-    const action = '<button class="sc-btn" data-server-card-join="'+cardJson+'"><i data-lucide="log-in" style="width:11px;height:11px"></i>JOIN</button>';
+    const isPrivate = !!card.isPrivate;
+
+    const action = isPrivate
+
+      ? '<button class="sc-btn" data-server-card-join="'+cardJson+'" style="opacity:0.85"><i data-lucide="lock" style="width:11px;height:11px"></i>VIEW</button>'
+
+      : '<button class="sc-btn" data-server-card-join="'+cardJson+'"><i data-lucide="log-in" style="width:11px;height:11px"></i>JOIN</button>';
+
+    const privTag = isPrivate
+
+      ? '<div class="sc-private-tag"><i data-lucide="lock" style="width:9px;height:9px"></i>PRIVATE</div>'
+
+      : '';
 
     return '<div class="sc-card">'+
 
-      '<div class="sc-eyebrow">SERVER INVITE</div>'+
+      '<div class="sc-eyebrow">SERVER INVITE'+privTag+'</div>'+
 
       '<div class="sc-row">'+emblem+'<div class="sc-info"><div class="sc-name">'+escapeHtml(card.name||'')+'</div><div class="sc-meta">'+(card.members||0)+' members</div></div></div>'+
 
@@ -11316,7 +11388,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!s.inviteKey) s.inviteKey = 'NEX-'+Math.random().toString(36).slice(2,7).toUpperCase()+'-'+Math.random().toString(36).slice(2,7).toUpperCase();
 
-    openForwardModal({ type:'serverCard', serverId:s.id, serverName:s.name, serverDesc:s.desc, serverEmblem:s.emblemImage||null, serverCover:s.cover||null, serverGrad:s.grad, serverGlow:s.glow, serverInitial:s.initial, serverInvite:s.inviteKey, serverMembers:(s.members||[]).length });
+    openForwardModal({ type:'serverCard', serverId:s.id, serverName:s.name, serverDesc:s.desc, serverEmblem:s.emblemImage||null, serverCover:s.cover||null, serverGrad:s.grad, serverGlow:s.glow, serverInitial:s.initial, serverInvite:s.inviteKey, serverMembers:(s.members||[]).length, serverPrivate:!!s.isPrivate });
 
   }
 
@@ -12028,11 +12100,15 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         members:[selfProfile.name], admins:[selfProfile.name],
 
-        textChannels:[ { id:uid(), name:'general', style:'glow', unread:0 } ],
+        textChannels:[],
 
-        voiceChannels:[ { id:'srv-vc-'+uid(), name:'GENERAL', style:csSelectedColor } ],
+        voiceChannels:[],
 
-        pinned:null
+        categories:[],
+
+        pinned:null,
+
+        isPrivate:false
 
       };
 
@@ -12056,9 +12132,59 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (!code){ showToast('Enter an invite ID','warn'); return; }
 
-      showToast('Sent join request for '+code,'success');
+      // Look up by invite key, then fall back to id.
+
+      const found = Object.values(servers).find(sv =>
+
+        (sv.inviteKey && sv.inviteKey.toLowerCase() === code.toLowerCase()) ||
+
+        sv.id === code
+
+      );
+
+      if (!found){ showToast('No server found for "'+code+'"','warn'); return; }
+
+      // Private servers are not joinable through the invite flow when the user
+
+      // isn't already a member.
+
+      if (found.isPrivate && !(found.members||[]).includes(selfProfile.name)){
+
+        showToast(found.name+' is private — try again later','warn'); return;
+
+      }
 
       document.getElementById('createServerBackdrop').classList.remove('show');
+
+      // Defer to the unified preview modal: shows name/about/members and the
+
+      // explicit JOIN/CANCEL buttons.
+
+      openServerJoinModal({
+
+        id: found.id,
+
+        name: found.name,
+
+        desc: found.desc,
+
+        emblem: found.emblemImage || null,
+
+        cover: found.cover || null,
+
+        grad: found.grad,
+
+        glow: found.glow,
+
+        initial: found.initial,
+
+        invite: found.inviteKey || null,
+
+        members: (found.members||[]).length,
+
+        isPrivate: !!found.isPrivate
+
+      });
 
     }
 
@@ -12724,6 +12850,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     document.getElementById('serverInviteKey').value = s.inviteKey;
 
+    const privEl = document.getElementById('serverPrivateInput'); if (privEl) privEl.checked = !!s.isPrivate;
+
     const colorChip = document.getElementById('serverColorChip');
 
     const colorInp  = document.getElementById('serverColorInput');
@@ -12837,6 +12965,10 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     if (newName){ s.name = newName; s.initial = newName.charAt(0).toUpperCase(); }
 
     s.desc = newAbout || s.desc;
+
+    const privEl = document.getElementById('serverPrivateInput');
+
+    if (privEl) s.isPrivate = !!privEl.checked;
 
     s.cover = url || null;
 
@@ -13932,25 +14064,77 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   // Add Friend
 
-  document.getElementById('addFriendSend').addEventListener('click', () => {
+  document.getElementById('addFriendSend').addEventListener('click', async () => {
 
-    const v = document.getElementById('addFriendInput').value.trim();
+    const raw = document.getElementById('addFriendInput').value.trim();
 
-    if (!v){ showToast('Enter an ID or handle','warn'); return; }
+    if (!raw){ showToast('Enter an ID or handle','warn'); return; }
 
-    const newId = Date.now();
+    const handle = raw.startsWith('@') ? raw : '@'+raw.toLowerCase().replace(/[^a-z0-9_]/g,'');
 
-    friendRequests.outgoing.push({ id:newId, name:v.replace('@',''), handle: v.startsWith('@')?v:'@'+v.toLowerCase().replace(/[^a-z0-9_]/g,''), initial:v.replace('@','').charAt(0).toUpperCase(), avColor:'linear-gradient(135deg,#818cf8,#1e1b4b)', meta:'sent just now' });
+    const handleKey = handle.replace(/^@/,'').toLowerCase();
+
+    // Self-add guard.
+
+    if (handleKey === (selfProfile.handle||'').replace(/^@/,'').toLowerCase()){
+
+      showToast('You can\'t friend yourself','warn'); return;
+
+    }
+
+    // Resolve the target. With a backend we ask /users/search; without one,
+
+    // we look in conversations[] (any user we've seen). If nothing is found,
+
+    // bail with an error rather than silently sending a request to nobody.
+
+    let target = null;
+
+    if (backend.isConfigured()){
+
+      const lookup = await backend.users.lookup(raw);
+
+      if (lookup && !lookup.error && !lookup.offline && lookup.user){
+
+        target = { name:lookup.user.name, handle:lookup.user.handle, initial:(lookup.user.name||'?').charAt(0).toUpperCase(), avColor:lookup.user.avColor||'linear-gradient(135deg,#818cf8,#1e1b4b)' };
+
+      }
+
+    }
+
+    if (!target){
+
+      const conv = conversations[handleKey] || Object.values(conversations).find(c => (c.handle||'').toLowerCase() === handle.toLowerCase());
+
+      if (conv) target = { name:conv.name, handle:conv.handle, initial:conv.initial, avColor:conv.avColor };
+
+    }
+
+    if (!target){
+
+      showToast('No user found for "'+raw+'"','warn'); return;
+
+    }
+
+    // Already friends or already pending?
+
+    if (isFriend(target.name.toLowerCase())){ showToast('Already friends with '+target.name,'warn'); return; }
+
+    if (friendRequests.outgoing.some(r => r.name.toLowerCase() === target.name.toLowerCase())){ showToast('Friend request already pending','warn'); return; }
+
+    friendRequests.outgoing.push({ id:Date.now(), name:target.name, handle:target.handle, initial:target.initial, avColor:target.avColor, meta:'sent just now' });
 
     document.getElementById('addFriendInput').value = '';
 
     document.getElementById('addFriendBackdrop').classList.remove('show');
 
-    showToast('Friend request sent to '+v,'success');
+    showToast('Friend request sent to '+target.name,'success');
 
     frActiveTab = 'outgoing';
 
     renderFriendRequestsHome();
+
+    if (typeof renderFriendsLists === 'function') renderFriendsLists();
 
     updateBadges();
 
@@ -15404,7 +15588,31 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (!s.admins.includes(target)) s.admins.unshift(target);
 
+      // The previous owner loses admin powers immediately. Strip them from the
+
+      // legacy admins[] list so isAdmin / settings menus reflect the change.
+
+      const me = selfProfile.name;
+
+      if (me && me !== target){
+
+        s.admins = (s.admins||[]).filter(m => m !== me);
+
+      }
+
+      // Recompute the local user's admin flag for the currently-viewed server.
+
+      isAdmin = (s.admins||[]).includes(me);
+
       document.getElementById('ownerTransferBackdrop').classList.remove('show');
+
+      // Close the server-identity modal too — the previous owner can't edit it any more.
+
+      document.getElementById('coverBackdrop').classList.remove('show');
+
+      // Roles modal stays open so the new ownership is visible, but re-render
+
+      // it without admin-only controls.
 
       renderRolesList(); renderRoleEditor();
 
@@ -15424,21 +15632,53 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     document.getElementById('serverJoinBackdrop').classList.remove('show');
 
-    if (servers[card.id]){
+    const existing = servers[card.id];
 
-      // Already a member: just open it.
+    if (existing){
+
+      const alreadyIn = (existing.members||[]).includes(selfProfile.name);
+
+      if (alreadyIn){
+
+        // Already a member: just open it.
+
+        setPage('pageWorld'); selectServer(card.id);
+
+        pendingJoinCard = null;
+
+        return;
+
+      }
+
+      if (existing.isPrivate){
+
+        showToast(existing.name+' is private — try again later','warn');
+
+        pendingJoinCard = null;
+
+        return;
+
+      }
+
+      existing.members = (existing.members||[]).concat([selfProfile.name]);
+
+      if (!myServers.includes(card.id)) myServers.push(card.id);
+
+      renderServerRails();
+
+      renderHomeMyServers();
 
       setPage('pageWorld'); selectServer(card.id);
+
+      showToast('Joined '+existing.name,'success');
+
+      pendingJoinCard = null;
 
       return;
 
     }
 
-    // Demo: shouldn't happen here since the only known server in the demo IS the one
-
-    // we shared from. We still toast a success and (if data exists) wire it in.
-
-    showToast('Joined '+(card.name||'server'),'success');
+    showToast('Server is no longer available','warn');
 
     pendingJoinCard = null;
 
