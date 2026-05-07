@@ -1087,6 +1087,48 @@
 
   }
 
+  // Debounced persistence helpers. Each saver fires at most once per ~250ms,
+
+  // collapsing rapid drag-reorder or rapid toggle clicks into a single PUT.
+
+  function _debounce(fn, ms){
+
+    let t = null;
+
+    return function(){
+
+      if (t) clearTimeout(t);
+
+      t = setTimeout(() => { t = null; fn(); }, ms);
+
+    };
+
+  }
+
+  const persistMarkedOrbits = _debounce(() => {
+
+    if (backend.isConfigured()) backend.me.saveOrbits(marked.slice()).catch(()=>{});
+
+  }, 250);
+
+  const persistMarkedTextChannels = _debounce(() => {
+
+    if (backend.isConfigured()) backend.me.saveTextChannels(markedTextChannels.slice()).catch(()=>{});
+
+  }, 250);
+
+  const persistMarkedFriends = _debounce(() => {
+
+    if (backend.isConfigured()) backend.me.saveFriendMarks(markedFriends.slice()).catch(()=>{});
+
+  }, 250);
+
+  const persistPinnedServers = _debounce(() => {
+
+    if (backend.isConfigured()) backend.me.savePinnedServers(myServers.slice()).catch(()=>{});
+
+  }, 250);
+
   function toggleMark(ch){
 
     const data = channelData[ch];
@@ -1109,6 +1151,8 @@
 
         renderHomeMarkedOrbits();
 
+        persistMarkedOrbits();
+
         showToast('Unmarked '+data.name,'warn');
 
       });
@@ -1124,6 +1168,8 @@
     renderOrbSlides();
 
     renderHomeMarkedOrbits();
+
+    persistMarkedOrbits();
 
   }
 
@@ -3007,7 +3053,7 @@
 
     }).join('');
 
-    wireDragReorder(el, '.mark-orb-card', keys => { marked = keys.filter(k => marked.includes(k)); renderHomeMarkedOrbits(); });
+    wireDragReorder(el, '.mark-orb-card', keys => { marked = keys.filter(k => marked.includes(k)); renderHomeMarkedOrbits(); persistMarkedOrbits(); });
 
   }
 
@@ -3043,7 +3089,7 @@
 
     }).join('');
 
-    wireDragReorder(el, '.my-server-card', keys => { myServers = keys.filter(k => myServers.includes(k)); renderHomeMyServers(); renderServerRails(); });
+    wireDragReorder(el, '.my-server-card', keys => { myServers = keys.filter(k => myServers.includes(k)); renderHomeMyServers(); renderServerRails(); persistPinnedServers(); });
 
   }
 
@@ -3063,6 +3109,8 @@
 
     renderMarkedPanel(); renderDmList();
 
+    persistMarkedFriends();
+
   }
 
   function isChannelMarked(srvId, tcId){ return markedTextChannels.includes(srvId+'__'+tcId); }
@@ -3076,6 +3124,8 @@
     else { markedTextChannels.push(k); showToast('Channel marked','success'); }
 
     renderMarkedPanel();
+
+    persistMarkedTextChannels();
 
   }
 
@@ -3171,11 +3221,11 @@
 
     if (markedPanelTab === 'friends'){
 
-      wireDragReorder(list, '.mp-row', keys => { markedFriends = keys.map(k => k.replace('friend:','')).filter(k => markedFriends.includes(k)); renderMarkedPanel(); });
+      wireDragReorder(list, '.mp-row', keys => { markedFriends = keys.map(k => k.replace('friend:','')).filter(k => markedFriends.includes(k)); renderMarkedPanel(); persistMarkedFriends(); });
 
     } else {
 
-      wireDragReorder(list, '.mp-row', keys => { markedTextChannels = keys.map(k => k.replace('tc:','')).filter(k => markedTextChannels.includes(k)); renderMarkedPanel(); });
+      wireDragReorder(list, '.mp-row', keys => { markedTextChannels = keys.map(k => k.replace('tc:','')).filter(k => markedTextChannels.includes(k)); renderMarkedPanel(); persistMarkedTextChannels(); });
 
     }
 
@@ -5351,7 +5401,15 @@
 
       patch: patch    => _apiRequest('PATCH', '/me', patch),
 
-      snapshot: ()    => _apiRequest('GET',   '/me/snapshot')
+      snapshot: ()    => _apiRequest('GET',   '/me/snapshot'),
+
+      saveOrbits:        ids     => _apiRequest('PUT', '/me/marks/orbits',         { ids }),
+
+      saveTextChannels:  keys    => _apiRequest('PUT', '/me/marks/text-channels',  { keys }),
+
+      saveFriendMarks:   handles => _apiRequest('PUT', '/me/marks/friends',        { handles }),
+
+      savePinnedServers: ids     => _apiRequest('PUT', '/me/marks/pinned-servers', { ids })
 
     },
 
@@ -13973,11 +14031,21 @@
 
     const insideBubble = e.target.closest('.dm-bubble');
 
+    const insideMsgRow = e.target.closest('.dm-msg, .dm-bubble-hover-actions');
+
     if (!insideBA && !insideBubble && document.getElementById('bubbleActions').classList.contains('show')) hideBubbleActions();
 
-    // Close any tap-opened DM action toolbar when clicking outside a bubble.
+    // Close any tap-opened DM action toolbar when clicking outside the row.
 
-    if (!insideBubble){
+    // We treat the message row (which contains the bubble AND the floating
+
+    // toolbar) as the safe area, otherwise tapping a Copy/Edit button —
+
+    // which lives on top of the bubble, not inside it — would close the
+
+    // toolbar before the click handler had a chance to run.
+
+    if (!insideMsgRow){
 
       document.querySelectorAll('.dm-msg.actions-open').forEach(r => r.classList.remove('actions-open'));
 

@@ -123,7 +123,16 @@ meRouter.get('/snapshot', async (req, res, next) => {
       `SELECT s.* FROM server_members sm
          JOIN servers s ON s.id = sm.server_id
         WHERE sm.user_id = ?`, [me.id]);
-    const myServers = memberRows.map(s => s.id);
+    // Honour the user's preferred display order from user_pinned_servers,
+    // falling back to membership order for any server they haven't
+    // explicitly arranged yet.
+    const pinnedOrderRows = await q(
+      `SELECT server_id FROM user_pinned_servers WHERE user_id = ? ORDER BY position`, [me.id]);
+    const pinnedOrder = pinnedOrderRows.map(r => r.server_id);
+    const memberSet = new Set(memberRows.map(s => s.id));
+    const ordered = pinnedOrder.filter(id => memberSet.has(id));
+    for (const s of memberRows) if (!ordered.includes(s.id)) ordered.push(s.id);
+    const myServers = ordered;
     const servers = {};
     if (memberRows.length) {
       const sids = memberRows.map(s => s.id);
@@ -236,5 +245,88 @@ meRouter.get('/snapshot', async (req, res, next) => {
         }))
       }
     });
+  } catch (e) { next(e); }
+});
+
+// --- Persistence for user-specific layout state -----------------------------
+// The client edits these lists frequently (toggle a mark, reorder a pin).
+// Each endpoint replaces the whole list for the caller; we keep the API
+// simple instead of negotiating per-row diffs.
+
+// Marked voice channels (orbits).
+meRouter.put('/marks/orbits', async (req, res, next) => {
+  try {
+    const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
+    await q('DELETE FROM user_marked_orbits WHERE user_id = ?', [req.user.id]);
+    let i = 0;
+    for (const cid of ids) {
+      if (typeof cid !== 'string' || !cid) continue;
+      // Reject anything that doesn't reference an existing voice channel so
+      // we don't insert orphan rows when the client gets out of sync.
+      const exists = await one('SELECT id FROM voice_channels WHERE id = ?', [cid]);
+      if (!exists) continue;
+      await q(
+        'INSERT IGNORE INTO user_marked_orbits (user_id, channel_id, position) VALUES (?, ?, ?)',
+        [req.user.id, cid, ++i]);
+    }
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+// Marked text channels. Client sends "<serverId>__<channelId>" composite keys.
+meRouter.put('/marks/text-channels', async (req, res, next) => {
+  try {
+    const keys = Array.isArray(req.body && req.body.keys) ? req.body.keys : [];
+    await q('DELETE FROM user_marked_text_channels WHERE user_id = ?', [req.user.id]);
+    let i = 0;
+    for (const k of keys) {
+      if (typeof k !== 'string') continue;
+      const idx = k.indexOf('__');
+      if (idx < 0) continue;
+      const tcId = k.slice(idx + 2);
+      const exists = await one('SELECT id FROM text_channels WHERE id = ?', [tcId]);
+      if (!exists) continue;
+      await q(
+        'INSERT IGNORE INTO user_marked_text_channels (user_id, channel_id, position) VALUES (?, ?, ?)',
+        [req.user.id, tcId, ++i]);
+    }
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+// Marked friends. Client sends an array of @handles (case-insensitive).
+meRouter.put('/marks/friends', async (req, res, next) => {
+  try {
+    const handles = Array.isArray(req.body && req.body.handles) ? req.body.handles : [];
+    await q('DELETE FROM user_marked_friends WHERE user_id = ?', [req.user.id]);
+    let i = 0;
+    for (const raw of handles) {
+      if (typeof raw !== 'string') continue;
+      const h = raw.replace(/^@/, '').toLowerCase();
+      const u = await one('SELECT id FROM users WHERE handle = ?', [h]);
+      if (!u) continue;
+      await q(
+        'INSERT IGNORE INTO user_marked_friends (user_id, friend_id, position) VALUES (?, ?, ?)',
+        [req.user.id, u.id, ++i]);
+    }
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+});
+
+// Pinned servers (display order on the rail).
+meRouter.put('/marks/pinned-servers', async (req, res, next) => {
+  try {
+    const ids = Array.isArray(req.body && req.body.ids) ? req.body.ids : [];
+    await q('DELETE FROM user_pinned_servers WHERE user_id = ?', [req.user.id]);
+    let i = 0;
+    for (const sid of ids) {
+      if (typeof sid !== 'string' || !sid) continue;
+      const exists = await one('SELECT id FROM server_members WHERE server_id = ? AND user_id = ?', [sid, req.user.id]);
+      if (!exists) continue;
+      await q(
+        'INSERT IGNORE INTO user_pinned_servers (user_id, server_id, position) VALUES (?, ?, ?)',
+        [req.user.id, sid, ++i]);
+    }
+    res.json({ ok: true });
   } catch (e) { next(e); }
 });

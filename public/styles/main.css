@@ -2915,11 +2915,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
 /* DM bubble actions — show on hover (desktop) or when explicitly opened by
 
-   tap (touch). The .show class is toggled by JS so iOS / Android users can
+   tap (touch). Toggling visibility via opacity (not display:none) avoids the
 
-   still reach Reply / Edit / Copy / Delete without needing a hover state. */
+   iOS race where the hover-out fires before the action click is dispatched. */
 
-.dm-msg .dm-bubble-hover-actions{position:absolute;top:-30px;display:none;background:var(--panel);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:3px;gap:1px;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:60;backdrop-filter:blur(20px)}
+.dm-msg .dm-bubble-hover-actions{position:absolute;top:-30px;display:flex;opacity:0;pointer-events:none;background:var(--panel);border:1px solid rgba(255,255,255,0.1);border-radius:18px;padding:3px;gap:1px;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:60;backdrop-filter:blur(20px);transition:opacity .12s ease}
 
 .dm-msg.them .dm-bubble-hover-actions{left:46px}
 
@@ -2927,7 +2927,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
 .dm-msg:hover .dm-bubble-hover-actions,
 
-.dm-msg.actions-open .dm-bubble-hover-actions{display:flex}
+.dm-msg.actions-open .dm-bubble-hover-actions{opacity:1;pointer-events:auto}
 
 .dm-bubble-hover-actions .dm-bubble-action{width:26px;height:26px}
 
