@@ -52,3 +52,33 @@ export async function emitVoiceLeave(serverId, channelId, userName, members) {
   const uids = await serverMemberUids(serverId);
   sendToServer(uids, { type: 'voice:leave', serverId, channelId, userName, members });
 }
+
+export async function emitChannelMessageDeleted(serverId, channelId, messageId) {
+  const uids = await serverMemberUids(serverId);
+  sendToServer(uids, { type: 'channel:message:deleted', serverId, channelId, messageId });
+}
+
+export async function emitServerPinChanged(serverId, pinnedText) {
+  const uids = await serverMemberUids(serverId);
+  sendToServer(uids, { type: 'server:pin', serverId, pinned: pinnedText ? { text: pinnedText, by: null, time: null } : null });
+}
+
+export async function emitServerCategoryAdded(serverId, category) {
+  const uids = await serverMemberUids(serverId);
+  sendToServer(uids, { type: 'server:category-added', serverId, category });
+}
+
+export async function emitServerCategoryDeleted(serverId, categoryId) {
+  const uids = await serverMemberUids(serverId);
+  sendToServer(uids, { type: 'server:category-deleted', serverId, categoryId });
+}
+
+export async function emitServerChannelAdded(serverId, channelKind, channel, categoryId) {
+  const uids = await serverMemberUids(serverId);
+  sendToServer(uids, { type: 'server:channel-added', serverId, channelKind, channel, categoryId });
+}
+
+export async function emitServerChannelDeleted(serverId, channelKind, channelId) {
+  const uids = await serverMemberUids(serverId);
+  sendToServer(uids, { type: 'server:channel-deleted', serverId, channelKind, channelId });
+}
