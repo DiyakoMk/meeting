@@ -8065,7 +8065,7 @@
 
         if (r.offline){ showToast('Cannot reach the server','warn'); return; }
 
-        if (r.error){ showToast('Could not create channel: '+r.error,'warn'); return; }
+        if (r.error){ console.warn('[orblood] addTextChannel error', r); showToast('Could not create channel: '+r.error,'warn'); return; }
 
         newId = r.channel.id;
 
@@ -8965,7 +8965,7 @@
 
   }
 
-  function submitPin(){
+  async function submitPin(){
 
     if (!currentServer) return;
 
@@ -8984,6 +8984,18 @@
       else { cat.pinned = { text, by:selfProfile.name, time:'just now' }; showToast('Pinned to category','success'); }
 
     } else {
+
+      // Persist server-level pin to backend so other members see it.
+
+      if (backend.isConfigured()){
+
+        const r = await backend.servers.patch(currentServer, { pinnedText: text || null });
+
+        if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+        if (r.error){ showToast('Could not update pin: '+r.error,'warn'); return; }
+
+      }
 
       if (!text){ s.pinned = null; showToast('Pin removed','warn'); }
 
@@ -11663,7 +11675,51 @@
 
       if (r){
 
-        showToast(r.name+' is now your friend','success');
+        // Persist before mutating local state so we surface server errors.
+
+        if (backend.isConfigured()){
+
+          (async () => {
+
+            const resp = await backend.friends.accept(id);
+
+            if (resp.error){ showToast('Could not accept: '+resp.error,'warn'); return; }
+
+            const peer = resp.peer || {};
+
+            const k = (peer.handle || r.handle || r.name).replace(/^@/,'').toLowerCase();
+
+            if (!conversations[k]){
+
+              conversations[k] = { name: peer.name || r.name, online:false, unread:0, avColor: peer.avColor || r.avColor, avImage: peer.avImage || null, initial: peer.initial || r.initial, handle: peer.handle || r.handle, bio: peer.bio || 'New friend.', stats:{posts:0,friends:1,orbits:0}, location:'UNKNOWN', joined:'NOW', lastSeen:'just now', rank:'EXPLORER', orbColor:'#818cf8', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#818cf8 55%,#1e1b4b)' };
+
+              messages[k] = [];
+
+            }
+
+            addFriend(k);
+
+            friendRequests.incoming = friendRequests.incoming.filter(x=>x.id!==id);
+
+            renderDmList();
+
+            renderHomeFriends();
+
+            renderFriendRequestsHome();
+
+            if (typeof renderFriendsLists === 'function') renderFriendsLists();
+
+            updateBadges();
+
+            showToast((peer.name || r.name)+' is now your friend','success');
+
+          })();
+
+          return;
+
+        }
+
+        // Local-only fallback (no backend wired up).
 
         const k = r.name.toLowerCase();
 
@@ -11685,19 +11741,35 @@
 
         friendRequests.incoming = friendRequests.incoming.filter(x=>x.id!==id);
 
+        showToast(r.name+' is now your friend','success');
+
       }
 
     } else if (action === 'reject'){
 
       const r = friendRequests.incoming.find(x=>x.id===id);
 
+      if (backend.isConfigured()){
+
+        backend.friends.reject(id).catch(()=>{});
+
+      }
+
       friendRequests.incoming = friendRequests.incoming.filter(x=>x.id!==id);
+
+      renderFriendRequestsHome();
 
       if (r) showToast(r.name+' declined','warn');
 
     } else if (action === 'cancel'){
 
       const r = friendRequests.outgoing.find(x=>x.id===id);
+
+      if (backend.isConfigured()){
+
+        backend.friends.cancel(id).catch(()=>{});
+
+      }
 
       friendRequests.outgoing = friendRequests.outgoing.filter(x=>x.id!==id);
 
