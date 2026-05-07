@@ -1156,6 +1156,8 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 /* Two-column layout for the user settings modal — mirrors the roles modal. */
 
+#profileModal{max-width:380px}
+
 #profileModal.is-editing{max-width:780px;width:96vw;max-height:88vh}
 
 #profileModal.is-editing .profile-edit{flex:1;flex-direction:row;gap:0;overflow:hidden;min-height:0}
@@ -2380,7 +2382,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 #profileModal.is-editing .profile-view{display:none}
 
-#profileModal.is-editing .profile-edit{display:flex;flex-direction:column;gap:12px}
+#profileModal.is-editing .profile-edit{display:flex;flex-direction:row;gap:0;overflow:hidden;min-height:0}
 
 #profileModal.is-editing .profile-edit-foot{display:flex}
 
@@ -3760,7 +3762,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     <div class="modal-backdrop" id="profileModalBackdrop">
 
-      <div class="smodal" id="profileModal" style="max-width:380px">
+      <div class="smodal" id="profileModal">
 
         <div class="smodal-head">
 
@@ -5776,15 +5778,17 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         const u = data.users[idx] || '';
 
-        let avInner = u ? u.charAt(0) : '';
+        let avInner = '';
 
         let avBgExtra = '';
 
-        if (u === selfProfile.name && selfProfile.avImage){
+        if (u){
 
-          avInner = '';
+          const a = resolveUserAvatar(u);
 
-          avBgExtra = ';background:#0a070f url('+selfProfile.avImage+') center/cover no-repeat';
+          if (a.isImage){ avBgExtra = ';background:'+a.bg; }
+
+          else { avInner = a.text; }
 
         }
 
@@ -5918,21 +5922,19 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           if (av){
 
-            if (u === selfProfile.name && selfProfile.avImage){
+            const aRes = resolveUserAvatar(u);
+
+            if (aRes.isImage){
 
               av.textContent = '';
 
-              av.style.backgroundImage = 'url('+selfProfile.avImage+')';
-
-              av.style.backgroundColor = '#0a070f';
+              av.style.background = aRes.bg;
 
             } else {
 
-              if (av.textContent !== u.charAt(0)) av.textContent = u.charAt(0);
+              if (av.textContent !== aRes.text) av.textContent = aRes.text;
 
-              av.style.backgroundImage = '';
-
-              av.style.backgroundColor = '';
+              av.style.background = '';
 
             }
 
@@ -6138,9 +6140,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (isConn){
 
-        // include 'You' (Cooper) explicitly first
+        // include 'You' (the local user) explicitly first
 
-        html += '<div class="vu-item speaking" data-vu-user="Cooper" data-vu-ch="'+ch+'" data-name="You · '+data.name+'"><div class="vu-av" style="background:'+selfAvStyle()+';border-color:'+data.avBorder+'"><span>'+selfAvInner()+'</span><span class="vu-s '+(muted?'off':'on')+'"></span></div></div>';
+        const meAv = resolveUserAvatar(selfProfile.name);
+
+        html += '<div class="vu-item speaking" data-vu-user="'+escapeHtml(selfProfile.name)+'" data-vu-ch="'+ch+'" data-name="You · '+data.name+'"><div class="vu-av" style="background:'+meAv.bg+';border-color:'+data.avBorder+'"><span>'+(meAv.isImage?'':escapeHtml(meAv.text))+'</span><span class="vu-s '+(muted?'off':'on')+'"></span></div></div>';
 
         data.users.forEach(u => {
 
@@ -6150,7 +6154,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           const mutedByMe = mutedUsersByMe.has(u);
 
-          html += '<div class="vu-item'+(speaking?' speaking':'')+(mutedByMe?' muted-by-me':'')+'" data-vu-user="'+escapeHtml(u)+'" data-vu-ch="'+ch+'" data-name="'+escapeHtml(u)+(mutedByMe?' · MUTED BY YOU':'')+'"><div class="vu-av" style="background:'+data.color+'0.25);border-color:'+data.avBorder+'"><span>'+u.charAt(0)+'</span><span class="vu-s on"></span></div></div>';
+          const a = resolveUserAvatar(u);
+
+          html += '<div class="vu-item'+(speaking?' speaking':'')+(mutedByMe?' muted-by-me':'')+'" data-vu-user="'+escapeHtml(u)+'" data-vu-ch="'+ch+'" data-name="'+escapeHtml(u)+(mutedByMe?' · MUTED BY YOU':'')+'"><div class="vu-av" style="background:'+a.bg+';border-color:'+data.avBorder+'"><span>'+(a.isImage?'':escapeHtml(a.text))+'</span><span class="vu-s on"></span></div></div>';
 
         });
 
@@ -6164,7 +6170,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           data.users.slice(0,4).forEach(u => {
 
-            html += '<div class="vu-item dim" data-vu-user="'+escapeHtml(u)+'" data-vu-ch="'+ch+'" data-name="'+escapeHtml(u)+' · '+data.name+'"><div class="vu-av" style="background:'+data.color+'0.18);border-color:'+data.avBorder+'"><span>'+u.charAt(0)+'</span><span class="vu-s idle"></span></div></div>';
+            const a = resolveUserAvatar(u);
+
+            html += '<div class="vu-item dim" data-vu-user="'+escapeHtml(u)+'" data-vu-ch="'+ch+'" data-name="'+escapeHtml(u)+' · '+data.name+'"><div class="vu-av" style="background:'+a.bg+';border-color:'+data.avBorder+'"><span>'+(a.isImage?'':escapeHtml(a.text))+'</span><span class="vu-s idle"></span></div></div>';
 
           });
 
@@ -6382,6 +6390,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     renderHomeMarkedOrbits();
 
+    if (currentServer) renderServerOverview();
+
     playVoiceCue('join');
 
   }
@@ -6435,6 +6445,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     updateOrbStates();
 
     if (voiceUsersSidebarOpen) renderVoiceUsers();
+
+    if (currentServer) renderServerOverview();
 
     showToast('Disconnected from '+channelData[lastChannel].name,'warn');
 
@@ -6544,7 +6556,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (!conv.isSaved && dmListHidden.has(key)) return;
 
-      if (isBlocked(key)) return;
+      // Blocked users are still listed in the chat sidebar — the chat panel
+
+      // itself shows a "you blocked X" banner. Only the Blocked tab is filtered.
+
+      if (tab === 'blocked' && !isBlocked(key)) return;
+
+      if (tab !== 'blocked' && tab !== 'all' && tab !== 'unread' && tab !== 'requests'){ /* future tabs */ }
 
       if (filter && !conv.name.toLowerCase().includes(filter)) return;
 
@@ -6570,7 +6588,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         (conv.isSaved ? '' : '<div class="dm-list-check" data-dm-list-check="'+key+'" title="Select"><i data-lucide="check" style="width:11px;height:11px"></i></div>')+
 
-        '<div class="dm-av-wrap"><div class="dm-av '+(conv.online?'online':'')+'" style="background:'+conv.avColor+'">'+conv.initial+'</div></div>'+
+        (() => { const r = resolveUserAvatar(conv.isSaved?conv.name:key); return '<div class="dm-av-wrap"><div class="dm-av '+(conv.online?'online':'')+'" style="background:'+r.bg+'">'+(r.isImage?'':escapeHtml(r.text))+'</div></div>'; })()+
 
         '<div class="dm-mid">'+
 
@@ -6622,9 +6640,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     document.getElementById('dmInputWrap').style.display = 'block';
 
-    document.getElementById('dmHeadAvText').textContent = conv.initial;
+    const headAvRes = resolveUserAvatar(conv.name);
 
-    document.getElementById('dmHeadAv').style.background = conv.avColor;
+    document.getElementById('dmHeadAvText').textContent = headAvRes.isImage ? '' : headAvRes.text;
+
+    document.getElementById('dmHeadAv').style.background = headAvRes.bg;
 
     const showPresence = !conv.isSaved;
 
@@ -6812,7 +6832,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       const cls = 'dm-msg '+(m.sender==='me'?'you':'them')+(grouped?' grouped':'');
 
-      const av = m.sender==='me' ? '<div class="dm-msg-av" style="background:'+selfAvStyle()+'">'+selfAvInner()+'</div>' : '<div class="dm-msg-av" style="background:'+conv.avColor+'">'+conv.initial+'</div>';
+      const av = (() => {
+
+        const r = m.sender==='me' ? resolveUserAvatar(selfProfile.name) : resolveUserAvatar(conv.name);
+
+        return '<div class="dm-msg-av" style="background:'+r.bg+'">'+(r.isImage?'':escapeHtml(r.text))+'</div>';
+
+      })();
 
       let bubbleContent = '';
 
@@ -7752,13 +7778,17 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       const isInVoice = inVoiceUsers.includes(c.name);
 
-      html += '<div class="friend-bubble" data-conv="'+k+'"><div class="friend-bubble-av '+(isInVoice?'in-voice':'')+'" style="background:'+c.avColor+'"><span>'+c.initial+'</span><span class="fb-status"></span></div><div class="friend-bubble-name">'+escapeHtml(c.name)+'</div></div>';
+      const a = resolveUserAvatar(k);
+
+      html += '<div class="friend-bubble" data-conv="'+k+'"><div class="friend-bubble-av '+(isInVoice?'in-voice':'')+'" style="background:'+a.bg+'"><span>'+(a.isImage?'':escapeHtml(a.text))+'</span><span class="fb-status"></span></div><div class="friend-bubble-name">'+escapeHtml(c.name)+'</div></div>';
 
     });
 
     offline.forEach(([k,c])=>{
 
-      html += '<div class="friend-bubble" data-conv="'+k+'"><div class="friend-bubble-av offline" style="background:'+c.avColor+'"><span>'+c.initial+'</span><span class="fb-status"></span></div><div class="friend-bubble-name">'+escapeHtml(c.name)+'</div></div>';
+      const a = resolveUserAvatar(k);
+
+      html += '<div class="friend-bubble" data-conv="'+k+'"><div class="friend-bubble-av offline" style="background:'+a.bg+'"><span>'+(a.isImage?'':escapeHtml(a.text))+'</span><span class="fb-status"></span></div><div class="friend-bubble-name">'+escapeHtml(c.name)+'</div></div>';
 
     });
 
@@ -7848,13 +7878,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         data.users.slice(0,3).forEach(u => {
 
-          const ck = u.toLowerCase();
+          const a = resolveUserAvatar(u);
 
-          const c = conversations[ck];
-
-          const av = c ? c.avColor : 'linear-gradient(135deg,#a78bfa,#1a0b2e)';
-
-          avs += '<div class="mo-av" style="background:'+av+'" title="'+escapeHtml(u)+'">'+u.charAt(0)+'</div>';
+          avs += '<div class="mo-av" style="background:'+a.bg+'" title="'+escapeHtml(u)+'">'+(a.isImage?'':escapeHtml(a.text))+'</div>';
 
         });
 
@@ -8826,11 +8852,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         if (!m.id) m.id = Date.now()+Math.floor(Math.random()*1000);
 
-        const ck = m.user.toLowerCase();
-
-        const c = conversations[ck];
-
-        const av = c ? c.avColor : 'linear-gradient(135deg,#6366f1,#1e1b4b)';
+        const avRes = resolveUserAvatar(m.user);
 
         const isMine = m.user === selfProfile.name;
 
@@ -8882,7 +8904,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         const selCls = (chSelectMode && chSelectedIds.has(m.id)) ? ' is-selected' : '';
 
-        html += '<div class="ws-msg'+selCls+'" data-ch-msg="'+m.id+'" data-mine="'+(isMine?'1':'0')+'"><div class="ws-msg-av" style="--av:'+av+';background:'+av+'">'+m.user.charAt(0)+'</div>'+
+        html += '<div class="ws-msg'+selCls+'" data-ch-msg="'+m.id+'" data-mine="'+(isMine?'1':'0')+'"><div class="ws-msg-av" style="background:'+avRes.bg+'">'+(avRes.isImage?'':escapeHtml(avRes.text))+'</div>'+
 
           '<div class="ws-msg-body">'+
 
@@ -9178,15 +9200,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
               shown.forEach(u => {
 
-                const ck = u.toLowerCase();
-
-                const c = conversations[ck];
-
-                const av = c ? c.avColor : 'linear-gradient(135deg,#818cf8,#1e1b4b)';
+                const a = resolveUserAvatar(u);
 
                 const speakingCls = (isConn && speakingUser === u) ? ' speaking' : '';
 
-                avsHtml += '<div class="ws-cat-vc-av'+speakingCls+'" style="--av-c:'+av+';background:'+av+'" title="'+escapeHtml(u)+'">'+u.charAt(0)+'</div>';
+                avsHtml += '<div class="ws-cat-vc-av'+speakingCls+'" style="background:'+a.bg+'" title="'+escapeHtml(u)+'">'+(a.isImage?'':escapeHtml(a.text))+'</div>';
 
               });
 
@@ -9346,25 +9364,37 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       });
 
+      const memberRowHtml = (name, color) => {
+
+        const a = resolveUserAvatar(name);
+
+        const ckey = name.toLowerCase();
+
+        const c = conversations[ckey];
+
+        const online = name === selfProfile.name ? selfProfile.online !== false : (c ? c.online : false);
+
+        const styleVar = color ? ' style="--role-c:'+color+'"' : '';
+
+        const nameStyle = color ? ' style="color:'+color+'"' : '';
+
+        return '<div class="ms-row" data-ms-name="'+escapeHtml(name)+'"'+styleVar+'>'+
+
+          '<div class="ms-av '+(online?'online':'')+'" style="background:'+a.bg+'">'+(a.isImage?'':escapeHtml(a.text))+'</div>'+
+
+          '<div class="ms-name"'+nameStyle+'>'+escapeHtml(name)+'</div>'+
+
+        '</div>';
+
+      };
+
       groups.forEach(g => {
 
         if (!g.names.length) return;
 
         html += '<div class="ms-group"><div class="ms-group-h"><span style="color:'+g.role.color+'">'+escapeHtml(g.role.name.toUpperCase())+'</span><span class="ms-count">'+g.names.length+'</span></div>';
 
-        g.names.forEach(name => {
-
-          const ckey = name.toLowerCase();
-
-          const c = conversations[ckey];
-
-          const av = c ? c.avColor : 'linear-gradient(135deg,#a78bfa,#1e1b4b)';
-
-          const online = c ? c.online : false;
-
-          html += '<div class="ms-row" data-ms-name="'+escapeHtml(name)+'" style="--role-c:'+g.role.color+'"><div class="ms-av '+(online?'online':'')+'" style="background:'+av+'">'+name.charAt(0)+'</div><div class="ms-name" style="color:'+g.role.color+'">'+escapeHtml(name)+'</div></div>';
-
-        });
+        g.names.forEach(name => { html += memberRowHtml(name, g.role.color); });
 
         html += '</div>';
 
@@ -9374,19 +9404,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         html += '<div class="ms-group"><div class="ms-group-h"><span>OTHERS</span><span class="ms-count">'+unassigned.length+'</span></div>';
 
-        unassigned.forEach(name => {
-
-          const ckey = name.toLowerCase();
-
-          const c = conversations[ckey];
-
-          const av = c ? c.avColor : 'linear-gradient(135deg,#a78bfa,#1e1b4b)';
-
-          const online = c ? c.online : false;
-
-          html += '<div class="ms-row" data-ms-name="'+escapeHtml(name)+'"><div class="ms-av '+(online?'online':'')+'" style="background:'+av+'">'+name.charAt(0)+'</div><div class="ms-name">'+escapeHtml(name)+'</div></div>';
-
-        });
+        unassigned.forEach(name => { html += memberRowHtml(name, null); });
 
         html += '</div>';
 
@@ -9402,7 +9420,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       friends.forEach(c => {
 
-        html += '<div class="ms-row" data-ms-name="'+escapeHtml(c.name)+'"><div class="ms-av '+(c.online?'online':'')+'" style="background:'+c.avColor+'">'+c.initial+'</div><div class="ms-name">'+escapeHtml(c.name)+'</div></div>';
+        const a = resolveUserAvatar(c.name);
+
+        html += '<div class="ms-row" data-ms-name="'+escapeHtml(c.name)+'"><div class="ms-av '+(c.online?'online':'')+'" style="background:'+a.bg+'">'+(a.isImage?'':escapeHtml(a.text))+'</div><div class="ms-name">'+escapeHtml(c.name)+'</div></div>';
 
       });
 
@@ -9917,6 +9937,52 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
   function selfAvStyle(){ return selfProfile.avImage ? '#0a070f url('+selfProfile.avImage+') center/cover no-repeat' : (selfProfile.avColor||'linear-gradient(135deg,#22c55e,#15803d)'); }
 
   function selfAvInner(){ return selfProfile.avImage ? '' : (selfProfile.initial||'C'); }
+
+  // Universal avatar resolver. Given any display name (or DM key), returns a
+
+  // {bg, text} pair so every "circle with someone's face" everywhere in the UI
+
+  // pulls from a single source. selfProfile wins, then conversations[*],
+
+  // otherwise we fall back to a deterministic gradient + initial.
+
+  function resolveUserAvatar(nameOrKey){
+
+    if (!nameOrKey) return { bg:'linear-gradient(135deg,#a78bfa,#1e1b4b)', text:'?', isImage:false };
+
+    if (nameOrKey === selfProfile.name || nameOrKey === 'me' || nameOrKey === selfProfile.handle){
+
+      return { bg:selfAvStyle(), text:selfAvInner(), isImage:!!selfProfile.avImage };
+
+    }
+
+    const key = nameOrKey.toLowerCase();
+
+    const c = conversations[key] || Object.values(conversations).find(x => x && x.name === nameOrKey);
+
+    if (c){
+
+      if (c.avImage) return { bg:'#0a070f url('+c.avImage+') center/cover no-repeat', text:'', isImage:true };
+
+      return { bg:c.avColor||c.orbGrad||'linear-gradient(135deg,#a78bfa,#1e1b4b)', text:(c.initial||c.name||'?').charAt(0).toUpperCase(), isImage:false };
+
+    }
+
+    return { bg:'linear-gradient(135deg,#a78bfa,#1e1b4b)', text:String(nameOrKey).charAt(0).toUpperCase(), isImage:false };
+
+  }
+
+  function avatarHtml(nameOrKey, extraClass, extraStyle){
+
+    const a = resolveUserAvatar(nameOrKey);
+
+    const cls = extraClass ? (' '+extraClass) : '';
+
+    const sty = extraStyle ? (';'+extraStyle) : '';
+
+    return '<div class="user-av'+cls+'" style="background:'+a.bg+sty+'">'+(a.isImage?'':escapeHtml(a.text))+'</div>';
+
+  }
 
   // ============== AUTH (signup / login + splash) ==============
 
@@ -15470,6 +15536,12 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!currentConversation) return;
 
+    const conv = conversations[currentConversation];
+
+    const isSaved = conv && conv.isSaved;
+
+    const blocked = isBlocked(currentConversation);
+
     const items = [
 
       { icon:'check-square', label:'Select messages', action:()=>{ enterDmSelectMode(); } },
@@ -15478,11 +15550,45 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       { sep:true },
 
-      { icon:'bell-off',     label:'Mute notifications', action:()=>{ showToast('Muted','warn'); } },
-
-      { icon:'user-x',       label:'Block user',      danger:true, action:()=>{ showToast('Blocked (demo)','warn'); } }
+      { icon:'bell-off',     label:'Mute notifications', action:()=>{ showToast('Muted','warn'); } }
 
     ];
+
+    if (!isSaved){
+
+      items.push({
+
+        icon: blocked ? 'shield' : 'user-x',
+
+        label: blocked ? 'Unblock user' : 'Block user',
+
+        danger: !blocked,
+
+        action: () => {
+
+          if (blocked){ unblockUser(currentConversation); showToast('Unblocked '+(conv?conv.name:''),'success'); }
+
+          else {
+
+            appConfirm('Block '+(conv?conv.name:'this user')+'? You won\'t be able to message each other.', {title:'BLOCK USER', confirmLabel:'BLOCK', danger:true}).then(ok => {
+
+              if (!ok) return;
+
+              blockUser(currentConversation);
+
+              if (typeof renderFriendsLists === 'function') renderFriendsLists();
+
+              showToast('Blocked '+(conv?conv.name:''),'warn');
+
+            });
+
+          }
+
+        }
+
+      });
+
+    }
 
     openPortalMenu(e.currentTarget, items);
 
