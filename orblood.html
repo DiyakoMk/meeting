@@ -3188,7 +3188,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
                 <div class="greet-eyebrow">SIGNAL ACTIVE · <span id="heroLocation">SECTOR 7G</span></div>
 
-                <h1 class="greet-h" id="greetGreeting">GOOD EVENING, COOPER</h1>
+                <h1 class="greet-h" id="greetGreeting">WELCOME</h1>
 
                 <p class="greet-sub">You have <b id="heroUnreadDM">0 unread transmissions</b>, <b id="heroReqs">0 friend requests</b>, and <b id="heroLegendary">0 legendary orbs</b> in view.</p>
 
@@ -3422,7 +3422,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
               <div class="dm-head-av" id="dmHeadAv">
 
-                <span id="dmHeadAvText">M</span>
+                <span id="dmHeadAvText"></span>
 
                 <div class="head-pulse" id="dmHeadPulse"></div>
 
@@ -3430,9 +3430,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
               <div class="dm-head-info">
 
-                <div class="dm-head-name" id="dmHeadName">Murph<span class="verified"><i data-lucide="badge-check" style="width:14px;height:14px"></i></span></div>
+                <div class="dm-head-name" id="dmHeadName"></div>
 
-                <div class="dm-head-sub" id="dmHeadSub"><span class="ds-dot"></span><span id="dmHeadSubText">ONLINE · ENCRYPTED CHANNEL</span></div>
+                <div class="dm-head-sub" id="dmHeadSub"><span class="ds-dot"></span><span id="dmHeadSubText"></span></div>
 
               </div>
 
@@ -3462,7 +3462,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <div class="dm-input-wrap" id="dmInputWrap" style="display:none">
 
-              <div class="dm-ibox-label" id="dmIboxLabel">TRANSMITTING TO COOPER</div>
+              <div class="dm-ibox-label" id="dmIboxLabel">TRANSMITTING</div>
 
               <div class="dm-reply-bar" id="dmReplyBar" style="display:none">
 
@@ -3782,7 +3782,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <div class="profile-orb">
 
-              <div class="profile-orb-core" id="modalOrbCore">C</div>
+              <div class="profile-orb-core" id="modalOrbCore"></div>
 
               <div class="profile-orb-status" id="modalStatusDot"></div>
 
@@ -3790,9 +3790,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <div class="profile-head-info">
 
-              <div class="profile-name" id="modalName">Cooper</div>
+              <div class="profile-name" id="modalName"></div>
 
-              <div class="profile-handle-row"><span class="profile-handle" id="modalHandle">@cooper</span><button class="profile-handle-copy" id="modalHandleCopy" title="Copy handle"><i data-lucide="copy" style="width:11px;height:11px"></i></button></div>
+              <div class="profile-handle-row"><span class="profile-handle" id="modalHandle"></span><button class="profile-handle-copy" id="modalHandleCopy" title="Copy handle"><i data-lucide="copy" style="width:11px;height:11px"></i></button></div>
 
             </div>
 
@@ -3808,7 +3808,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           </div>
 
-          <div class="profile-bio" id="modalBio">Pilot. Father. Survivor.</div>
+          <div class="profile-bio" id="modalBio"></div>
 
           <div class="profile-section" id="modalJoinedRow" style="display:none">
 
@@ -3892,7 +3892,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
               <div class="profile-edit-avatar-row">
 
-                <div class="profile-edit-avatar-preview" id="profileEditAvatarPreview">C</div>
+                <div class="profile-edit-avatar-preview" id="profileEditAvatarPreview"></div>
 
                 <div style="display:flex;flex-direction:column;gap:6px">
 
@@ -4642,7 +4642,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <label class="sm-label">DISPLAY NAME</label>
 
-            <input type="text" class="sm-input" id="authName" placeholder="Cooper" />
+            <input type="text" class="sm-input" id="authName" placeholder="Your display name" />
 
           </div>
 
@@ -5112,59 +5112,27 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   // ============== STATE ==============
 
+  // Voice channels live entirely in `servers[*].voiceChannels`. The only
+
+  // built-in entry kept here is the "EMPTY" placeholder used by the orb column
+
+  // when the user has no servers and no marked orbits yet. Real orbs are
+
+  // appended at runtime by submitCreateChannel() / hydrateFromBackend().
+
   const channelData = {
 
-    orbit:    { name:'ORBIT',    users:['Cooper','Brand','Doyle','Romilly'], color:'rgba(185,28,74,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#6366f1 60%,#1e1b4b)', atmoColor:'rgba(185,28,74,0.4)', orbiterColor:'rgba(185,28,74,0.7)', avBorder:'#818cf8', emoji:'🌌', tier:'epic' },
-
-    endurance:{ name:'ENDURANCE',users:['Case','TARS','Mann'],                color:'rgba(236,72,153,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#ec4899 60%,#831843)', atmoColor:'rgba(236,72,153,0.4)', orbiterColor:'rgba(236,72,153,0.7)', avBorder:'#f472b6', emoji:'🚀', tier:'rare' },
-
-    gargantua:{ name:'GARGANTUA',users:['Mann','CASE','KIPP','Cooper','Brand','Doyle','Romilly','Murph','Tom'], color:'rgba(190,18,60,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#a855f7 60%,#3b0764)', atmoColor:'rgba(190,18,60,0.4)', orbiterColor:'rgba(190,18,60,0.7)', avBorder:'#c084fc', emoji:'⚫', tier:'epic' },
-
-    miller:   { name:'MILLER',   users:['Brand','Doyle'],                     color:'rgba(56,189,248,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.3),#0284c7 55%,#0c2951)', atmoColor:'rgba(56,189,248,0.28)', orbiterColor:'rgba(56,189,248,0.55)', avBorder:'#7dd3fc', emoji:'🌊', tier:'rare' },
-
-    solaris:  { name:'SOLARIS',  users:['NEXUS','TARS','Brand','Cooper'],     color:'rgba(245,158,11,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fef3c7 25%,#f59e0b 55%,#7c2d12)', atmoColor:'rgba(245,158,11,0.55)', orbiterColor:'rgba(245,158,11,0.7)', avBorder:'#fbbf24', emoji:'☀', tier:'legendary', skin:'fire' },
-
-    glacius:  { name:'GLACIUS',  users:['CASE','Mann','Doyle','TARS','Brand'],color:'rgba(125,211,252,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.95),#e0f2fe 20%,#7dd3fc 55%,#0c4a6e)', atmoColor:'rgba(125,211,252,0.55)', orbiterColor:'rgba(125,211,252,0.7)', avBorder:'#bae6fd', emoji:'❄', tier:'legendary', skin:'ice' },
-
-    verdant:  { name:'VERDANT',  users:['Cooper','Murph','Tom','Brand','Doyle','Romilly'],color:'rgba(74,222,128,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.7),#bbf7d0 25%,#4ade80 55%,#14532d)', atmoColor:'rgba(74,222,128,0.55)', orbiterColor:'rgba(74,222,128,0.7)', avBorder:'#86efac', emoji:'🌳', tier:'legendary', skin:'tree' },
-
-    inferno:  { name:'INFERNO',  users:['Mann','KIPP','TARS','Cooper','CASE','NEXUS','Doyle'],color:'rgba(249,115,22,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fed7aa 20%,#f97316 55%,#7c2d12)', atmoColor:'rgba(249,115,22,0.6)', orbiterColor:'rgba(249,115,22,0.7)', avBorder:'#fdba74', emoji:'🔥', tier:'legendary', skin:'flame' },
-
-    coop:     { name:'COOPER',   users:[],                                    color:'rgba(34,197,94,',  planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#22c55e 60%,#14532d)', atmoColor:'rgba(34,197,94,0.4)', orbiterColor:'rgba(34,197,94,0.7)', avBorder:'#4ade80', emoji:'🌱', tier:'common' },
-
-    __empty__:{ name:'EMPTY',    users:[],                                    color:'rgba(120,120,140,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.18),#3a3a44 55%,#0f0f14)', atmoColor:'rgba(120,120,140,0.18)', orbiterColor:'rgba(120,120,140,0.4)', avBorder:'#6b7280', emoji:'∅', tier:'common', isEmpty:true },
-
-    // Sub-channels of seeded servers — each gets its own carousel-friendly entry
-
-    // so the orb column shows the channel's own name, not the parent's.
-
-    'endurance-bridge': { name:'BRIDGE', users:['Case','Doyle'], color:'rgba(244,114,182,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#f472b6 60%,#831843)', atmoColor:'rgba(244,114,182,0.4)', orbiterColor:'rgba(244,114,182,0.7)', avBorder:'#f9a8d4', emoji:'🛰', tier:'rare' },
-
-    'cooper-talk':      { name:'TALK',   users:[],               color:'rgba(34,197,94,',  planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#22c55e 60%,#14532d)', atmoColor:'rgba(34,197,94,0.4)', orbiterColor:'rgba(34,197,94,0.7)', avBorder:'#4ade80', emoji:'💬', tier:'common' }
+    __empty__:{ name:'EMPTY', users:[], color:'rgba(120,120,140,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.18),#3a3a44 55%,#0f0f14)', atmoColor:'rgba(120,120,140,0.18)', orbiterColor:'rgba(120,120,140,0.4)', avBorder:'#6b7280', emoji:'∅', tier:'common', isEmpty:true }
 
   };
 
-  // Resolve a server-side voiceChannel record to the channelData key. Each
+  function vcChannelKey(vc){ return vc ? vc.id : null; }
 
-  // entry that has its own channelData uses its own id. This used to fall back
+  const allChannels = [];
 
-  // to the parent server key for a couple of seeded sub-channels, which made
+  let favorites = [];
 
-  // the orb column show the wrong name on join.
-
-  function vcChannelKey(vc){
-
-    if (!vc) return null;
-
-    return vc.id;
-
-  }
-
-  const allChannels = ['orbit','endurance','solaris','glacius','verdant','inferno','gargantua','miller','coop'];
-
-  let favorites = ['orbit','endurance','solaris','glacius','verdant','inferno','gargantua'];
-
-  let marked = ['gargantua','miller','glacius','verdant'];
+  let marked = [];
 
   let inVoice = false;
 
@@ -5192,141 +5160,37 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   const userVolumes = {}; // userName -> 0-200 (%) volume; default 100
 
-  let isAdmin = true; // Cooper is admin (toggleable for demo)
+  // Whether the local user has admin powers in the *currently viewed* server.
+
+  // Recomputed by selectServer() and any place that switches `currentServer`.
+
+  let isAdmin = false;
 
   // ============== SERVERS ==============
 
-  // Each server has its own text channels & voice channels (with style) & admins & pinned
+  // Populated at runtime — either by the user creating a server, accepting an
 
-  const servers = {
+  // invite, or by hydrateFromBackend() once a real backend is connected.
 
-    endurance: {
+  // Shape of each entry:
 
-      id:'endurance', name:'ENDURANCE', initial:'E', desc:'Mission control for the Endurance crew. Coordinate jumps, share readings, debate gravity equations.',
+  //   { id, name, initial, desc, grad, glow, bannerC1, bannerC2, cover,
 
-      grad:'linear-gradient(135deg,#ec4899,#831843)', glow:'rgba(236,72,153,0.55)', bannerC1:'rgba(236,72,153,0.2)', bannerC2:'rgba(190,18,60,0.12)',
+  //     members:[], admins:[], textChannels:[{id,name,style,unread}],
 
-      cover:null, // user can paste an image data URL here
+  //     voiceChannels:[{id,name,style}],
 
-      members:['Cooper','Brand','TARS','CASE','Murph','Doyle','Romilly'],
+  //     pinned:{text,by,time}|null,
 
-      admins:['Cooper','Brand'],
+  //     categories:[{id,name,textChannels:[],voiceChannels:[]}],
 
-      textChannels:[
+  //     roles:[] (built lazily by ensureRoles()) }
 
-        { id:'general', name:'general', style:'glow', unread:3 },
+  const servers = {};
 
-        { id:'mission-log', name:'mission-log', style:'fire', unread:0 },
+  let myServers = [];
 
-        { id:'data-stream', name:'data-stream', style:'ice', unread:0 },
-
-        { id:'lounge', name:'lounge', style:'nature', unread:1 }
-
-      ],
-
-      voiceChannels:[
-
-        { id:'orbit', name:'ORBIT', style:'indigo' },
-
-        { id:'endurance-bridge', name:'BRIDGE', style:'pink' }
-
-      ],
-
-      pinned:{ text:'Crew briefing tomorrow 14:00 UTC. Bring all telemetry from Miller pass.', by:'Cooper', time:'2h ago' },
-
-      categories:[
-
-        { id:'cmd', name:'COMMAND CENTER', textChannels:['general','mission-log'], voiceChannels:['orbit'] },
-
-        { id:'ops', name:'OPERATIONS', textChannels:['data-stream','lounge'], voiceChannels:['endurance-bridge'] }
-
-      ]
-
-    },
-
-    cooper: {
-
-      id:'cooper', name:'COOPER', initial:'C', desc:'Cooper\'s personal hub. Casual chat, planet observations, and the occasional emergency.',
-
-      grad:'linear-gradient(135deg,#22c55e,#14532d)', glow:'rgba(34,197,94,0.55)', bannerC1:'rgba(34,197,94,0.18)', bannerC2:'rgba(185,28,74,0.1)',
-
-      cover:null,
-
-      members:['Cooper','Murph','Tom','Donald'],
-
-      admins:['Cooper'],
-
-      textChannels:[
-
-        { id:'general', name:'general', style:'nature', unread:0 },
-
-        { id:'farm-log', name:'farm-log', style:'gold', unread:0 }
-
-      ],
-
-      voiceChannels:[
-
-        { id:'cooper-talk', name:'TALK', style:'green' }
-
-      ],
-
-      pinned:{ text:'Welcome to my hub. Pull up a chair, watch the corn grow.', by:'Cooper', time:'1d ago' },
-
-      categories:[
-
-        { id:'home', name:'THE FARM', textChannels:['general','farm-log'], voiceChannels:['cooper-talk'] }
-
-      ]
-
-    },
-
-    nexus: {
-
-      id:'nexus', name:'NEXUS', initial:'N', desc:'Official NEXUS broadcast hub. World announcements and legendary discoveries.',
-
-      grad:'linear-gradient(135deg,#fbbf24,#ec4899)', glow:'rgba(245,158,11,0.55)', bannerC1:'rgba(245,158,11,0.2)', bannerC2:'rgba(236,72,153,0.12)',
-
-      cover:null,
-
-      members:['NEXUS','Cooper','Brand','TARS','CASE','Murph','Doyle','Romilly','Mann','KIPP'],
-
-      admins:['NEXUS'],
-
-      textChannels:[
-
-        { id:'announcements', name:'announcements', style:'gold', unread:5 },
-
-        { id:'discoveries', name:'discoveries', style:'glow', unread:2 },
-
-        { id:'legendary', name:'legendary', style:'fire', unread:0 }
-
-      ],
-
-      voiceChannels:[
-
-        { id:'solaris', name:'SOLARIS', style:'gold' },
-
-        { id:'gargantua', name:'GARGANTUA', style:'purple' }
-
-      ],
-
-      pinned:{ text:'WORLD WAVE: New legendary orb "SOLARIS" discovered — first sighting in sector 7G!', by:'NEXUS', time:'42m ago' },
-
-      categories:[
-
-        { id:'broadcast', name:'BROADCAST DECK', textChannels:['announcements','discoveries'], voiceChannels:['solaris'] },
-
-        { id:'observatory', name:'OBSERVATORY', textChannels:['legendary'], voiceChannels:['gargantua'] }
-
-      ]
-
-    }
-
-  };
-
-  let myServers = ['endurance','cooper','nexus']; // ordered
-
-  let currentServer = null; // null = default world view
+  let currentServer = null;
 
   let homeRailOpen = false;
 
@@ -5368,21 +5232,15 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   const textStyles = ['glow','fire','ice','nature','gold'];
 
-  // Conversation state
+  // Conversation state. The only built-in entry is 'saved' (a private notes
+
+  // chat owned by the local user). Everything else is loaded from the backend
+
+  // or created when a friend request is accepted / a DM is opened.
 
   const conversations = {
 
-    saved:   { name:'Saved Messages', online:true, unread:0, avColor:'linear-gradient(135deg,#b91c4a,#7f1d1d)', initial:'★', handle:'@saved', bio:'Personal notes, bookmarks and forwarded messages — only you can see this.', stats:{posts:0,friends:0,orbits:0}, location:'PRIVATE', joined:'JUST NOW', lastSeen:'always', rank:'NOTES', orbColor:'#b91c4a', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#b91c4a 55%,#7f1d1d)', isSaved:true },
-
-    murph:   { name:'Murph',  online:true,  unread:3, avColor:'linear-gradient(135deg,#f472b6,#9d174d)', initial:'M', handle:'@murph_t', bio:'Daughter. Quantum theorist. Currently decoding the equation. Fifth-dimensional beings approve.', stats:{posts:204,friends:18,orbits:3}, location:'EARTH · NASA',joined:'OCT 2023', lastSeen:'just now', rank:'THEORIST', orbColor:'#f472b6', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#f472b6 55%,#9d174d)' },
-
-    brand:   { name:'Brand',  online:true,  unread:2, avColor:'linear-gradient(135deg,#818cf8,#581c87)', initial:'B', handle:'@brand_a', bio:'Biologist. Mission specialist. Love is the one thing that transcends time and space.', stats:{posts:87,friends:34,orbits:5}, location:'EDMUNDS PLANET', joined:'AUG 2023', lastSeen:'just now', rank:'SPECIALIST', orbColor:'#818cf8', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#818cf8 55%,#581c87)' },
-
-    tars:    { name:'TARS',   online:true,  unread:0, avColor:'linear-gradient(135deg,#22d3ee,#155e75)', initial:'T', handle:'@tars_unit', bio:'Robot. Honesty 90%. Humor 75%. Deploy slap when needed.', stats:{posts:512,friends:8,orbits:12}, location:'ENDURANCE', joined:'MAY 2023', lastSeen:'just now', rank:'AI UNIT', orbColor:'#22d3ee', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#22d3ee 55%,#155e75)' },
-
-    case:    { name:'CASE',   online:false, unread:0, avColor:'linear-gradient(135deg,#94a3b8,#334155)', initial:'C', handle:'@case_unit', bio:'Robot. Backup pilot. Quiet, reliable, prefers calm conditions.', stats:{posts:228,friends:12,orbits:6}, location:'GARGANTUA ORBIT', joined:'MAY 2023', lastSeen:'2h ago', rank:'AI UNIT', orbColor:'#94a3b8', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#94a3b8 55%,#334155)' },
-
-    doyle:   { name:'Doyle',  online:false, unread:0, avColor:'linear-gradient(135deg,#fbbf24,#92400e)', initial:'D', handle:'@doyle_w', bio:'Pilot. Engineer. Always says it\'s safer than it looks.', stats:{posts:46,friends:22,orbits:4}, location:'MILLER\'S PLANET', joined:'JAN 2024', lastSeen:'5h ago', rank:'PILOT', orbColor:'#fbbf24', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#fbbf24 55%,#92400e)' }
+    saved: { name:'Saved Messages', online:true, unread:0, avColor:'linear-gradient(135deg,#b91c4a,#7f1d1d)', initial:'★', handle:'@saved', bio:'Personal notes, bookmarks and forwarded messages — only you can see this.', stats:{posts:0,friends:0,orbits:0}, location:'PRIVATE', joined:'JUST NOW', lastSeen:'always', rank:'NOTES', orbColor:'#b91c4a', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#b91c4a 55%,#7f1d1d)', isSaved:true }
 
   };
 
@@ -5470,53 +5328,23 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   let activeWorldFilter = 'all';
 
-  // Marked friends (DM key list) and marked text channels (server__channelId)
+  // Marked friends (DM key list) and marked text channels (server__channelId).
 
-  let markedFriends = ['murph','brand'];
+  // Empty by default — populated as the user marks friends/channels.
 
-  let markedTextChannels = ['endurance__general','endurance__lounge','nexus__announcements'];
+  let markedFriends = [];
+
+  let markedTextChannels = [];
 
   let markedPanelTab = 'friends';
 
-  // Notifications
+  // Notifications — populated by the backend / realtime channel.
 
-  let notifications = [
+  let notifications = [];
 
-    { id:1, type:'message', icon:'message-circle', iconCls:'', title:'Murph sent a transmission', desc:'"The data stream is back online — meet me on the channel"', time:'2m', unread:true },
+  // Friend requests (incoming + outgoing).
 
-    { id:2, type:'voice', icon:'phone', iconCls:'green', title:'Brand joined ORBIT', desc:'Voice channel · 4 members active', time:'12m', unread:true },
-
-    { id:3, type:'friend', icon:'user-plus', iconCls:'pink', title:'Doyle wants to be friends', desc:'Friend request awaiting your reply', time:'38m', unread:true },
-
-    { id:4, type:'discovery', icon:'sparkles', iconCls:'warn', title:'LEGENDARY orb SOLARIS discovered', desc:'First sighting in sector 7G — view in codex', time:'42m', unread:true },
-
-    { id:5, type:'mention', icon:'at-sign', iconCls:'warn', title:'Case mentioned you', desc:'in #endurance · "@cooper check the gravity readings"', time:'1h', unread:false },
-
-    { id:6, type:'image', icon:'image', iconCls:'', title:'TARS shared an image', desc:'station-blueprint-v2.png', time:'3h', unread:false }
-
-  ];
-
-  // Friend requests (incoming + outgoing)
-
-  let friendRequests = {
-
-    incoming: [
-
-      { id:1, name:'Doyle',   handle:'@doyle_w',  initial:'D', avColor:'linear-gradient(135deg,#fbbf24,#92400e)', meta:'4 mutual · 38m ago' },
-
-      { id:2, name:'Mann',    handle:'@dr_mann',  initial:'M', avColor:'linear-gradient(135deg,#f87171,#7f1d1d)', meta:'2 mutual · 2h ago' },
-
-      { id:3, name:'KIPP',    handle:'@kipp_unit',initial:'K', avColor:'linear-gradient(135deg,#94a3b8,#334155)', meta:'7 mutual · yesterday' }
-
-    ],
-
-    outgoing: [
-
-      { id:101, name:'Romilly', handle:'@romilly_p', initial:'R', avColor:'linear-gradient(135deg,#60a5fa,#1e3a8a)', meta:'sent 1h ago' }
-
-    ]
-
-  };
+  let friendRequests = { incoming:[], outgoing:[] };
 
   // ============== UNIFIED FRIENDS DATABASE ==============
 
@@ -5524,13 +5352,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   // home online-friends row, settings panes, and DM messaging gates all read
 
-  // from this one set so the lists never drift apart.
+  // from this one set so the lists never drift apart. Empty until the backend
 
-  // Demo friends. Doyle/Mann/KIPP intentionally excluded — they're seeded as
+  // hydrates it (or the user accepts a friend request).
 
-  // incoming friend requests below, so they shouldn't show up as friends yet.
-
-  let friendsList = ['murph','brand','tars','case']; // ordered DM keys
+  let friendsList = [];
 
   function isFriend(key){ if (!key) return false; return friendsList.includes(key.toLowerCase()); }
 
@@ -5568,85 +5394,25 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   function writeFriendsOnly(on){ try { localStorage.setItem(FRIENDS_ONLY_KEY, on?'1':'0'); } catch(_){} }
 
-  // Conversation messages
+  // Conversation messages — keyed by conversation id. Saved Messages ships
+
+  // empty so the user can drop their first note. Real DM threads are loaded
+
+  // from the backend / appended as they arrive.
 
   const messages = {
 
-    saved: [
-
-      { id:'sv1', sender:'me', text:'Coordinates of the docking ring — keep these handy.', time:'NOW', day:'TODAY', status:'read' }
-
-    ],
-
-    murph: [
-
-      { id:'m1', sender:'them', text:'The data stream is back online.', time:'18:04', day:'TODAY', status:'read' },
-
-      { id:'m2', sender:'them', text:'Quantum equation just sent — check it.', time:'18:04', day:'TODAY', status:'read' },
-
-      { id:'m3', sender:'me',   text:'Got it. Decoding now.', time:'18:06', day:'TODAY', status:'read' },
-
-      { id:'m4', sender:'them', type:'image', src:'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 280"><defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="%236366f1"/><stop offset="1" stop-color="%23ec4899"/></linearGradient></defs><rect width="400" height="280" fill="url(%23g)"/><circle cx="120" cy="100" r="55" fill="%23fef3c7" opacity="0.85"/><circle cx="280" cy="160" r="35" fill="%23fff" opacity="0.6"/><text x="200" y="240" font-family="monospace" font-size="14" fill="white" text-anchor="middle">QUANTUM-DATA-04.PNG</text></svg>', caption:'Black hole interior — anomaly highlighted in cyan.', time:'18:08', day:'TODAY', status:'read' },
-
-      { id:'m5', sender:'me',   text:'Brilliant. Forwarding to TARS.', time:'18:10', day:'TODAY', status:'delivered' },
-
-      { id:'m6', sender:'them', text:'Stay safe out there, Dad.', time:'18:11', day:'TODAY', status:'read' }
-
-    ],
-
-    brand: [
-
-      { id:'b1', sender:'them', text:'The wave is coming. Get to the ship.', time:'09:22', day:'YESTERDAY', status:'read' },
-
-      { id:'b2', sender:'me',   text:'On my way.', time:'09:23', day:'YESTERDAY', status:'read' },
-
-      { id:'b3', sender:'them', text:'Are you back yet?', time:'17:41', day:'TODAY', status:'read' },
-
-      { id:'b4', sender:'them', text:'I need your readings.', time:'17:41', day:'TODAY', status:'read' }
-
-    ],
-
-    tars: [
-
-      { id:'t1', sender:'them', text:'Cue the dramatic music.', time:'14:00', day:'TODAY', status:'read' },
-
-      { id:'t2', sender:'me',   text:'Humor setting at 75%, TARS.', time:'14:01', day:'TODAY', status:'read' },
-
-      { id:'t3', sender:'them', text:'Acknowledged. Sarcasm level: high.', time:'14:01', day:'TODAY', status:'read' }
-
-    ],
-
-    case: [
-
-      { id:'c1', sender:'them', text:'All systems nominal.', time:'YESTERDAY', day:'YESTERDAY', status:'read' }
-
-    ],
-
-    doyle: [
-
-      { id:'d1', sender:'them', text:'The wave was bigger than we thought.', time:'2 DAYS AGO', day:'EARLIER', status:'read' }
-
-    ]
+    saved: []
 
   };
 
-  // World messages
+  // World feed (legacy — currently unused since the world page is empty when
 
-  let worldMessages = [
+  // the user is in no servers). Kept here so the forward-target logic still
 
-    { id:'w1', sender:'TARS', initial:'T', av:'linear-gradient(135deg,#22d3ee,#155e75)', role:'AI', roleCls:'bot', text:'Mission log: arrived at sector 7G. All systems nominal.', time:'19:02', cat:'news', reactions:{ '🤖':3, '👍':5 } },
+  // has a target to push to without crashing.
 
-    { id:'w3', sender:'NEXUS', initial:'N', av:'linear-gradient(135deg,#fbbf24,#ec4899)', role:'BROADCAST', roleCls:'legend', text:'WORLD WAVE: New legendary orb "SOLARIS" discovered!', time:'19:15', cat:'discovery', special:true, pinned:true, reactions:{ '🔥':24, '⭐':18, '🌟':12 } },
-
-    { id:'w4', sender:'Brand', initial:'B', av:'linear-gradient(135deg,#818cf8,#581c87)', role:'SPECIALIST', type:'image', src:'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 250"><defs><radialGradient id="g" cx="50%25" cy="50%25"><stop offset="0" stop-color="%23fef3c7"/><stop offset="0.5" stop-color="%23f59e0b"/><stop offset="1" stop-color="%23831843"/></radialGradient></defs><rect width="400" height="250" fill="%23030305"/><circle cx="200" cy="125" r="80" fill="url(%23g)"/><text x="200" y="225" font-family="monospace" font-size="11" fill="white" text-anchor="middle" opacity="0.6">SOLARIS — LEGENDARY</text></svg>', text:'First sighting of SOLARIS!', time:'19:18', cat:'media', reactions:{ '😍':14, '📸':9 } },
-
-    { id:'w5', sender:'Doyle', initial:'D', av:'linear-gradient(135deg,#fbbf24,#92400e)', role:'PILOT', text:'@cooper check the gravity readings on Miller\'s planet.', time:'19:20', cat:'mention', reactions:{ '👀':3 } },
-
-    { id:'w6', sender:'Romilly', initial:'R', av:'linear-gradient(135deg,#60a5fa,#1e3a8a)', role:'PHYSICIST', text:'Joining ORBIT voice channel — anyone want to discuss the equation?', time:'19:25', cat:'voice', reactions:{ '🎙':6 } },
-
-    { id:'w7', sender:'CASE', initial:'C', av:'linear-gradient(135deg,#94a3b8,#334155)', role:'AI', roleCls:'bot', text:'Backup pilot online. Standing by for orbit insertion commands.', time:'19:31', cat:'news', reactions:{} }
-
-  ];
+  let worldMessages = [];
 
   // ============== UNREAD COUNTS ==============
 
@@ -6512,7 +6278,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (currentServer) renderServerOverview();
 
-    showToast('Disconnected from '+channelData[lastChannel].name,'warn');
+    showToast('Disconnected from '+(channelData[lastChannel] ? channelData[lastChannel].name : 'voice channel'),'warn');
 
     stopSpeakingSimulation();
 
@@ -8206,21 +7972,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   // ============== ACTIVITY TIMELINE ==============
 
-  const activityFeed = [
+  // Populated by the backend (notifications stream). Empty by default.
 
-    { dot:'M', dotCls:'pink', title:'Murph sent you a transmission', desc:'"The data stream is back online..."', time:'2m', action:{type:'conv',id:'murph'} },
-
-    { dot:'B', dotCls:'green', title:'Brand joined ORBIT', desc:'Voice channel · 4 members now active', time:'12m', action:{type:'voice',id:'orbit'} },
-
-    { dot:'D', dotCls:'warm', title:'Doyle wants to be friends', desc:'Friend request pending your reply', time:'38m', action:{type:'requests'} },
-
-    { dot:'★', dotCls:'warm', title:'Legendary orb SOLARIS discovered', desc:'First sighting in sector 7G — visit codex', time:'42m', action:{type:'voice',id:'solaris'} },
-
-    { dot:'C', dotCls:'', title:'Case mentioned you in #endurance', desc:'"@cooper check the gravity readings"', time:'1h', action:{type:'conv',id:'case'} },
-
-    { dot:'T', dotCls:'pink', title:'TARS shared an image', desc:'station-blueprint-v2.png · 482 KB', time:'3h', action:{type:'conv',id:'tars'} }
-
-  ];
+  const activityFeed = [];
 
   function renderActivityTimeline(){
 
@@ -8653,6 +8407,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     // Make sure roles + perms are materialised before render so admin-only buttons appear.
 
     ensureRoles(s);
+
+    isAdmin = (s.admins||[]).includes(selfProfile.name);
 
     setServerView('main');
 
@@ -9982,23 +9738,31 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   // ============== PROFILE MODAL ==============
 
-  // Self profile (editable). Persisted in-memory only.
+  // Self profile (editable). Hydrated from the backend (or auth modal) on
+
+  // boot via applyProfileFromAuth() / resetSelfProfileForSignup(). The values
+
+  // here are placeholders only — they are visible for at most a frame before
+
+  // bootAuth() replaces them.
 
   const selfProfile = {
 
-    name:'Cooper', initial:'C',
+    name:'', initial:'?',
 
-    avColor:'linear-gradient(135deg,#22c55e,#15803d)',
+    avColor:'linear-gradient(135deg,#a78bfa,#1e1b4b)',
 
-    orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#22c55e 55%,#14532d)',
+    orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#a78bfa 55%,#1e1b4b)',
 
-    orbColor:'#4ade80',
+    orbColor:'#a78bfa',
 
     avImage:null,
 
-    handle:'@cooper', rank:'COMMANDER',
+    bannerImage:null,
 
-    bio:'Pilot. Father. Survivor.',
+    handle:'', rank:'EXPLORER',
+
+    bio:'',
 
     online:true, lastSeen:'just now'
 
@@ -10055,6 +9819,330 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     const sty = extraStyle ? (';'+extraStyle) : '';
 
     return '<div class="user-av'+cls+'" style="background:'+a.bg+sty+'">'+(a.isImage?'':escapeHtml(a.text))+'</div>';
+
+  }
+
+  // ============== BACKEND ADAPTER ==============
+
+  //
+
+  // Thin REST client that talks to the MySQL-backed API. Every place in the
+
+  // UI that mutates a piece of state (servers, channels, friend requests,
+
+  // messages, profile, etc.) calls into this module so we don't have to
+
+  // sprinkle fetch() everywhere.
+
+  //
+
+  // Configuration:
+
+  //   - BACKEND_BASE_URL  : where the API lives. Override with
+
+  //                         <meta name="orblood-api" content="https://...">
+
+  //                         in the page <head>, or set window.ORBLOOD_API.
+
+  //   - BACKEND_TOKEN_KEY : localStorage key holding the auth token returned
+
+  //                         by /auth/login or /auth/signup.
+
+  //
+
+  // Expected REST surface (shape only — pick your own routes when wiring up):
+
+  //   POST /auth/signup           {email,password,name,handle}     -> {token,user}
+
+  //   POST /auth/login            {email,password}                 -> {token,user}
+
+  //   GET  /me                                                      -> {user}
+
+  //   PATCH /me                   {name?,handle?,bio?,avImage?,bannerImage?,baseColor?,phone?,password?}
+
+  //   GET  /me/snapshot                                             -> full hydration payload
+
+  //   GET  /servers/:id                                             -> server detail
+
+  //   POST /servers               {name,desc,baseColor,grad,glow}   -> server
+
+  //   PATCH /servers/:id          {...}                             -> server
+
+  //   DELETE /servers/:id
+
+  //   POST /servers/:id/leave
+
+  //   POST /servers/:id/categories         {name}                   -> category
+
+  //   DELETE /servers/:id/categories/:cid
+
+  //   POST /servers/:id/text-channels      {name,style,categoryId}  -> channel
+
+  //   DELETE /servers/:id/text-channels/:cid
+
+  //   POST /servers/:id/voice-channels     {name,style,categoryId}  -> channel
+
+  //   DELETE /servers/:id/voice-channels/:cid
+
+  //   POST /servers/:id/voice-channels/:cid/join
+
+  //   POST /servers/:id/voice-channels/:cid/leave
+
+  //   GET  /dms/:peerKey                                            -> [messages]
+
+  //   POST /dms/:peerKey                   {text,replyTo?,attachment?}  -> message
+
+  //   POST /dms/:peerKey/clear
+
+  //   POST /friends/request                {handleOrEmail}          -> request
+
+  //   POST /friends/:reqId/accept
+
+  //   POST /friends/:reqId/reject
+
+  //   DELETE /friends/:reqId
+
+  //   POST /friends/:userId/remove
+
+  //   POST /users/:userId/block
+
+  //   POST /users/:userId/unblock
+
+  //
+
+  // The Hydration payload (GET /me/snapshot) is what initially fills the
+
+  // in-memory state so the rest of the UI works unchanged. See
+
+  // hydrateFromBackend() below for the exact shape.
+
+  const BACKEND_TOKEN_KEY = 'orblood_token_v1';
+
+  function _backendBase(){
+
+    if (typeof window !== 'undefined' && window.ORBLOOD_API) return String(window.ORBLOOD_API).replace(/\/$/, '');
+
+    const meta = document.querySelector('meta[name="orblood-api"]');
+
+    if (meta && meta.content) return meta.content.replace(/\/$/, '');
+
+    return '';
+
+  }
+
+  function _readToken(){ try { return localStorage.getItem(BACKEND_TOKEN_KEY) || null; } catch(_){ return null; } }
+
+  function _writeToken(t){ try { if (t) localStorage.setItem(BACKEND_TOKEN_KEY, t); else localStorage.removeItem(BACKEND_TOKEN_KEY); } catch(_){} }
+
+  async function _apiRequest(method, path, body){
+
+    const base = _backendBase();
+
+    if (!base) return { offline:true };
+
+    const headers = { 'Content-Type':'application/json', 'Accept':'application/json' };
+
+    const tok = _readToken(); if (tok) headers['Authorization'] = 'Bearer '+tok;
+
+    let res;
+
+    try {
+
+      res = await fetch(base + path, { method, headers, body: body ? JSON.stringify(body) : undefined, credentials:'include' });
+
+    } catch (e){
+
+      console.warn('[orblood] backend unreachable for '+method+' '+path, e);
+
+      return { offline:true, error:e };
+
+    }
+
+    let data = null;
+
+    try { data = await res.json(); } catch(_){ data = null; }
+
+    if (!res.ok){
+
+      const err = (data && data.error) || res.statusText;
+
+      console.warn('[orblood] backend error '+res.status+' on '+method+' '+path+': '+err);
+
+      return { error:err, status:res.status, data };
+
+    }
+
+    return data || {};
+
+  }
+
+  const backend = {
+
+    isConfigured(){ return !!_backendBase(); },
+
+    token: { read:_readToken, write:_writeToken },
+
+    auth: {
+
+      signup: payload => _apiRequest('POST', '/auth/signup', payload),
+
+      login:  payload => _apiRequest('POST', '/auth/login',  payload),
+
+      logout: ()      => _apiRequest('POST', '/auth/logout'),
+
+      me:     ()      => _apiRequest('GET',  '/me')
+
+    },
+
+    me: {
+
+      patch: patch    => _apiRequest('PATCH', '/me', patch),
+
+      snapshot: ()    => _apiRequest('GET',   '/me/snapshot')
+
+    },
+
+    servers: {
+
+      create:  payload      => _apiRequest('POST',   '/servers', payload),
+
+      patch:   (id, p)      => _apiRequest('PATCH',  '/servers/'+encodeURIComponent(id), p),
+
+      remove:  id           => _apiRequest('DELETE', '/servers/'+encodeURIComponent(id)),
+
+      leave:   id           => _apiRequest('POST',   '/servers/'+encodeURIComponent(id)+'/leave'),
+
+      addCategory: (sid, p) => _apiRequest('POST',   '/servers/'+encodeURIComponent(sid)+'/categories', p),
+
+      delCategory: (sid, c) => _apiRequest('DELETE', '/servers/'+encodeURIComponent(sid)+'/categories/'+encodeURIComponent(c)),
+
+      addTextChannel:  (sid, p) => _apiRequest('POST',   '/servers/'+encodeURIComponent(sid)+'/text-channels',  p),
+
+      delTextChannel:  (sid, c) => _apiRequest('DELETE', '/servers/'+encodeURIComponent(sid)+'/text-channels/'+encodeURIComponent(c)),
+
+      addVoiceChannel: (sid, p) => _apiRequest('POST',   '/servers/'+encodeURIComponent(sid)+'/voice-channels', p),
+
+      delVoiceChannel: (sid, c) => _apiRequest('DELETE', '/servers/'+encodeURIComponent(sid)+'/voice-channels/'+encodeURIComponent(c)),
+
+      voiceJoin:  (sid, c) => _apiRequest('POST', '/servers/'+encodeURIComponent(sid)+'/voice-channels/'+encodeURIComponent(c)+'/join'),
+
+      voiceLeave: (sid, c) => _apiRequest('POST', '/servers/'+encodeURIComponent(sid)+'/voice-channels/'+encodeURIComponent(c)+'/leave')
+
+    },
+
+    dms: {
+
+      list:   peer        => _apiRequest('GET',  '/dms/'+encodeURIComponent(peer)),
+
+      send:   (peer, p)   => _apiRequest('POST', '/dms/'+encodeURIComponent(peer), p),
+
+      clear:  peer        => _apiRequest('POST', '/dms/'+encodeURIComponent(peer)+'/clear'),
+
+      del:    (peer, mid) => _apiRequest('DELETE', '/dms/'+encodeURIComponent(peer)+'/'+encodeURIComponent(mid))
+
+    },
+
+    friends: {
+
+      request: handleOrEmail => _apiRequest('POST', '/friends/request', { target:handleOrEmail }),
+
+      accept:  rid => _apiRequest('POST',   '/friends/'+encodeURIComponent(rid)+'/accept'),
+
+      reject:  rid => _apiRequest('POST',   '/friends/'+encodeURIComponent(rid)+'/reject'),
+
+      cancel:  rid => _apiRequest('DELETE', '/friends/'+encodeURIComponent(rid)),
+
+      remove:  uid => _apiRequest('POST',   '/friends/'+encodeURIComponent(uid)+'/remove')
+
+    },
+
+    users: {
+
+      block:   uid => _apiRequest('POST', '/users/'+encodeURIComponent(uid)+'/block'),
+
+      unblock: uid => _apiRequest('POST', '/users/'+encodeURIComponent(uid)+'/unblock'),
+
+      lookup:  q   => _apiRequest('GET',  '/users/search?q='+encodeURIComponent(q))
+
+    }
+
+  };
+
+  // Pulls the entire app state from the backend in one round-trip and rebuilds
+
+  // every in-memory store. Safe to call after login / on reconnect.
+
+  async function hydrateFromBackend(){
+
+    if (!backend.isConfigured()) return false;
+
+    const snap = await backend.me.snapshot();
+
+    if (snap && snap.offline) return false;
+
+    if (!snap || snap.error) return false;
+
+    if (snap.user) applyProfileFromAuth(snap.user);
+
+    if (snap.servers && typeof snap.servers === 'object'){
+
+      Object.keys(servers).forEach(k => delete servers[k]);
+
+      Object.assign(servers, snap.servers);
+
+    }
+
+    if (Array.isArray(snap.myServers)) myServers = snap.myServers.slice();
+
+    if (snap.channelData && typeof snap.channelData === 'object'){
+
+      // Keep the built-in EMPTY placeholder; replace everything else.
+
+      Object.keys(channelData).forEach(k => { if (k !== '__empty__') delete channelData[k]; });
+
+      Object.assign(channelData, snap.channelData);
+
+    }
+
+    if (snap.conversations && typeof snap.conversations === 'object'){
+
+      Object.keys(conversations).forEach(k => { if (k !== 'saved') delete conversations[k]; });
+
+      Object.assign(conversations, snap.conversations);
+
+    }
+
+    if (snap.messages && typeof snap.messages === 'object'){
+
+      Object.keys(messages).forEach(k => delete messages[k]);
+
+      Object.assign(messages, snap.messages);
+
+      if (!messages.saved) messages.saved = [];
+
+    }
+
+    if (Array.isArray(snap.friendsList))  friendsList = snap.friendsList.slice();
+
+    if (Array.isArray(snap.markedFriends)) markedFriends = snap.markedFriends.slice();
+
+    if (Array.isArray(snap.markedTextChannels)) markedTextChannels = snap.markedTextChannels.slice();
+
+    if (Array.isArray(snap.marked))       marked = snap.marked.slice();
+
+    if (Array.isArray(snap.notifications)) notifications = snap.notifications.slice();
+
+    if (Array.isArray(snap.blockedUsers)){ blockedUsers.clear(); snap.blockedUsers.forEach(k => blockedUsers.add(k)); }
+
+    if (snap.friendRequests){
+
+      friendRequests.incoming = Array.isArray(snap.friendRequests.incoming) ? snap.friendRequests.incoming.slice() : [];
+
+      friendRequests.outgoing = Array.isArray(snap.friendRequests.outgoing) ? snap.friendRequests.outgoing.slice() : [];
+
+    }
+
+    return true;
 
   }
 
@@ -10204,35 +10292,19 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   // user sees themselves — not Cooper — as the owner / admin / channel member.
 
+  // No-op now that the demo "Cooper" persona has been removed from seed data.
+
+  // Kept as a stable hook so callers (bootAuth / signup / profile rename) can
+
+  // ask the runtime to swap any leftover references to the local user.
+
   function rebrandLocalUser(toName){
 
-    if (!toName || toName === 'Cooper') return;
-
-    const swap = arr => Array.isArray(arr) ? arr.map(x => x === 'Cooper' ? toName : x) : arr;
-
-    Object.values(servers).forEach(s => {
-
-      s.members = swap(s.members);
-
-      s.admins  = swap(s.admins);
-
-      if (s.pinned && s.pinned.by === 'Cooper') s.pinned.by = toName;
-
-      (s.categories||[]).forEach(cat => { if (cat.pinned && cat.pinned.by === 'Cooper') cat.pinned.by = toName; });
-
-      (s.roles||[]).forEach(r => { if (Array.isArray(r.members)) r.members = swap(r.members); });
-
-    });
-
-    // For voice channels we DROP 'Cooper' instead of renaming. Otherwise the
-
-    // local user appears as already-connected to a bunch of demo orbs before
-
-    // they have actually joined anything (and re-appears after disconnect).
+    if (!toName) return;
 
     Object.values(channelData).forEach(d => {
 
-      if (Array.isArray(d.users)) d.users = d.users.filter(x => x !== 'Cooper' && x !== toName);
+      if (Array.isArray(d.users)) d.users = d.users.filter(x => x !== toName);
 
     });
 
@@ -10253,6 +10325,32 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       refreshSelfAvatarsEverywhere();
 
       await runSplash('LOADING YOUR TRANSMISSIONS', 900);
+
+      // Pull the freshest copy of every store from the backend (servers, DMs,
+
+      // friends, marks, blocks). Falls through silently if no API is wired up.
+
+      if (await hydrateFromBackend()){
+
+        if (typeof renderHomeFriends === 'function') renderHomeFriends();
+
+        if (typeof renderHomeMyServers === 'function') renderHomeMyServers();
+
+        if (typeof renderHomeMarkedOrbits === 'function') renderHomeMarkedOrbits();
+
+        if (typeof renderDmList === 'function') renderDmList();
+
+        if (typeof renderMarkedPanel === 'function') renderMarkedPanel();
+
+        if (typeof renderFriendRequestsHome === 'function') renderFriendRequestsHome();
+
+        if (typeof renderOrbSlides === 'function') renderOrbSlides();
+
+        if (typeof renderServerRails === 'function') renderServerRails();
+
+        if (typeof updateBadges === 'function') updateBadges();
+
+      }
 
       return;
 
@@ -16344,7 +16442,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const h = new Date().getHours();
 
-    const name = (selfProfile.name || 'Cooper').toUpperCase();
+    const name = (selfProfile.name || 'EXPLORER').toUpperCase();
 
     let g = 'GOOD EVENING, '+name;
 
