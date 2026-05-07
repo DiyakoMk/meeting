@@ -1054,6 +1054,16 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .dm-head-sub.is-saved .ds-dot{display:none}
 
+.dm-compose-locked{display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;color:var(--t1);margin:0 14px 12px}
+
+.dm-compose-locked i{color:var(--warn);flex-shrink:0}
+
+.dm-compose-locked-text{flex:1;min-width:0;font-size:0.72rem;line-height:1.4}
+
+.dm-compose-locked-text b{display:block;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;letter-spacing:1.5px;color:var(--warn);margin-bottom:2px}
+
+.dm-compose-locked-text span{color:var(--t2)}
+
 .dm-head-actions{display:flex;align-items:center;gap:4px}
 
 .dm-head-actions .ph-icon-btn{width:30px;height:30px}
@@ -1143,6 +1153,78 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .settings-tab.active{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent}
 
 .settings-pane{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+
+/* Two-column layout for the user settings modal — mirrors the roles modal. */
+
+#profileModal.is-editing{max-width:780px;width:96vw;max-height:88vh}
+
+#profileModal.is-editing .profile-edit{flex:1;flex-direction:row;gap:0;overflow:hidden;min-height:0}
+
+.settings-side{width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--gb);padding:12px 8px;overflow-y:auto}
+
+.settings-side-h{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;letter-spacing:1.5px;color:var(--t3);padding:4px 8px 8px}
+
+.settings-side-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all 0.15s;border:1px solid transparent;color:var(--t2);font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1.2px}
+
+.settings-side-item i{width:13px;height:13px;flex-shrink:0}
+
+.settings-side-item:hover{background:rgba(255,255,255,0.04);color:var(--t1)}
+
+.settings-side-item.active{background:rgba(185,28,74,0.16);border-color:rgba(185,28,74,0.3);color:#fff}
+
+.settings-side-item .badge{margin-left:auto;font-size:0.5rem;padding:1px 6px;border-radius:6px;background:var(--accent);color:#fff;font-weight:700}
+
+.settings-content{flex:1;min-width:0;display:flex;flex-direction:column;overflow-y:auto}
+
+.settings-content > .settings-pane{display:none}
+
+.settings-content > .settings-pane.active{display:flex}
+
+@media (max-width:760px){
+
+  #profileModal.is-editing .profile-edit{flex-direction:column}
+
+  .settings-side{width:100%;border-right:none;border-bottom:1px solid var(--gb);flex-direction:row;overflow-x:auto;padding:8px}
+
+  .settings-side-h{display:none}
+
+  .settings-side-item{flex-shrink:0}
+
+}
+
+/* Friends panel inside settings */
+
+.fp-list{display:flex;flex-direction:column;gap:0;background:rgba(255,255,255,0.02);border:1px solid var(--gb);border-radius:10px;overflow:hidden}
+
+.fp-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s}
+
+.fp-row:last-child{border-bottom:none}
+
+.fp-row:hover{background:rgba(255,255,255,0.03)}
+
+.fp-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:600;color:#fff;border:1.5px solid rgba(255,255,255,0.1);flex-shrink:0;background-size:cover;background-position:center;position:relative}
+
+.fp-av .fp-status{position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:50%;background:var(--success);border:2px solid var(--bg)}
+
+.fp-av.offline .fp-status{background:var(--t3)}
+
+.fp-mid{flex:1;min-width:0}
+
+.fp-name{font-size:0.78rem;color:var(--t1);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.fp-meta{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.fp-actions{display:flex;gap:4px;flex-shrink:0}
+
+.fp-btn{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;background:rgba(255,255,255,0.04);color:var(--t2);border:1px solid var(--gb)}
+
+.fp-btn:hover{background:rgba(255,255,255,0.08);color:var(--t1)}
+
+.fp-btn.danger:hover{background:rgba(239,68,68,0.18);color:var(--danger);border-color:rgba(239,68,68,0.3)}
+
+.fp-btn.success:hover{background:rgba(34,197,94,0.18);color:var(--success);border-color:rgba(34,197,94,0.3)}
+
+.fp-empty{padding:20px;text-align:center;color:var(--t3);font-size:0.72rem;font-style:italic}
 
 .dm-block-banner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:36px 22px;text-align:center;color:var(--t2)}
 
@@ -3106,7 +3188,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
                 <h1 class="greet-h" id="greetGreeting">GOOD EVENING, COOPER</h1>
 
-                <p class="greet-sub">You have <b id="heroUnreadDM">5 unread transmissions</b>, <b id="heroReqs">3 friend requests</b>, and <b>1 legendary orb</b> just discovered.</p>
+                <p class="greet-sub">You have <b id="heroUnreadDM">0 unread transmissions</b>, <b id="heroReqs">0 friend requests</b>, and <b id="heroLegendary">0 legendary orbs</b> in view.</p>
 
               </div>
 
@@ -3114,13 +3196,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <div class="home-hero-stats">
 
-              <button class="hero-stat" data-action="dms"><div class="hero-stat-i"><i data-lucide="message-circle" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n" id="heroStatDM">5</div><div class="hero-stat-l">UNREAD</div></div></button>
+              <button class="hero-stat" data-action="dms"><div class="hero-stat-i"><i data-lucide="message-circle" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n" id="heroStatDM">0</div><div class="hero-stat-l">UNREAD</div></div></button>
 
-              <button class="hero-stat green" data-action="voice"><div class="hero-stat-i"><i data-lucide="orbit" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n">3</div><div class="hero-stat-l">LIVE ORBITS</div></div></button>
+              <button class="hero-stat green" data-action="voice"><div class="hero-stat-i"><i data-lucide="orbit" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n" id="heroStatLive">0</div><div class="hero-stat-l">LIVE ORBITS</div></div></button>
 
-              <button class="hero-stat pink" data-action="requests"><div class="hero-stat-i"><i data-lucide="user-plus" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n" id="heroStatReq">3</div><div class="hero-stat-l">REQUESTS</div></div></button>
+              <button class="hero-stat pink" data-action="requests"><div class="hero-stat-i"><i data-lucide="user-plus" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n" id="heroStatReq">0</div><div class="hero-stat-l">REQUESTS</div></div></button>
 
-              <button class="hero-stat warn" data-action="codex"><div class="hero-stat-i"><i data-lucide="sparkles" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n">1</div><div class="hero-stat-l">LEGENDARY</div></div></button>
+              <button class="hero-stat warn" data-action="codex"><div class="hero-stat-i"><i data-lucide="sparkles" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n" id="heroStatLegendary">0</div><div class="hero-stat-l">LEGENDARY</div></div></button>
 
             </div>
 
@@ -3440,6 +3522,16 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
               </div>
 
+              <div class="dm-compose-locked" id="dmComposeLocked" style="display:none">
+
+                <i data-lucide="lock" style="width:13px;height:13px"></i>
+
+                <div class="dm-compose-locked-text"><b>ONLY FRIENDS</b><span id="dmComposeLockedSub">Send a friend request first to start chatting.</span></div>
+
+                <button class="sm-btn cancel" id="dmComposeFriendBtn" type="button"><i data-lucide="user-plus" style="width:11px;height:11px"></i>FRIEND</button>
+
+              </div>
+
               <input type="file" id="dmFileInput" accept="image/*" style="display:none" />
 
             </div>
@@ -3756,21 +3848,39 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         </div>
 
-        <!-- SETTINGS MODE (was Edit) -->
+        <!-- SETTINGS MODE — sidebar nav like the server roles modal -->
 
         <div class="smodal-body profile-edit" style="padding:0;gap:0">
 
-          <div class="settings-tabs">
+          <div class="settings-side">
 
-            <button class="settings-tab active" data-st-tab="profile" type="button"><i data-lucide="user" style="width:11px;height:11px"></i>PROFILE</button>
+            <div class="settings-side-h">SETTINGS</div>
 
-            <button class="settings-tab" data-st-tab="account" type="button"><i data-lucide="key-round" style="width:11px;height:11px"></i>ACCOUNT</button>
+            <button class="settings-side-item active" data-st-tab="profile" type="button"><i data-lucide="user"></i>Profile</button>
 
-            <button class="settings-tab" data-st-tab="notif" type="button"><i data-lucide="bell" style="width:11px;height:11px"></i>NOTIFS</button>
+            <button class="settings-side-item" data-st-tab="account" type="button"><i data-lucide="key-round"></i>Account</button>
+
+            <button class="settings-side-item" data-st-tab="privacy" type="button"><i data-lucide="shield-check"></i>Privacy</button>
+
+            <div class="settings-side-h" style="margin-top:8px">FRIENDS</div>
+
+            <button class="settings-side-item" data-st-tab="friends" type="button"><i data-lucide="users"></i>Friends<span class="badge" id="settingsFriendsCount" style="display:none">0</span></button>
+
+            <button class="settings-side-item" data-st-tab="incoming" type="button"><i data-lucide="user-plus"></i>Incoming<span class="badge" id="settingsIncomingCount" style="display:none">0</span></button>
+
+            <button class="settings-side-item" data-st-tab="pending" type="button"><i data-lucide="clock"></i>Pending<span class="badge" id="settingsPendingCount" style="display:none">0</span></button>
+
+            <button class="settings-side-item" data-st-tab="blocked" type="button"><i data-lucide="shield-off"></i>Blocked<span class="badge" id="settingsBlockedCount" style="display:none">0</span></button>
+
+            <div class="settings-side-h" style="margin-top:8px">SYSTEM</div>
+
+            <button class="settings-side-item" data-st-tab="notif" type="button"><i data-lucide="bell"></i>Notifications</button>
 
           </div>
 
-          <div class="settings-pane" data-st-pane="profile">
+          <div class="settings-content">
+
+          <div class="settings-pane active" data-st-pane="profile">
 
             <div class="sm-field" style="align-items:center;text-align:center">
 
@@ -3868,7 +3978,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           </div>
 
-          <div class="settings-pane" data-st-pane="account" style="display:none">
+          <div class="settings-pane" data-st-pane="account">
 
             <div class="sm-field">
 
@@ -3904,7 +4014,69 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           </div>
 
-          <div class="settings-pane" data-st-pane="notif" style="display:none">
+          <div class="settings-pane" data-st-pane="privacy">
+
+            <div class="sm-field">
+
+              <label class="sm-label">DIRECT MESSAGES</label>
+
+              <label class="vs-toggle"><input type="checkbox" id="privFriendsOnly" /> Only friends can send me messages</label>
+
+              <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">When enabled, anyone who is not on your friends list will see a locked compose box and have to send a friend request first.</div>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="friends">
+
+            <div class="sm-field">
+
+              <label class="sm-label">YOUR FRIENDS</label>
+
+              <div class="fp-list" id="settingsFriendsList"></div>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="incoming">
+
+            <div class="sm-field">
+
+              <label class="sm-label">INCOMING REQUESTS</label>
+
+              <div class="fp-list" id="settingsIncomingList"></div>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="pending">
+
+            <div class="sm-field">
+
+              <label class="sm-label">SENT REQUESTS</label>
+
+              <div class="fp-list" id="settingsPendingList"></div>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="blocked">
+
+            <div class="sm-field">
+
+              <label class="sm-label">BLOCKED USERS</label>
+
+              <div class="fp-list" id="settingsBlockedList"></div>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="notif">
 
             <div class="sm-field">
 
@@ -3921,6 +4093,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
               <label class="vs-toggle"><input type="checkbox" id="notifFriends" checked /> Friend requests</label>
 
             </div>
+
+          </div>
 
           </div>
 
@@ -5316,6 +5490,52 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   };
 
+  // ============== UNIFIED FRIENDS DATABASE ==============
+
+  // Single source of truth for "is this person a friend of mine". Conversations,
+
+  // home online-friends row, settings panes, and DM messaging gates all read
+
+  // from this one set so the lists never drift apart.
+
+  let friendsList = ['murph','brand','tars','case','doyle']; // ordered DM keys
+
+  function isFriend(key){ if (!key) return false; return friendsList.includes(key.toLowerCase()); }
+
+  function addFriend(key){
+
+    if (!key) return;
+
+    const k = key.toLowerCase();
+
+    if (!friendsList.includes(k)) friendsList.push(k);
+
+  }
+
+  function removeFriend(key){
+
+    if (!key) return;
+
+    const k = key.toLowerCase();
+
+    friendsList = friendsList.filter(x => x !== k);
+
+    // Also drop them from marked friends and DM list ordering hints, but keep
+
+    // their conversation around so message history isn't lost.
+
+    if (typeof markedFriends !== 'undefined'){ markedFriends = markedFriends.filter(x => x !== k); }
+
+  }
+
+  // User-controlled gate: only friends can DM me. Persisted across sessions.
+
+  const FRIENDS_ONLY_KEY = 'orblood_friends_only_v1';
+
+  function readFriendsOnly(){ try { return localStorage.getItem(FRIENDS_ONLY_KEY) === '1'; } catch(_){ return false; } }
+
+  function writeFriendsOnly(on){ try { localStorage.setItem(FRIENDS_ONLY_KEY, on?'1':'0'); } catch(_){} }
+
   // Conversation messages
 
   const messages = {
@@ -5430,13 +5650,39 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (dmTabUnread){ dmTabUnread.textContent = totU; dmTabUnread.style.display = totU>0?'inline-block':'none'; }
 
+    // Live orbits = voice channels with at least one connected user that the
+
+    // user can actually see. Legendary = legendary-tier orbs visible in their
+
+    // marked carousel. Both are recomputed from the same source the rest of
+
+    // the UI uses, so the hero never drifts from the lists below it.
+
+    const visibleOrbs = (typeof getAllChannels === 'function')
+
+      ? getAllChannels().filter(k => k !== '__empty__')
+
+      : [];
+
+    const liveOrbits = visibleOrbs.filter(k => (channelData[k]?.users||[]).length > 0).length;
+
+    const legendaryCount = visibleOrbs.filter(k => channelData[k]?.tier === 'legendary').length;
+
+    const reqCount = friendRequests.incoming.length;
+
     const heroDM = document.getElementById('heroStatDM'); if (heroDM) heroDM.textContent = totU;
 
-    const heroReq = document.getElementById('heroStatReq'); if (heroReq) heroReq.textContent = friendRequests.incoming.length;
+    const heroReq = document.getElementById('heroStatReq'); if (heroReq) heroReq.textContent = reqCount;
+
+    const heroLive = document.getElementById('heroStatLive'); if (heroLive) heroLive.textContent = liveOrbits;
+
+    const heroLeg = document.getElementById('heroStatLegendary'); if (heroLeg) heroLeg.textContent = legendaryCount;
 
     const heroUnread = document.getElementById('heroUnreadDM'); if (heroUnread) heroUnread.textContent = totU + (totU===1?' unread transmission':' unread transmissions');
 
-    const heroR = document.getElementById('heroReqs'); if (heroR) heroR.textContent = friendRequests.incoming.length + (friendRequests.incoming.length===1?' friend request':' friend requests');
+    const heroR = document.getElementById('heroReqs'); if (heroR) heroR.textContent = reqCount + (reqCount===1?' friend request':' friend requests');
+
+    const heroLegSub = document.getElementById('heroLegendary'); if (heroLegSub) heroLegSub.textContent = legendaryCount + (legendaryCount===1?' legendary orb':' legendary orbs');
 
     const frIn = document.getElementById('frInCount'); if (frIn) frIn.textContent = friendRequests.incoming.length;
 
@@ -5534,7 +5780,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         let avBgExtra = '';
 
-        if (u === 'Cooper' && selfProfile.avImage){
+        if (u === selfProfile.name && selfProfile.avImage){
 
           avInner = '';
 
@@ -5672,7 +5918,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           if (av){
 
-            if (u === 'Cooper' && selfProfile.avImage){
+            if (u === selfProfile.name && selfProfile.avImage){
 
               av.textContent = '';
 
@@ -5723,6 +5969,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     updateOrbHud();
 
     updateMarkedSidebar();
+
+    if (typeof updateBadges === 'function') updateBadges();
 
   }
 
@@ -5852,7 +6100,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           if (seen.has(k) || !channelData[k]) return;
 
-          if (!memberCanSee(srv, 'Cooper', v)) return;
+          if (!memberCanSee(srv,selfProfile.name, v)) return;
 
           order.push(k); seen.add(k);
 
@@ -5896,7 +6144,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         data.users.forEach(u => {
 
-          if (u === 'Cooper') return;
+          if (u === selfProfile.name) return;
 
           const speaking = speakingUser === u;
 
@@ -6096,11 +6344,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     }
 
-    if (!channelData[ch].users.includes('Cooper')) channelData[ch].users = ['Cooper', ...channelData[ch].users];
+    if (!channelData[ch].users.includes(selfProfile.name)) channelData[ch].users = [selfProfile.name, ...channelData[ch].users];
 
     if (wasConnectedTo){
 
-      channelData[wasConnectedTo].users = channelData[wasConnectedTo].users.filter(u=>u!=='Cooper');
+      channelData[wasConnectedTo].users = channelData[wasConnectedTo].users.filter(u=>u!==selfProfile.name);
 
       showToast('Switched to '+channelData[ch].name,'success');
 
@@ -6146,7 +6394,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const ch = connectedChannel;
 
-    if (channelData[ch]) channelData[ch].users = channelData[ch].users.filter(u=>u!=='Cooper');
+    if (channelData[ch]) channelData[ch].users = channelData[ch].users.filter(u=>u!==selfProfile.name);
 
     inVoice = false;
 
@@ -6222,7 +6470,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (!inVoice || !connectedChannel) return;
 
-      const users = channelData[connectedChannel].users.filter(u=>u!=='Cooper' && !mutedUsersByMe.has(u));
+      const users = channelData[connectedChannel].users.filter(u=>u!==selfProfile.name && !mutedUsersByMe.has(u));
 
       if (users.length===0){ speakingUser = null; return; }
 
@@ -6430,6 +6678,60 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   }
 
+  // Friends-only compose gate. When the local user has the privacy toggle on
+
+  // and the current chat partner isn't a friend (and isn't Saved Messages),
+
+  // hide the compose box and show a locked banner with a Friend Request shortcut.
+
+  function syncDmComposeLock(){
+
+    const wrap   = document.getElementById('dmInputWrap');
+
+    const ibox   = document.getElementById('dmIbox');
+
+    const replyBar = document.getElementById('dmReplyBar');
+
+    const editBar  = document.getElementById('dmEditBar');
+
+    const attBar   = document.getElementById('dmAttachPreview');
+
+    const lockedEl = document.getElementById('dmComposeLocked');
+
+    if (!wrap || !ibox || !lockedEl) return;
+
+    const conv = conversations[currentConversation];
+
+    const isSaved = conv && conv.isSaved;
+
+    const restricted = readFriendsOnly() && currentConversation && !isSaved && !isFriend(currentConversation);
+
+    wrap.style.display = 'block';
+
+    if (restricted){
+
+      ibox.style.display = 'none';
+
+      if (replyBar) replyBar.style.display = 'none';
+
+      if (editBar) editBar.style.display = 'none';
+
+      if (attBar) attBar.style.display = 'none';
+
+      lockedEl.style.display = 'flex';
+
+    } else {
+
+      ibox.style.display = 'flex';
+
+      lockedEl.style.display = 'none';
+
+    }
+
+    refreshIcons();
+
+  }
+
   function renderConversation(){
 
     const msgsEl = document.getElementById('dmMsgs');
@@ -6463,6 +6765,10 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       return;
 
     }
+
+    // Reflect compose-box state for friends-only restriction.
+
+    syncDmComposeLock();
 
     let html = '';
 
@@ -6778,9 +7084,29 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!currentConversation) return;
 
+    // Reset message state. Wipe local stale UI bits (selection, pinned banner,
+
+    // bubble action popups) BEFORE re-rendering so we don't see ghost rows.
+
     messages[currentConversation] = [];
 
     dmPinnedByConv[currentConversation] = null;
+
+    if (typeof dmSelectedIds !== 'undefined') dmSelectedIds.clear();
+
+    if (typeof dmSelectMode !== 'undefined' && dmSelectMode) exitDmSelectMode();
+
+    if (typeof hideBubbleActions === 'function') hideBubbleActions();
+
+    cancelReply(); cancelEdit(); clearDmAttach();
+
+    // Clear the rendered list directly so even if a downstream render is async,
+
+    // the user sees "empty" the instant they confirm.
+
+    const msgsEl = document.getElementById('dmMsgs');
+
+    if (msgsEl) msgsEl.innerHTML = '';
 
     renderConversation();
 
@@ -7028,6 +7354,14 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (isBlocked(currentConversation)){ showToast('You blocked this user. Unblock to send messages.','warn'); return; }
 
+    const conv = conversations[currentConversation];
+
+    if (readFriendsOnly() && conv && !conv.isSaved && !isFriend(currentConversation)){
+
+      showToast('Only friends can be messaged. Send a friend request first.','warn'); return;
+
+    }
+
     const inp = document.getElementById('dmInput');
 
     const text = inp.value.trim();
@@ -7142,7 +7476,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const time = nowTime();
 
-    const msg = { id:uid(), sender:'Cooper', initial:'C', av:'linear-gradient(135deg,#22c55e,#15803d)', role:'COMMANDER', time, special:false, cat:'news', reactions:{} };
+    const msg = { id:uid(), sender:selfProfile.name, initial:selfProfile.initial, av:selfProfile.avColor||'linear-gradient(135deg,#22c55e,#15803d)', role:selfProfile.rank||'COMMANDER', time, special:false, cat:'news', reactions:{} };
 
     if (worldAttachData){
 
@@ -7392,9 +7726,21 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const row = document.getElementById('homeFriendsRow');
 
-    const onlineConvs = Object.entries(conversations).filter(([k,c])=>c.online && !isBlocked(k));
-
     const inVoiceUsers = inVoice && connectedChannel ? channelData[connectedChannel].users : [];
+
+    // Pull from the unified friends database. Show online friends first, then
+
+    // offline friends, skipping blocked ones.
+
+    const friendEntries = friendsList
+
+      .map(k => [k, conversations[k]])
+
+      .filter(([k,c]) => c && !isBlocked(k));
+
+    const online  = friendEntries.filter(([_,c]) => c.online);
+
+    const offline = friendEntries.filter(([_,c]) => !c.online);
 
     let html = '';
 
@@ -7402,7 +7748,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     html += '<div class="friend-bubble add" id="addFriendBtn"><div class="friend-bubble-av"><i data-lucide="user-plus" style="width:18px;height:18px"></i></div><div class="friend-bubble-name">ADD</div></div>';
 
-    onlineConvs.forEach(([k,c])=>{
+    online.forEach(([k,c])=>{
 
       const isInVoice = inVoiceUsers.includes(c.name);
 
@@ -7410,7 +7756,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     });
 
-    Object.entries(conversations).filter(([k,c])=>!c.online && !isBlocked(k)).forEach(([k,c])=>{
+    offline.forEach(([k,c])=>{
 
       html += '<div class="friend-bubble" data-conv="'+k+'"><div class="friend-bubble-av offline" style="background:'+c.avColor+'"><span>'+c.initial+'</span><span class="fb-status"></span></div><div class="friend-bubble-name">'+escapeHtml(c.name)+'</div></div>';
 
@@ -7952,7 +8298,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       // We deliberately do NOT model 'Member' as a role - members without any role just get baseline access.
 
-      const owner = (s.admins && s.admins[0]) || 'Cooper';
+      const owner = (s.admins && s.admins[0]) || selfProfile.name;
 
       s.roles = [
 
@@ -7972,7 +8318,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!owner){
 
-      const ownerName = (s.admins && s.admins[0]) || 'Cooper';
+      const ownerName = (s.admins && s.admins[0]) || selfProfile.name;
 
       owner = { id:'owner', name:'Owner', color:'#fde68a', system:true, members:[ownerName], perms:Object.fromEntries(PERMISSIONS.map(p=>[p.key,true])) };
 
@@ -7984,7 +8330,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     owner.perms = Object.fromEntries(PERMISSIONS.map(p=>[p.key,true]));
 
-    if (!owner.members || owner.members.length !== 1) owner.members = [(owner.members && owner.members[0]) || (s.admins && s.admins[0]) || 'Cooper'];
+    if (!owner.members || owner.members.length !== 1) owner.members = [(owner.members && owner.members[0]) || (s.admins && s.admins[0]) || selfProfile.name];
 
     const ownerName = owner.members[0];
 
@@ -8068,7 +8414,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!found) return true; // unowned/default channels are public
 
-    return memberCanSee(found.server, 'Cooper', found.vc);
+    return memberCanSee(found.server, selfProfile.name, found.vc);
 
   }
 
@@ -8286,7 +8632,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     s.textChannels.forEach(tc => {
 
-      if (!memberCanSee(s,'Cooper',tc)) return;
+      if (!memberCanSee(s,selfProfile.name,tc)) return;
 
       const active = tc.id === currentTextChannel;
 
@@ -8462,7 +8808,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (pm){
 
-        const xBtn = (isAdmin && memberHasPerm(s,'Cooper','managePins')) ? '<button class="ws-pin-x" data-ch-pin-x="'+pm.id+'" title="Unpin"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
+        const xBtn = (isAdmin && memberHasPerm(s,selfProfile.name,'managePins')) ? '<button class="ws-pin-x" data-ch-pin-x="'+pm.id+'" title="Unpin"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
 
         html += '<div class="ws-cat-pin" style="margin-bottom:12px"><div class="ws-cat-pin-i"><i data-lucide="pin" style="width:11px;height:11px"></i></div><div class="ws-cat-pin-info"><div class="ws-cat-pin-l">PINNED · '+escapeHtml(tc.pinnedBy||'')+'</div><div class="ws-cat-pin-text">'+escapeHtml((pm.text||'(image)').slice(0,200))+'</div></div>'+xBtn+'</div>';
 
@@ -8486,7 +8832,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         const av = c ? c.avColor : 'linear-gradient(135deg,#6366f1,#1e1b4b)';
 
-        const isMine = m.user === 'Cooper';
+        const isMine = m.user === selfProfile.name;
 
         let replyPrev = '';
 
@@ -8554,7 +8900,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             (m.type !== 'image' && !m.deleted ? '<button class="ws-msg-act" data-ch-action="copy" data-ch-id="'+m.id+'" title="Copy"><i data-lucide="copy" style="width:12px;height:12px"></i></button>' : '') +
 
-            (isAdmin && memberHasPerm(s,'Cooper','managePins') && !m.deleted ? '<button class="ws-msg-act" data-ch-action="pin" data-ch-id="'+m.id+'" title="'+(tc.pinnedMsgId===m.id?'Unpin':'Pin')+'"><i data-lucide="pin" style="width:12px;height:12px;color:'+(tc.pinnedMsgId===m.id?'var(--warn)':'')+'"></i></button>' : '') +
+            (isAdmin && memberHasPerm(s,selfProfile.name,'managePins') && !m.deleted ? '<button class="ws-msg-act" data-ch-action="pin" data-ch-id="'+m.id+'" title="'+(tc.pinnedMsgId===m.id?'Unpin':'Pin')+'"><i data-lucide="pin" style="width:12px;height:12px;color:'+(tc.pinnedMsgId===m.id?'var(--warn)':'')+'"></i></button>' : '') +
 
             (isMine && !m.deleted ? '<button class="ws-msg-act danger" data-ch-action="delete" data-ch-id="'+m.id+'" title="Delete"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>' : '') +
 
@@ -8660,7 +9006,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     // Banner top-right action cluster: share for everyone; leave only for non-owners; settings only for admins.
 
-    const isOwnerHere = s.admins.includes('Cooper');
+    const isOwnerHere = s.admins.includes(selfProfile.name);
 
     html += '<div class="ws-banner-actions">';
 
@@ -8702,11 +9048,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         '</div>'+
 
-        (isAdmin && memberHasPerm(s,'Cooper','managePins') ? '<button class="ws-pin-add" data-srv-action="addpin"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
+        (isAdmin && memberHasPerm(s,selfProfile.name,'managePins') ? '<button class="ws-pin-add" data-srv-action="addpin"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
 
       '</div>';
 
-    } else if (isAdmin && memberHasPerm(s,'Cooper','managePins')){
+    } else if (isAdmin && memberHasPerm(s,selfProfile.name,'managePins')){
 
       html += '<div class="ws-pinned-box" style="opacity:0.7">'+
 
@@ -8726,13 +9072,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       html += '<div class="ws-cats-grid">';
 
-      const canManageCat = memberHasPerm(s,'Cooper','manageCategory');
+      const canManageCat = memberHasPerm(s,selfProfile.name,'manageCategory');
 
-      const canManageTc  = memberHasPerm(s,'Cooper','manageTextCh');
+      const canManageTc  = memberHasPerm(s,selfProfile.name,'manageTextCh');
 
       s.categories.forEach(cat => {
 
-        if (!memberCanSee(s,'Cooper',cat)) return;
+        if (!memberCanSee(s,selfProfile.name,cat)) return;
 
         const span = cat.span || 1;
 
@@ -8744,7 +9090,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         html += '<div class="ws-cat-h"><div class="ws-cat-h-name" data-cat-glow>'+escapeHtml(cat.name)+'</div>'+
 
-          (isAdmin && memberHasPerm(s,'Cooper','manageCategory') ? '<button class="ws-cat-del" data-cat-delete="'+cat.id+'" title="Delete category"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>' : '')+
+          (isAdmin && memberHasPerm(s,selfProfile.name,'manageCategory') ? '<button class="ws-cat-del" data-cat-delete="'+cat.id+'" title="Delete category"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>' : '')+
 
         '</div>';
 
@@ -8758,11 +9104,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             '<div class="ws-cat-pin-info"><div class="ws-cat-pin-l">CATEGORY PIN</div><div class="ws-cat-pin-text">'+escapeHtml(cat.pinned.text)+'</div></div>'+
 
-            (isAdmin && memberHasPerm(s,'Cooper','managePins') ? '<button class="ws-cat-pin-edit" data-cat-pin-edit="'+cat.id+'"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
+            (isAdmin && memberHasPerm(s,selfProfile.name,'managePins') ? '<button class="ws-cat-pin-edit" data-cat-pin-edit="'+cat.id+'"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
 
           '</div>';
 
-        } else if (isAdmin && memberHasPerm(s,'Cooper','managePins')){
+        } else if (isAdmin && memberHasPerm(s,selfProfile.name,'managePins')){
 
           html += '<button class="ws-cat-add-pin" data-cat-pin-edit="'+cat.id+'"><i data-lucide="pin" style="width:9px;height:9px"></i>ADD CATEGORY PIN</button>';
 
@@ -8780,9 +9126,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             if (!tc) return;
 
-            if (!memberCanSee(s,'Cooper',tc)) return;
+            if (!memberCanSee(s,selfProfile.name,tc)) return;
 
-            const tcDel = (isAdmin && memberHasPerm(s,'Cooper','manageTextCh')) ? '<span class="ws-cat-tc-del" data-tc-delete="'+tc.id+'" title="Delete channel"><i data-lucide="x" style="width:10px;height:10px"></i></span>' : '';
+            const tcDel = (isAdmin && memberHasPerm(s,selfProfile.name,'manageTextCh')) ? '<span class="ws-cat-tc-del" data-tc-delete="'+tc.id+'" title="Delete channel"><i data-lucide="x" style="width:10px;height:10px"></i></span>' : '';
 
             const tcDrag = canManageTc ? ' draggable="true"' : '';
 
@@ -8806,7 +9152,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             if (!vc) return;
 
-            if (!memberCanSee(s,'Cooper',vc)) return;
+            if (!memberCanSee(s,selfProfile.name,vc)) return;
 
             const style = voiceStyles[vc.style] || voiceStyles.indigo;
 
@@ -8854,7 +9200,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             }
 
-            const vcDel = (isAdmin && memberHasPerm(s,'Cooper','manageVoiceCh')) ? '<button class="ws-cat-vc-del" data-vc-delete="'+vc.id+'" title="Delete voice channel"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
+            const vcDel = (isAdmin && memberHasPerm(s,selfProfile.name,'manageVoiceCh')) ? '<button class="ws-cat-vc-del" data-vc-delete="'+vc.id+'" title="Delete voice channel"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
 
             html += '<div class="ws-cat-vc'+(isConn?' connected':'')+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
 
@@ -9180,7 +9526,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!inVoice){ showToast('You must be connected to a voice channel','warn'); return; }
 
-    if (userName === 'Cooper') return; // not yourself
+    if (userName === selfProfile.name) return; // not yourself
 
     if (channelKey !== connectedChannel){ showToast('You can only mute/manage members of the channel you are in','warn'); return; }
 
@@ -9216,7 +9562,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const ownerSrv = ownerInfo ? ownerInfo.server : null;
 
-    const canKick = ownerSrv ? memberHasPerm(ownerSrv, 'Cooper', 'kickFromVoice') : false;
+    const canKick = ownerSrv ? memberHasPerm(ownerSrv, selfProfile.name, 'kickFromVoice') : false;
 
     if (canKick){
 
@@ -9712,6 +10058,36 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   }
 
+  // Demo data ships with "Cooper" as the local user's stand-in. Once a real
+
+  // account name is known, rewrite every reference in the seeded data so the
+
+  // user sees themselves — not Cooper — as the owner / admin / channel member.
+
+  function rebrandLocalUser(toName){
+
+    if (!toName || toName === 'Cooper') return;
+
+    const swap = arr => Array.isArray(arr) ? arr.map(x => x === 'Cooper' ? toName : x) : arr;
+
+    Object.values(servers).forEach(s => {
+
+      s.members = swap(s.members);
+
+      s.admins  = swap(s.admins);
+
+      if (s.pinned && s.pinned.by === 'Cooper') s.pinned.by = toName;
+
+      (s.categories||[]).forEach(cat => { if (cat.pinned && cat.pinned.by === 'Cooper') cat.pinned.by = toName; });
+
+      (s.roles||[]).forEach(r => { if (Array.isArray(r.members)) r.members = swap(r.members); });
+
+    });
+
+    Object.values(channelData).forEach(d => { if (Array.isArray(d.users)) d.users = swap(d.users); });
+
+  }
+
   async function bootAuth(){
 
     const existing = readAuth();
@@ -9721,6 +10097,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       // Already signed in - skip the modal, just show a brief splash, hydrate profile.
 
       applyProfileFromAuth(existing);
+
+      rebrandLocalUser(selfProfile.name);
 
       refreshSelfAvatarsEverywhere();
 
@@ -9766,6 +10144,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       resetSelfProfileForSignup(user);
 
+      rebrandLocalUser(selfProfile.name);
+
       refreshSelfAvatarsEverywhere();
 
       hideAuthModal();
@@ -9789,6 +10169,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       writeAuth(user);
 
       applyProfileFromAuth(user);
+
+      rebrandLocalUser(selfProfile.name);
 
       refreshSelfAvatarsEverywhere();
 
@@ -10026,7 +10408,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!isSelf){
 
-      const shared = Object.values(servers).filter(srv => (srv.members||[]).includes('Cooper') && (srv.members||[]).includes(data.name));
+      const shared = Object.values(servers).filter(srv => (srv.members||[]).includes(selfProfile.name) && (srv.members||[]).includes(data.name));
 
       if (shared.length){
 
@@ -10076,9 +10458,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       // Reset to PROFILE tab whenever the modal opens fresh.
 
-      document.querySelectorAll('.settings-tab').forEach(t => t.classList.toggle('active', t.dataset.stTab === 'profile'));
+      setSettingsTab('profile');
 
-      document.querySelectorAll('[data-st-pane]').forEach(p => p.style.display = p.dataset.stPane === 'profile' ? 'flex' : 'none');
+      // Reflect the current friends-only setting on the privacy toggle.
+
+      const fo = document.getElementById('privFriendsOnly'); if (fo) fo.checked = readFriendsOnly();
+
+      renderFriendsLists();
 
     }
 
@@ -10122,6 +10508,174 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   }
 
+  // ============== SETTINGS · FRIEND PANELS ==============
+
+  function renderFriendsLists(){
+
+    renderSettingsFriends();
+
+    renderSettingsIncoming();
+
+    renderSettingsPending();
+
+    renderSettingsBlocked();
+
+    refreshIcons();
+
+  }
+
+  function setBadge(id, n){
+
+    const b = document.getElementById(id); if (!b) return;
+
+    b.textContent = n; b.style.display = n>0 ? '' : 'none';
+
+  }
+
+  function rowAvHtml(c){
+
+    const av = c.avImage
+
+      ? '<div class="fp-av'+(c.online?'':' offline')+'" style="background:#0a070f url('+c.avImage+') center/cover no-repeat"><span class="fp-status"></span></div>'
+
+      : '<div class="fp-av'+(c.online?'':' offline')+'" style="background:'+(c.avColor||'linear-gradient(135deg,#818cf8,#1e1b4b)')+'"><span>'+(c.initial||'?')+'</span><span class="fp-status"></span></div>';
+
+    return av;
+
+  }
+
+  function reqAvHtml(r){
+
+    return '<div class="fp-av offline" style="background:'+(r.avColor||'linear-gradient(135deg,#818cf8,#1e1b4b)')+'"><span>'+(r.initial||'?')+'</span></div>';
+
+  }
+
+  function renderSettingsFriends(){
+
+    const list = document.getElementById('settingsFriendsList'); if (!list) return;
+
+    const entries = friendsList.map(k => [k, conversations[k]]).filter(([_,c]) => c);
+
+    setBadge('settingsFriendsCount', entries.length);
+
+    if (!entries.length){ list.innerHTML = '<div class="fp-empty">No friends yet. Send a friend request to get started.</div>'; return; }
+
+    list.innerHTML = entries.map(([k,c]) =>
+
+      '<div class="fp-row" data-fp-key="'+k+'">'+
+
+        rowAvHtml(c)+
+
+        '<div class="fp-mid"><div class="fp-name">'+escapeHtml(c.name)+'</div><div class="fp-meta">'+escapeHtml(c.handle||'')+(c.online?' · online':' · offline')+'</div></div>'+
+
+        '<div class="fp-actions">'+
+
+          '<button class="fp-btn" data-fp-message="'+k+'" title="Message"><i data-lucide="message-circle" style="width:13px;height:13px"></i></button>'+
+
+          '<button class="fp-btn danger" data-fp-remove="'+k+'" title="Remove friend"><i data-lucide="user-x" style="width:13px;height:13px"></i></button>'+
+
+        '</div>'+
+
+      '</div>'
+
+    ).join('');
+
+  }
+
+  function renderSettingsIncoming(){
+
+    const list = document.getElementById('settingsIncomingList'); if (!list) return;
+
+    const items = friendRequests.incoming;
+
+    setBadge('settingsIncomingCount', items.length);
+
+    if (!items.length){ list.innerHTML = '<div class="fp-empty">No incoming friend requests.</div>'; return; }
+
+    list.innerHTML = items.map(r =>
+
+      '<div class="fp-row" data-fp-req="'+r.id+'">'+
+
+        reqAvHtml(r)+
+
+        '<div class="fp-mid"><div class="fp-name">'+escapeHtml(r.name)+'</div><div class="fp-meta">'+escapeHtml(r.handle||'')+' · '+escapeHtml(r.meta||'')+'</div></div>'+
+
+        '<div class="fp-actions">'+
+
+          '<button class="fp-btn success" data-fp-accept="'+r.id+'" title="Accept"><i data-lucide="check" style="width:13px;height:13px"></i></button>'+
+
+          '<button class="fp-btn danger" data-fp-reject="'+r.id+'" title="Reject"><i data-lucide="x" style="width:13px;height:13px"></i></button>'+
+
+        '</div>'+
+
+      '</div>'
+
+    ).join('');
+
+  }
+
+  function renderSettingsPending(){
+
+    const list = document.getElementById('settingsPendingList'); if (!list) return;
+
+    const items = friendRequests.outgoing;
+
+    setBadge('settingsPendingCount', items.length);
+
+    if (!items.length){ list.innerHTML = '<div class="fp-empty">No pending friend requests.</div>'; return; }
+
+    list.innerHTML = items.map(r =>
+
+      '<div class="fp-row" data-fp-out="'+r.id+'">'+
+
+        reqAvHtml(r)+
+
+        '<div class="fp-mid"><div class="fp-name">'+escapeHtml(r.name)+'</div><div class="fp-meta">'+escapeHtml(r.handle||'')+' · '+escapeHtml(r.meta||'')+'</div></div>'+
+
+        '<div class="fp-actions">'+
+
+          '<button class="fp-btn danger" data-fp-cancel="'+r.id+'" title="Cancel request"><i data-lucide="x" style="width:13px;height:13px"></i></button>'+
+
+        '</div>'+
+
+      '</div>'
+
+    ).join('');
+
+  }
+
+  function renderSettingsBlocked(){
+
+    const list = document.getElementById('settingsBlockedList'); if (!list) return;
+
+    const keys = Array.from(blockedUsers);
+
+    setBadge('settingsBlockedCount', keys.length);
+
+    if (!keys.length){ list.innerHTML = '<div class="fp-empty">No blocked users.</div>'; return; }
+
+    list.innerHTML = keys.map(k => {
+
+      const c = conversations[k] || { name:k, initial:k.charAt(0).toUpperCase(), avColor:'linear-gradient(135deg,#818cf8,#1e1b4b)', handle:'@'+k, online:false };
+
+      return '<div class="fp-row" data-fp-blocked="'+k+'">'+
+
+        rowAvHtml(c)+
+
+        '<div class="fp-mid"><div class="fp-name">'+escapeHtml(c.name)+'</div><div class="fp-meta">'+escapeHtml(c.handle||'')+'</div></div>'+
+
+        '<div class="fp-actions">'+
+
+          '<button class="fp-btn success" data-fp-unblock="'+k+'" title="Unblock"><i data-lucide="shield" style="width:13px;height:13px"></i></button>'+
+
+        '</div>'+
+
+      '</div>';
+
+    }).join('');
+
+  }
+
   function applyProfileEdit(){
 
     const name = document.getElementById('profileEditName').value.trim() || selfProfile.name;
@@ -10131,6 +10685,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     const handle = handleRaw ? '@'+handleRaw.toLowerCase().replace(/[^a-z0-9_]/g,'') : selfProfile.handle;
 
     const bio = document.getElementById('profileEditBio').value.trim() || selfProfile.bio;
+
+    const oldName = selfProfile.name;
 
     selfProfile.name = name;
 
@@ -10173,6 +10729,36 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     auth.baseColor = selfProfile.baseColor || null;
 
     writeAuth(auth);
+
+    // If the display name changed, propagate it everywhere the old one was used
+
+    // (server members/admins/pinned-by, voice channel users) so we don't leave
+
+    // stale references behind.
+
+    if (oldName && oldName !== name){
+
+      const swap = arr => Array.isArray(arr) ? arr.map(x => x === oldName ? name : x) : arr;
+
+      Object.values(servers).forEach(s => {
+
+        s.members = swap(s.members);
+
+        s.admins  = swap(s.admins);
+
+        if (s.pinned && s.pinned.by === oldName) s.pinned.by = name;
+
+        (s.categories||[]).forEach(cat => { if (cat.pinned && cat.pinned.by === oldName) cat.pinned.by = name; });
+
+        (s.roles||[]).forEach(r => { if (Array.isArray(r.members)) r.members = swap(r.members); });
+
+      });
+
+      Object.values(channelData).forEach(d => { if (Array.isArray(d.users)) d.users = swap(d.users); });
+
+      if (typeof renderServerOverview === 'function' && currentServer) renderServerOverview();
+
+    }
 
     cancelProfileEdit();
 
@@ -10284,7 +10870,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!ent){ showToast('That channel no longer exists','warn'); return; }
 
-    if (!memberCanSee(srv, 'Cooper', ent)){
+    if (!memberCanSee(srv,selfProfile.name, ent)){
 
       showToast('Restricted access - you do not have the required role','warn');
 
@@ -10512,7 +11098,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!memberHasPerm(s,'Cooper','manageRoles') && !memberHasPerm(s,'Cooper', target.type==='text'?'manageTextCh':target.type==='voice'?'manageVoiceCh':'manageCategory')){
+    if (!memberHasPerm(s,selfProfile.name,'manageRoles') && !memberHasPerm(s,selfProfile.name, target.type==='text'?'manageTextCh':target.type==='voice'?'manageVoiceCh':'manageCategory')){
 
       showToast('You do not have permission to edit this','warn'); return;
 
@@ -11016,7 +11602,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (!name){ showToast('Enter a category name','warn'); return; }
 
-      if (!memberHasPerm(s,'Cooper','manageCategory')){ showToast('You do not have permission to add categories','warn'); return; }
+      if (!memberHasPerm(s,selfProfile.name,'manageCategory')){ showToast('You do not have permission to add categories','warn'); return; }
 
       s.categories = s.categories || [];
 
@@ -11192,7 +11778,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         grad:p.grad, glow:p.glow, bannerC1:p.glow.replace('0.55','0.18'), bannerC2:'rgba(185,28,74,0.1)',
 
-        members:['Cooper'], admins:['Cooper'],
+        members:[selfProfile.name], admins:[selfProfile.name],
 
         textChannels:[ { id:uid(), name:'general', style:'glow', unread:0 } ],
 
@@ -11648,7 +12234,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!memberHasPerm(s,'Cooper','manageRoles')){ showToast('You do not have permission to manage roles','warn'); return; }
+    if (!memberHasPerm(s,selfProfile.name,'manageRoles')){ showToast('You do not have permission to manage roles','warn'); return; }
 
     ensureRoles(s);
 
@@ -11802,7 +12388,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!memberHasPerm(s,'Cooper','managePins')){ showToast('You do not have permission to pin messages','warn'); return; }
+    if (!memberHasPerm(s,selfProfile.name,'managePins')){ showToast('You do not have permission to pin messages','warn'); return; }
 
     pinModalTarget = { type:'server', catId:null };
 
@@ -11820,7 +12406,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!memberHasPerm(s,'Cooper','managePins')){ showToast('You do not have permission to pin messages','warn'); return; }
+    if (!memberHasPerm(s,selfProfile.name,'managePins')){ showToast('You do not have permission to pin messages','warn'); return; }
 
     const cat = s.categories && s.categories.find(c => c.id === catId);
 
@@ -11876,7 +12462,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer];
 
-    if (!s.admins.includes('Cooper')){ showToast('Only admins can edit identity','warn'); return; }
+    if (!s.admins.includes(selfProfile.name)){ showToast('Only admins can edit identity','warn'); return; }
 
     if (!s.inviteKey) s.inviteKey = 'NEX-'+Math.random().toString(36).slice(2,7).toUpperCase()+'-'+Math.random().toString(36).slice(2,7).toUpperCase();
 
@@ -12592,15 +13178,191 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   });
 
-  // Settings tabs + color picker + notif toggles
+  // Settings sidebar nav + color picker + notif toggles
 
-  document.querySelectorAll('.settings-tab').forEach(t => t.addEventListener('click', () => {
+  function setSettingsTab(tab){
 
-    document.querySelectorAll('.settings-tab').forEach(x => x.classList.toggle('active', x === t));
+    document.querySelectorAll('.settings-side-item').forEach(x => x.classList.toggle('active', x.dataset.stTab === tab));
 
-    document.querySelectorAll('[data-st-pane]').forEach(p => p.style.display = p.dataset.stPane === t.dataset.stTab ? 'flex' : 'none');
+    document.querySelectorAll('[data-st-pane]').forEach(p => p.classList.toggle('active', p.dataset.stPane === tab));
+
+    if (tab === 'friends' || tab === 'incoming' || tab === 'pending' || tab === 'blocked'){
+
+      renderFriendsLists();
+
+    }
+
+  }
+
+  document.querySelectorAll('.settings-side-item').forEach(t => t.addEventListener('click', () => {
+
+    setSettingsTab(t.dataset.stTab);
 
   }));
+
+  // Friend panel actions
+
+  document.getElementById('settingsFriendsList').addEventListener('click', e => {
+
+    const m = e.target.closest('[data-fp-message]'); if (m){ const k = m.dataset.fpMessage; closeProfile(); setPage('pageMessages'); openConversation(k); return; }
+
+    const r = e.target.closest('[data-fp-remove]');
+
+    if (r){
+
+      const k = r.dataset.fpRemove; const c = conversations[k]; const name = c?c.name:k;
+
+      appConfirm('Remove '+name+' from your friends list?', {title:'REMOVE FRIEND', confirmLabel:'REMOVE', danger:true}).then(ok => {
+
+        if (!ok) return;
+
+        removeFriend(k);
+
+        renderFriendsLists();
+
+        renderHomeFriends();
+
+        renderDmList();
+
+        renderMarkedPanel();
+
+        showToast(name+' removed from friends','warn');
+
+      });
+
+    }
+
+  });
+
+  document.getElementById('settingsIncomingList').addEventListener('click', e => {
+
+    const a = e.target.closest('[data-fp-accept]');
+
+    if (a){
+
+      const id = parseInt(a.dataset.fpAccept);
+
+      const r = friendRequests.incoming.find(x => x.id === id); if (!r) return;
+
+      const k = r.name.toLowerCase();
+
+      if (!conversations[k]){
+
+        conversations[k] = { name:r.name, online:false, unread:0, avColor:r.avColor, initial:r.initial, handle:r.handle, bio:'New friend.', stats:{posts:0,friends:1,orbits:0}, location:'UNKNOWN', joined:'NOW', lastSeen:'just now', rank:'EXPLORER', orbColor:'#818cf8', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#818cf8 55%,#1e1b4b)' };
+
+        messages[k] = [];
+
+      }
+
+      addFriend(k);
+
+      friendRequests.incoming = friendRequests.incoming.filter(x => x.id !== id);
+
+      renderFriendsLists();
+
+      renderHomeFriends();
+
+      renderDmList();
+
+      updateBadges();
+
+      showToast(r.name+' is now your friend','success');
+
+      return;
+
+    }
+
+    const j = e.target.closest('[data-fp-reject]');
+
+    if (j){
+
+      const id = parseInt(j.dataset.fpReject);
+
+      const r = friendRequests.incoming.find(x => x.id === id); if (!r) return;
+
+      friendRequests.incoming = friendRequests.incoming.filter(x => x.id !== id);
+
+      renderFriendsLists();
+
+      updateBadges();
+
+      showToast(r.name+' declined','warn');
+
+    }
+
+  });
+
+  document.getElementById('settingsPendingList').addEventListener('click', e => {
+
+    const c = e.target.closest('[data-fp-cancel]');
+
+    if (c){
+
+      const id = parseInt(c.dataset.fpCancel);
+
+      const r = friendRequests.outgoing.find(x => x.id === id); if (!r) return;
+
+      friendRequests.outgoing = friendRequests.outgoing.filter(x => x.id !== id);
+
+      renderFriendsLists();
+
+      showToast('Cancelled request to '+r.name,'warn');
+
+    }
+
+  });
+
+  document.getElementById('settingsBlockedList').addEventListener('click', e => {
+
+    const u = e.target.closest('[data-fp-unblock]');
+
+    if (u){
+
+      const k = u.dataset.fpUnblock;
+
+      unblockUser(k);
+
+      renderFriendsLists();
+
+      showToast('Unblocked','success');
+
+    }
+
+  });
+
+  // Privacy: friends-only DM toggle
+
+  document.getElementById('privFriendsOnly').addEventListener('change', e => {
+
+    writeFriendsOnly(!!e.target.checked);
+
+    if (currentConversation) renderConversation();
+
+    showToast(e.target.checked ? 'Friends-only messages enabled' : 'Friends-only messages disabled','success');
+
+  });
+
+  // Send friend request straight from the locked compose banner.
+
+  document.getElementById('dmComposeFriendBtn').addEventListener('click', () => {
+
+    if (!currentConversation) return;
+
+    const conv = conversations[currentConversation]; if (!conv) return;
+
+    if (isAlreadyFriend(currentConversation)){ showToast('Already friends','warn'); return; }
+
+    if (friendRequests.outgoing.some(r => r.name.toLowerCase() === currentConversation.toLowerCase())){ showToast('Friend request already pending','warn'); return; }
+
+    friendRequests.outgoing.push({ id:Date.now(), name:conv.name, handle:conv.handle, initial:conv.initial, avColor:conv.avColor, meta:'sent just now' });
+
+    renderFriendsLists();
+
+    if (typeof renderFriendRequestsHome === 'function') renderFriendRequestsHome();
+
+    showToast('Friend request sent to '+conv.name,'success');
+
+  });
 
   // Color picker streams 'input' events on every cursor move. Only update the
 
@@ -12700,9 +13462,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   });
 
-  // A user counts as 'already a friend' if they are a real conversation entry
+  // Friend-status check used by profile UI. Synthetic '__u_*' lookup keys
 
-  // (not saved, not a temporary lookup, not blocked).
+  // and saved/temp entries can never be friends.
 
   function isAlreadyFriend(key){
 
@@ -12714,7 +13476,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!conv || conv.isSaved || conv.isTemp) return false;
 
-    return true;
+    return isFriend(key);
 
   }
 
@@ -13422,7 +14184,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const s = servers[currentServer]; if (!s) return;
 
-    const canManageRoles = memberHasPerm(s,'Cooper','manageRoles');
+    const canManageRoles = memberHasPerm(s,selfProfile.name,'manageRoles');
 
     if (tcEl){
 
@@ -13442,7 +14204,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       ];
 
-      if (memberHasPerm(s,'Cooper','manageTextCh') || canManageRoles){
+      if (memberHasPerm(s,selfProfile.name,'manageTextCh') || canManageRoles){
 
         items.push({ sep:true });
 
@@ -13470,7 +14232,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       ];
 
-      if (memberHasPerm(s,'Cooper','manageVoiceCh') || canManageRoles){
+      if (memberHasPerm(s,selfProfile.name,'manageVoiceCh') || canManageRoles){
 
         items.push({ sep:true });
 
@@ -13492,7 +14254,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       const items = [];
 
-      if (memberHasPerm(s,'Cooper','manageCategory') || canManageRoles){
+      if (memberHasPerm(s,selfProfile.name,'manageCategory') || canManageRoles){
 
         items.push({ icon:'settings', label:'Category settings', action:()=>{ openChanSettings({type:'category', id:catId}); } });
 
@@ -13556,9 +14318,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         }
 
-        s.members = (s.members||[]).filter(m => m !== 'Cooper');
+        s.members = (s.members||[]).filter(m => m !== selfProfile.name);
 
-        s.admins = (s.admins||[]).filter(m => m !== 'Cooper');
+        s.admins = (s.admins||[]).filter(m => m !== selfProfile.name);
 
         purgeServerReferences(sid);
 
@@ -14080,11 +14842,15 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           messages[k] = [];
 
-          renderDmList();
-
-          renderHomeFriends();
-
         }
+
+        addFriend(k);
+
+        renderDmList();
+
+        renderHomeFriends();
+
+        if (typeof renderFriendsLists === 'function') renderFriendsLists();
 
         friendRequests.incoming = friendRequests.incoming.filter(x=>x.id!==id);
 
@@ -15160,11 +15926,15 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         messages[k] = [];
 
-        renderDmList();
-
-        renderHomeFriends();
-
       }
+
+      addFriend(k);
+
+      renderDmList();
+
+      renderHomeFriends();
+
+      if (typeof renderFriendsLists === 'function') renderFriendsLists();
 
     } else { showToast(r.name+' declined','warn'); }
 
