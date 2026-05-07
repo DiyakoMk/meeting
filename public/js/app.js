@@ -14137,5 +14137,97 @@
 
   }, 9000);
 
+  (function setupAsyncButtonUI(){
+
+    const ARM_WINDOW_MS = 80;
+
+    const MIN_VISIBLE_MS = 220;
+
+    let armedBtn = null;
+
+    let armedAt = 0;
+
+    const startedAt = new WeakMap();
+
+    function startBtnLoading(btn){
+
+      if (!btn || btn.classList.contains('is-loading')) return;
+
+      btn.classList.add('is-loading');
+
+      btn.setAttribute('aria-busy','true');
+
+      startedAt.set(btn, performance.now());
+
+    }
+
+    function stopBtnLoading(btn){
+
+      if (!btn || !btn.classList.contains('is-loading')) return;
+
+      const elapsed = performance.now() - (startedAt.get(btn) || 0);
+
+      const wait = Math.max(0, MIN_VISIBLE_MS - elapsed);
+
+      setTimeout(()=>{
+
+        btn.classList.remove('is-loading');
+
+        btn.removeAttribute('aria-busy');
+
+      }, wait);
+
+    }
+
+    window.startBtnLoading = startBtnLoading;
+
+    window.stopBtnLoading = stopBtnLoading;
+
+    document.addEventListener('click', (e)=>{
+
+      const btn = e.target && e.target.closest && e.target.closest('button, .sm-btn, .ph-icon-btn, .ob, .ob-empty-btn, .auth-tab, [role="button"]');
+
+      if (!btn || btn.disabled) return;
+
+      armedBtn = btn;
+
+      armedAt = performance.now();
+
+      setTimeout(()=>{ if (armedBtn === btn && performance.now() - armedAt >= ARM_WINDOW_MS) armedBtn = null; }, ARM_WINDOW_MS + 5);
+
+    }, true);
+
+    const origFetch = window.fetch.bind(window);
+
+    window.fetch = function(...args){
+
+      let trackedBtn = null;
+
+      if (armedBtn && performance.now() - armedAt < ARM_WINDOW_MS){
+
+        trackedBtn = armedBtn;
+
+        armedBtn = null;
+
+        startBtnLoading(trackedBtn);
+
+      }
+
+      const p = origFetch(...args);
+
+      if (trackedBtn){
+
+        const release = ()=>{ stopBtnLoading(trackedBtn); };
+
+        p.then(release, release);
+
+      }
+
+      return p;
+
+    };
+
+  })();
+
 })();
 

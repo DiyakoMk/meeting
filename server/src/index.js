@@ -38,6 +38,12 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const uploadsAbs = path.resolve(here, '..', config.uploads.dir.replace(/^\.\//, ''));
 app.use(config.uploads.publicBase, express.static(uploadsAbs));
 
+// Serve the static frontend from the same origin so the SPA can call /api
+// without CORS. In production nginx does this; this fallback is for
+// dev/preview deployments where the backend is the only public process.
+const publicDir = path.resolve(here, '..', '..', 'public');
+app.use(express.static(publicDir));
+
 // Bearer-token decoder runs on every request.
 app.use(attachUser);
 
@@ -53,8 +59,9 @@ app.use('/api/friends',  friendsRouter);
 app.use('/api/users',    usersRouter);
 app.use('/api/uploads',  uploadsRouter);
 
-// 404
-app.use((_req, res) => res.status(404).json({ error: 'not_found' }));
+// 404 — JSON for API routes, fallback to SPA index.html for everything else.
+app.use('/api', (_req, res) => res.status(404).json({ error: 'not_found' }));
+app.use((_req, res) => res.sendFile(path.join(publicDir, 'index.html')));
 
 // Error handler
 app.use((err, _req, res, _next) => {
