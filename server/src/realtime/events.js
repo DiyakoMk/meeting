@@ -82,3 +82,22 @@ export async function emitServerChannelDeleted(serverId, channelKind, channelId)
   const uids = await serverMemberUids(serverId);
   sendToServer(uids, { type: 'server:channel-deleted', serverId, channelKind, channelId });
 }
+
+// Generic "the server just changed" — used when many fields change at once
+// (identity edit, role/membership changes, ownership transfer, etc.) so the
+// frontend can replace its in-memory copy without us inventing a granular
+// event for every PATCH.
+export async function emitServerUpdated(serverId, serverPayload) {
+  const uids = await serverMemberUids(serverId);
+  sendToServer(uids, { type: 'server:updated', serverId, server: serverPayload });
+}
+
+export async function emitChannelMessagePinned(serverId, channelId, pinnedMsgId, pinnedText, pinnedBy) {
+  const uids = await serverMemberUids(serverId);
+  sendToServer(uids, { type: 'channel:pin', serverId, channelId, pinnedMsgId, pinnedText, pinnedBy });
+}
+
+// Notify a single user that they were kicked / banned / promoted, etc.
+export function emitToUser(uid, payload) {
+  sendToUser(uid, payload);
+}

@@ -7,7 +7,8 @@ import { requireMember, requireAdmin } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
 import {
   emitChannelMessage, emitVoiceJoin, emitVoiceLeave,
-  emitChannelMessageDeleted, emitServerChannelAdded, emitServerChannelDeleted
+  emitChannelMessageDeleted, emitServerChannelAdded, emitServerChannelDeleted,
+  emitServerUpdated, emitChannelMessagePinned
 } from '../realtime/events.js';
 
 export const channelsRouter = Router();
@@ -185,3 +186,98 @@ channelsRouter.delete('/text/:sid/:cid/messages/:mid', async (req, res, next) =>
     emitChannelMessageDeleted(sid, cid, Number(mid));
   } catch (e) { next(e); }
 });
+
+// --- Patch (rename / restyle) a text channel ---
+const channelPatchSchema = z.object({
+  name:  z.string().trim().min(1).max(80).optional(),
+  style: z.string().max(40).optional()
+});
+
+channelsRouter.patch('/text/:sid/:cid', async (req, res, next) => {
+  try {
+    const sid = req.params.sid;
+    if (!await requireAdmin(req, res, sid)) return;
+    const body = parseOr400(channelPatchSchema, req.body, res); if (!body) return;
+    const sets = [], args = [];
+    if (body.name  !== undefined) { sets.push('name = ?');  args.push(body.name); }
+    if (body.style !== undefined) { sets.push('style = ?'); args.push(body.style); }
+    if (sets.length) {
+      args.push(req.params.cid, sid);
+      await q('UPDATE text_channels SET ' + sets.join(', ') + ' WHERE id = ? AND server_id = ?', args);
+    }
+    res.json({ ok: true });
+    emitServerUpdated(sid, await __buildServerPayload(sid));
+  } catch (e) { next(e); }
+});
+
+channelsRouter.patch('/voice/:sid/:cid', async (req, res, next) => {
+  try {
+    const sid = req.params.sid;
+    if (!await requireAdmin(req, res, sid)) return;
+    const body = parseOr400(channelPatchSchema, req.body, res); if (!body) return;
+    const sets = [], args = [];
+    if (body.name  !== undefined) { sets.push('name = ?');  args.push(body.name); }
+    if (body.style !== undefined) { sets.push('style = ?'); args.push(body.style); }
+    if (sets.length) {
+      args.push(req.params.cid, sid);
+      await q('UPDATE voice_channels SET ' + sets.join(', ') + ' WHERE id = ? AND server_id = ?', args);
+    }
+    res.json({ ok: true });
+    emitServerUpdated(sid, await __buildServerPayload(sid));
+  } catch (e) { next(e); }
+});
+
+// --- Pin / unpin a message inside a text channel ---
+const channelPinSchema = z.object({ messageId: z.union([z.number(), z.string()]).nullable().optional() });
+
+channelsRouter.post('/text/:sid/:cid/pin', async (req, res, next) => {
+  try {
+    const sid = req.params.sid, cid = req.params.cid;
+    const m = await requireMember(req, res, sid); if (!m) return;
+    // managePins comes from roles in the frontend, but at the API layer we
+    // gate on admin to stay safe until role storage is hooked up.
+    if (!m.is_admin) return res.status(403).json({ error: 'forbidden' });
+    const body = parseOr400(channelPinSchema, req.body, res); if (!body) return;
+    let pinnedMsg = null, pinnedBy = null, pinnedMsgId = null;
+    if (body.messageId) {
+      const row = await one('SELECT m.*, u.name AS sender_name FROM text_channel_messages m JOIN users u ON u.id = m.sender_id WHERE m.id = ? AND m.channel_id = ?', [Number(body.messageId), cid]);
+      if (!row) return res.status(404).json({ error: 'message_not_found' });
+      pinnedMsgId = row.id; pinnedMsg = row.body || ''; pinnedBy = row.sender_name;
+      await q('UPDATE text_channels SET pinned_msg_id = ? WHERE id = ? AND server_id = ?', [row.id, cid, sid]);
+    } else {
+      await q('UPDATE text_channels SET pinned_msg_id = NULL WHERE id = ? AND server_id = ?', [cid, sid]);
+    }
+    res.json({ ok: true, pinnedMsgId, pinnedMsg, pinnedBy });
+    emitChannelMessagePinned(sid, cid, pinnedMsgId, pinnedMsg, pinnedBy);
+  } catch (e) { next(e); }
+});
+
+// Helper: rebuild the same payload servers.js exports. Inline to avoid a
+// circular import; keeps emitServerUpdated honest after channel mutations.
+
+async function __buildServerPayload(sid) {
+  const s = await one('SELECT * FROM servers WHERE id = ?', [sid]);
+  if (!s) return null;
+  const members = await q(`SELECT sm.user_id, sm.is_admin, u.name FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?`, [sid]);
+  const cats = await q('SELECT * FROM server_categories WHERE server_id = ? ORDER BY position', [sid]);
+  const tcs  = await q('SELECT * FROM text_channels    WHERE server_id = ? ORDER BY position', [sid]);
+  const vcs  = await q('SELECT * FROM voice_channels   WHERE server_id = ? ORDER BY position', [sid]);
+  return {
+    id: s.id, name: s.name, initial: s.initial || (s.name||'?').charAt(0).toUpperCase(),
+    desc: s.description || '', baseColor: s.base_color || null,
+    grad: s.grad || null, glow: s.glow || null, cover: s.cover || null,
+    emblemImage: s.emblem_image || null, inviteKey: s.invite_key || null,
+    isPrivate: !!s.is_private,
+    members: members.map(x => x.name),
+    memberDetails: members.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin })),
+    admins:  members.filter(x => x.is_admin).map(x => x.name),
+    pinned: s.pinned_text ? { text: s.pinned_text, by: null, time: null } : null,
+    categories: cats.map(c => ({
+      id: c.id, name: c.name,
+      textChannels:  tcs.filter(t => t.category_id === c.id).map(t => t.id),
+      voiceChannels: vcs.filter(v => v.category_id === c.id).map(v => v.id)
+    })),
+    textChannels: tcs.map(t => ({ id: t.id, name: t.name, style: t.style || 'glow', unread: 0, pinnedMsgId: t.pinned_msg_id || null })),
+    voiceChannels: vcs.map(v => ({ id: v.id, name: v.name, style: v.style || 'indigo' }))
+  };
+}

@@ -5,7 +5,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { uid, inviteKey } from '../lib/ids.js';
 import { requireMember, requireAdmin, isAdmin as isAdminOf } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
-import { emitServerMemberJoined, emitServerMemberLeft, emitServerPinChanged, emitServerCategoryAdded, emitServerCategoryDeleted } from '../realtime/events.js';
+import { emitServerMemberJoined, emitServerMemberLeft, emitServerPinChanged, emitServerCategoryAdded, emitServerCategoryDeleted, emitServerUpdated, emitToUser } from '../realtime/events.js';
 
 export const serversRouter = Router();
 serversRouter.use(requireAuth);
@@ -33,7 +33,7 @@ async function buildServerPayload(sid) {
   const s = await one('SELECT * FROM servers WHERE id = ?', [sid]);
   if (!s) return null;
   const members = await q(
-    `SELECT sm.is_admin, u.name FROM server_members sm
+    `SELECT sm.user_id, sm.is_admin, u.name FROM server_members sm
        JOIN users u ON u.id = sm.user_id
       WHERE sm.server_id = ?`, [sid]);
   const cats = await q('SELECT * FROM server_categories WHERE server_id = ? ORDER BY position', [sid]);
@@ -52,6 +52,7 @@ async function buildServerPayload(sid) {
     inviteKey: s.invite_key || null,
     isPrivate: !!s.is_private,
     members: members.map(x => x.name),
+    memberDetails: members.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin })),
     admins:  members.filter(x => x.is_admin).map(x => x.name),
     pinned: s.pinned_text ? { text: s.pinned_text, by: null, time: null } : null,
     categories: cats.map(c => ({
@@ -155,8 +156,10 @@ serversRouter.patch('/:id', async (req, res, next) => {
       args.push(sid);
       await q('UPDATE servers SET ' + sets.join(', ') + ' WHERE id = ?', args);
     }
-    res.json({ server: await buildServerPayload(sid) });
+    const __payload = await buildServerPayload(sid);
+    res.json({ server: __payload });
     if (body.pinnedText !== undefined) emitServerPinChanged(sid, body.pinnedText || null);
+    if (['name','desc','baseColor','grad','glow','cover','emblemImage','isPrivate'].some(k => body[k] !== undefined)) emitServerUpdated(sid, __payload);
   } catch (e) { next(e); }
 });
 
@@ -267,5 +270,69 @@ serversRouter.post('/:id/transfer-ownership', async (req, res, next) => {
     } catch (e) { await conn.rollback(); throw e; }
     finally { conn.release(); }
     res.json({ server: await buildServerPayload(sid) });
+  } catch (e) { next(e); }
+});
+
+// --- Patch / rename a category ---
+const categoryPatchSchema = z.object({
+  name: z.string().trim().min(1).max(80).optional(),
+  pinnedText: z.string().max(2000).nullable().optional()
+});
+
+serversRouter.patch('/:id/categories/:cid', async (req, res, next) => {
+  try {
+    const sid = req.params.id;
+    if (!await requireAdmin(req, res, sid)) return;
+    const body = parseOr400(categoryPatchSchema, req.body, res); if (!body) return;
+    const sets = [], args = [];
+    if (body.name !== undefined) { sets.push('name = ?'); args.push(body.name); }
+    if (body.pinnedText !== undefined) {
+      sets.push('pinned_text = ?'); args.push(body.pinnedText || null);
+      sets.push('pinned_by = ?');   args.push(body.pinnedText ? req.user.id : null);
+    }
+    if (sets.length) {
+      args.push(req.params.cid, sid);
+      await q('UPDATE server_categories SET ' + sets.join(', ') + ' WHERE id = ? AND server_id = ?', args);
+    }
+    res.json({ ok: true });
+    emitServerUpdated(sid, await buildServerPayload(sid));
+  } catch (e) { next(e); }
+});
+
+// --- Reorder categories within a server ---
+const reorderSchema = z.object({ order: z.array(z.string().min(1).max(40)).max(200) });
+
+serversRouter.patch('/:id/categories/order', async (req, res, next) => {
+  try {
+    const sid = req.params.id;
+    if (!await requireAdmin(req, res, sid)) return;
+    const body = parseOr400(reorderSchema, req.body, res); if (!body) return;
+    for (let i = 0; i < body.order.length; i++) {
+      await q('UPDATE server_categories SET position = ? WHERE id = ? AND server_id = ?', [i+1, body.order[i], sid]);
+    }
+    res.json({ ok: true });
+    emitServerUpdated(sid, await buildServerPayload(sid));
+  } catch (e) { next(e); }
+});
+
+// --- Kick a member from a server (admin only) ---
+const kickSchema = z.object({ userId: z.union([z.string(), z.number()]) });
+
+serversRouter.post('/:id/kick', async (req, res, next) => {
+  try {
+    const sid = req.params.id;
+    if (!await requireAdmin(req, res, sid)) return;
+    const body = parseOr400(kickSchema, req.body, res); if (!body) return;
+    const targetId = String(body.userId);
+    if (String(req.user.id) === targetId) return res.status(400).json({ error: 'cannot_kick_self' });
+    const tm = await one('SELECT * FROM server_members WHERE server_id = ? AND user_id = ?', [sid, targetId]);
+    if (!tm) return res.status(404).json({ error: 'not_member' });
+    if (tm.is_admin) return res.status(403).json({ error: 'cannot_kick_admin' });
+    await q('DELETE FROM server_members WHERE server_id = ? AND user_id = ?', [sid, targetId]);
+    const u = await one('SELECT name FROM users WHERE id = ?', [targetId]);
+    res.json({ ok: true });
+    emitServerMemberLeft(sid, u ? u.name : '');
+    emitToUser(targetId, { type: 'server:kicked', serverId: sid });
+    emitServerUpdated(sid, await buildServerPayload(sid));
   } catch (e) { next(e); }
 });
