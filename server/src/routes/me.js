@@ -122,7 +122,7 @@ meRouter.get('/snapshot', async (req, res, next) => {
     if (memberRows.length) {
       const sids = memberRows.map(s => s.id);
       const placeholders = sids.map(() => '?').join(',');
-      const allMembers   = await q(`SELECT sm.server_id, sm.is_admin, u.name FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id IN (${placeholders})`, sids);
+      const allMembers   = await q(`SELECT sm.server_id, sm.user_id, sm.is_admin, u.name FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id IN (${placeholders})`, sids);
       const cats         = await q(`SELECT * FROM server_categories WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
       const tcs          = await q(`SELECT * FROM text_channels    WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
       const vcs          = await q(`SELECT * FROM voice_channels   WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
@@ -142,15 +142,18 @@ meRouter.get('/snapshot', async (req, res, next) => {
           inviteKey: row.invite_key || null,
           isPrivate: !!row.is_private,
           members: sm.map(x => x.name),
+          memberDetails: sm.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin })),
           admins: sm.filter(x => x.is_admin).map(x => x.name),
           pinned: row.pinned_text ? { text: row.pinned_text, by: null, time: null } : null,
           categories: cats.filter(c => c.server_id === sid).map(c => ({
             id: c.id, name: c.name,
+            pinned: c.pinned_text ? { text: c.pinned_text, by: null, time: null } : null,
             textChannels:  tcs.filter(t => t.server_id === sid && t.category_id === c.id).map(t => t.id),
             voiceChannels: vcs.filter(v => v.server_id === sid && v.category_id === c.id).map(v => v.id)
           })),
           textChannels: tcs.filter(t => t.server_id === sid).map(t => ({
-            id: t.id, name: t.name, style: t.style || 'glow', unread: 0
+            id: t.id, name: t.name, style: t.style || 'glow', unread: 0,
+            pinnedMsgId: t.pinned_msg_id || null
           })),
           voiceChannels: vcs.filter(v => v.server_id === sid).map(v => ({
             id: v.id, name: v.name, style: v.style || 'indigo'

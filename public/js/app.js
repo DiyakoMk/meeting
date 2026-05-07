@@ -3597,6 +3597,8 @@
 
         if (r && r.messages && Array.isArray(r.messages)){
 
+          r.messages.forEach(_expandChannelMessage);
+
           serverChannelMessages[sid+'__'+cid] = r.messages;
 
           if (currentServer === sid && currentTextChannel === cid) renderChannelView();
@@ -3717,11 +3719,31 @@
 
     const k = currentServer+'__'+currentTextChannel;
 
+    const sid = currentServer, cid = currentTextChannel;
+
+    const ids = Array.from(chSelectedIds);
+
+    if (backend.isConfigured()){
+
+      ids.forEach(id => {
+
+        if (typeof id === 'number'){
+
+          backend.servers.delChannelMessage(sid, cid, id).catch(()=>{});
+
+        }
+
+      });
+
+    }
+
     serverChannelMessages[k] = (serverChannelMessages[k]||[]).filter(m => !chSelectedIds.has(m.id));
 
-    showToast(chSelectedIds.size+' message(s) deleted','warn');
+    showToast(ids.length+' message(s) deleted','warn');
 
     exitChSelectMode();
+
+    renderChannelView();
 
   }
 
@@ -4225,6 +4247,12 @@
 
             s.categories = keys.map(k => map[k]).filter(Boolean);
 
+            if (backend.isConfigured()){
+
+              backend.servers.reorderCategories(currentServer, s.categories.map(c => c.id)).catch(()=>{});
+
+            }
+
             renderServerOverview();
 
           });
@@ -4561,25 +4589,39 @@
 
     const ownerSrv = ownerInfo ? ownerInfo.server : null;
 
-    const canKick = ownerSrv ? memberHasPerm(ownerSrv, selfProfile.name, 'kickFromVoice') : false;
+    const canKick = ownerSrv ? (memberHasPerm(ownerSrv, selfProfile.name, 'kickFromVoice') || memberHasPerm(ownerSrv, selfProfile.name, 'kickFromServer')) : false;
 
     if (canKick){
 
       items.push({ sep:true });
 
-      items.push({ icon:'user-x', label:'Kick from channel', danger:true, action:()=>{
+      items.push({ icon:'user-x', label:'Remove from server', danger:true, action: async ()=>{
+
+        const md = (ownerSrv.memberDetails || []).find(m => m.name === userName);
+
+        if (!md){ showToast('Cannot resolve member id','warn'); return; }
+
+        if (backend.isConfigured()){
+
+          const r = await backend.servers.kickMember(ownerSrv.id, md.id);
+
+          if (r.error){ showToast('Could not remove: '+r.error,'warn'); return; }
+
+          if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+        }
 
         if (channelData[channelKey]){
 
           channelData[channelKey].users = channelData[channelKey].users.filter(u => u !== userName);
 
-          showToast(userName+' kicked from '+channelData[channelKey].name,'warn');
-
-          updateOrbStates();
-
-          renderVoiceUsers();
-
         }
+
+        showToast(userName+' removed from '+ownerSrv.name,'warn');
+
+        updateOrbStates();
+
+        renderVoiceUsers();
 
       }});
 
@@ -5167,6 +5209,18 @@
 
       transferOwnership: (sid, targetUserId) => _apiRequest('POST', '/servers/'+encodeURIComponent(sid)+'/transfer-ownership', { targetUserId }),
 
+      kickMember: (sid, userId) => _apiRequest('POST', '/servers/'+encodeURIComponent(sid)+'/kick', { userId }),
+
+      patchCategory: (sid, cid, p) => _apiRequest('PATCH', '/servers/'+encodeURIComponent(sid)+'/categories/'+encodeURIComponent(cid), p),
+
+      reorderCategories: (sid, order) => _apiRequest('PATCH', '/servers/'+encodeURIComponent(sid)+'/categories/order', { order }),
+
+      patchTextChannel:  (sid, cid, p) => _apiRequest('PATCH', '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(cid), p),
+
+      patchVoiceChannel: (sid, cid, p) => _apiRequest('PATCH', '/channels/voice/'+encodeURIComponent(sid)+'/'+encodeURIComponent(cid), p),
+
+      pinChannelMessage: (sid, cid, messageId) => _apiRequest('POST', '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(cid)+'/pin', { messageId }),
+
       addCategory: (sid, p) => _apiRequest('POST',   '/servers/'+encodeURIComponent(sid)+'/categories', p),
 
       delCategory: (sid, c) => _apiRequest('DELETE', '/servers/'+encodeURIComponent(sid)+'/categories/'+encodeURIComponent(c)),
@@ -5617,6 +5671,154 @@
 
         break;
 
+      case 'server:updated':
+
+        _onServerUpdated(msg);
+
+        break;
+
+      case 'server:kicked':
+
+        _onServerKicked(msg);
+
+        break;
+
+      case 'channel:pin':
+
+        _onChannelPin(msg);
+
+        break;
+
+    }
+
+  }
+
+  function _onServerUpdated({ serverId, server }){
+
+    if (!server) return;
+
+    // Replace the in-memory server with the fresh authoritative copy.
+
+    servers[serverId] = Object.assign(servers[serverId] || {}, server);
+
+    // Roles are recomputed from admins/members each render via ensureRoles.
+
+    delete servers[serverId].roles;
+
+    // Re-materialise channelData entries for any new voice channels.
+
+    (server.voiceChannels || []).forEach(vc => {
+
+      if (channelData[vc.id]) return;
+
+      const st = voiceStyles[vc.style] || voiceStyles.indigo;
+
+      const m = (st.glow||'rgba(99,102,241,0.4)').match(/rgba\((\d+),(\d+),(\d+),/);
+
+      channelData[vc.id] = {
+
+        name: vc.name, users: [],
+
+        color: 'rgba('+(m?m[1]:99)+','+(m?m[2]:102)+','+(m?m[3]:241)+',',
+
+        planetGrad: st.grad, atmoColor: st.glow, orbiterColor: st.c,
+
+        avBorder:'#fff', emoji:'🪐',
+
+        tier: st.skin ? 'legendary' : 'common', skin: st.skin || undefined
+
+      };
+
+    });
+
+    // Drop channelData rows whose voice channel has gone away.
+
+    const liveVoiceIds = new Set((server.voiceChannels || []).map(v => v.id));
+
+    Object.keys(channelData).forEach(k => {
+
+      // Only drop entries that belong to THIS server. We can't tell from the
+
+      // chKey alone, so we narrow by checking against the previous voice
+
+      // channel list still attached to other servers.
+
+      let belongsHere = false;
+
+      const prev = servers[serverId];
+
+      if (prev && Array.isArray(prev._oldVoice)) belongsHere = prev._oldVoice.includes(k);
+
+      if (belongsHere && !liveVoiceIds.has(k)) delete channelData[k];
+
+    });
+
+    // Refresh affected UI surfaces.
+
+    if (currentServer === serverId){
+
+      if (typeof renderServerOverview === 'function') renderServerOverview();
+
+      if (typeof renderServerRails === 'function') renderServerRails();
+
+      if (currentTextChannel){
+
+        const stillThere = (server.textChannels||[]).some(t => t.id === currentTextChannel);
+
+        if (!stillThere){ currentTextChannel = null; goToServerMain(); }
+
+        else if (typeof renderChannelStrip === 'function') renderChannelStrip();
+
+      }
+
+    }
+
+    if (typeof renderHomeMyServers === 'function') renderHomeMyServers();
+
+    if (typeof renderOrbSlides === 'function') renderOrbSlides();
+
+  }
+
+  function _onServerKicked({ serverId }){
+
+    if (!servers[serverId]) return;
+
+    // Drop the server from every place we keep state.
+
+    if (currentServer === serverId){ currentServer = null; currentTextChannel = null; setPage('pageHome'); }
+
+    delete servers[serverId];
+
+    myServers = myServers.filter(s => s !== serverId);
+
+    if (typeof renderServerRails === 'function') renderServerRails();
+
+    if (typeof renderHomeMyServers === 'function') renderHomeMyServers();
+
+    if (typeof renderOrbSlides === 'function') renderOrbSlides();
+
+    showToast('You were removed from a server','warn');
+
+  }
+
+  function _onChannelPin({ serverId, channelId, pinnedMsgId, pinnedMsg, pinnedBy }){
+
+    const s = servers[serverId]; if (!s) return;
+
+    const tc = (s.textChannels||[]).find(t => t.id === channelId);
+
+    if (!tc) return;
+
+    tc.pinnedMsgId = pinnedMsgId || null;
+
+    tc.pinnedMsg   = pinnedMsg   || null;
+
+    tc.pinnedBy    = pinnedBy    || null;
+
+    if (currentServer === serverId && currentTextChannel === channelId){
+
+      if (typeof renderChannelView === 'function') renderChannelView();
+
     }
 
   }
@@ -5871,6 +6073,44 @@
 
   }
 
+  // Lift fields from the JSON `payload` blob into top-level message keys so
+
+  // the renderer can find type/serverCard/channelCard/etc. without changing
+
+  // every render path. Used by the realtime push, the openTextChannel fetch
+
+  // and the optimistic send-echo reconciliation.
+
+  function _expandChannelMessage(m){
+
+    if (!m) return m;
+
+    let p = m.payload;
+
+    if (typeof p === 'string'){ try { p = JSON.parse(p); } catch(_){} }
+
+    if (p && typeof p === 'object'){
+
+      if (p.type) m.type = m.type || p.type;
+
+      if (p.forwarded) m.forwarded = true;
+
+      if (p.serverCard)  m.serverCard  = m.serverCard  || p.serverCard;
+
+      if (p.channelCard) m.channelCard = m.channelCard || p.channelCard;
+
+      if (p.userCard)    m.userCard    = m.userCard    || p.userCard;
+
+      if (p.src && !m.src) m.src = p.src;
+
+      if (p.caption && !m.caption) m.caption = p.caption;
+
+    }
+
+    return m;
+
+  }
+
   function _onChannelMessage({ serverId, channelId, message }){
 
     const key = serverId + '__' + channelId;
@@ -5880,6 +6120,8 @@
     // Skip if this is the echo of our own send (REST already added it).
 
     if (message.user === selfProfile.name) return;
+
+    _expandChannelMessage(message);
 
     serverChannelMessages[key].push(message);
 
@@ -8069,37 +8311,57 @@
 
         const chId  = rest.slice(sep+1);
 
-        const k = srvId+'__'+chId;
+        // Build a payload object that captures the forwarded card / image so
 
-        serverChannelMessages[k] = serverChannelMessages[k] || [];
+        // the receiver renders it the same way after a refresh.
 
-        const time = nowTime();
-
-        const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:selfProfile.name, text:src.text||'', time, forwarded:true };
+        let payload = null;
 
         if (src.type==='serverCard'){
 
-          newMsg.type = 'serverCard';
-
-          newMsg.serverCard = { id:src.serverId, name:src.serverName, desc:src.serverDesc, emblem:src.serverEmblem, cover:src.serverCover, grad:src.serverGrad, glow:src.serverGlow, initial:src.serverInitial, invite:src.serverInvite, members:src.serverMembers, isPrivate:!!src.serverPrivate };
+          payload = { type:'serverCard', forwarded:true, serverCard:{ id:src.serverId, name:src.serverName, desc:src.serverDesc, emblem:src.serverEmblem, cover:src.serverCover, grad:src.serverGrad, glow:src.serverGlow, initial:src.serverInitial, invite:src.serverInvite, members:src.serverMembers, isPrivate:!!src.serverPrivate } };
 
         } else if (src.type==='channelCard'){
 
-          newMsg.type = 'channelCard';
-
-          newMsg.channelCard = { kind:src.kind, serverId:src.serverId, serverName:src.serverName, serverEmblem:src.serverEmblem, serverGrad:src.serverGrad, serverGlow:src.serverGlow, serverInitial:src.serverInitial, channelId:src.channelId, channelName:src.channelName, channelStyle:src.channelStyle, channelMembers:src.channelMembers };
+          payload = { type:'channelCard', forwarded:true, channelCard:{ kind:src.kind, serverId:src.serverId, serverName:src.serverName, serverEmblem:src.serverEmblem, serverGrad:src.serverGrad, serverGlow:src.serverGlow, serverInitial:src.serverInitial, channelId:src.channelId, channelName:src.channelName, channelStyle:src.channelStyle, channelMembers:src.channelMembers } };
 
         } else if (src.type==='userCard'){
 
-          newMsg.type = 'userCard';
+          payload = { type:'userCard', forwarded:true, userCard:{ userKey:src.userKey, name:src.name, handle:src.handle, initial:src.initial, avColor:src.avColor, avImage:src.avImage, bio:src.bio } };
 
-          newMsg.userCard = { userKey:src.userKey, name:src.name, handle:src.handle, initial:src.initial, avColor:src.avColor, avImage:src.avImage, bio:src.bio };
+        } else if (src.type==='image'){
 
-        } else if (src.type==='image'){ newMsg.type='image'; newMsg.src=src.src; }
+          payload = { type:'image', forwarded:true, src: src.src };
 
-        serverChannelMessages[k].push(newMsg);
+        } else {
 
-        const srv = servers[srvId]; if (srv){ const tc = srv.textChannels.find(x => x.id === chId); if (tc && !(currentServer===srvId && currentTextChannel===chId)){ tc.unread = (tc.unread||0)+1; updateBadges(); } }
+          payload = { type:'forward', forwarded:true };
+
+        }
+
+        if (backend.isConfigured()){
+
+          backend.servers.sendChannelMessage(srvId, chId, { text: src.text || '', payload }).catch(()=>{});
+
+        } else {
+
+          // Local-only fallback (no backend) — keep the legacy behaviour so the
+
+          // forward button still does *something* in offline demos.
+
+          const k = srvId+'__'+chId;
+
+          serverChannelMessages[k] = serverChannelMessages[k] || [];
+
+          const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:selfProfile.name, text:src.text||'', time:nowTime(), forwarded:true };
+
+          if (payload && payload.type !== 'forward') Object.assign(newMsg, payload);
+
+          serverChannelMessages[k].push(newMsg);
+
+          const srv = servers[srvId]; if (srv){ const tc = srv.textChannels.find(x => x.id === chId); if (tc && !(currentServer===srvId && currentTextChannel===chId)){ tc.unread = (tc.unread||0)+1; updateBadges(); } }
+
+        }
 
       }
 
@@ -9259,6 +9521,16 @@
 
       if (!cat) return;
 
+      if (backend.isConfigured()){
+
+        const r = await backend.servers.patchCategory(currentServer, cat.id, { pinnedText: text || null });
+
+        if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+        if (r.error){ showToast('Could not update pin: '+r.error,'warn'); return; }
+
+      }
+
       if (!text){ cat.pinned = null; showToast('Category pin removed','warn'); }
 
       else { cat.pinned = { text, by:selfProfile.name, time:'just now' }; showToast('Pinned to category','success'); }
@@ -9409,7 +9681,7 @@
 
   }
 
-  function submitCover(){
+  async function submitCover(){
 
     if (!currentServer) return;
 
@@ -9423,29 +9695,57 @@
 
     const s = servers[currentServer];
 
-    if (newName){ s.name = newName; s.initial = newName.charAt(0).toUpperCase(); }
+    const colorInp = document.getElementById('serverColorInput');
 
-    s.desc = newAbout || s.desc;
+    const color = colorInp ? colorInp.value : (s.baseColor || null);
 
     const privEl = document.getElementById('serverPrivateInput');
 
-    if (privEl) s.isPrivate = !!privEl.checked;
+    const isPrivate = privEl ? !!privEl.checked : !!s.isPrivate;
 
-    s.cover = url || null;
+    // Build the patch payload from the form values (only fields the schema
 
-    s.emblemImage = emb || null;
+    // accepts — bannerColor/C1/C2 are pure UI helpers and stay client-side).
 
-    const colorInp = document.getElementById('serverColorInput');
+    const patch = {
 
-    if (colorInp){
+      name: newName || s.name,
 
-      const color = colorInp.value;
+      desc: newAbout,
 
-      s.baseColor = color;
+      isPrivate,
 
-      s.grad = colorToOrbGrad(color);
+      cover: url || null,
 
-      s.glow = colorToGlow(color, 0.4);
+      emblemImage: emb || null
+
+    };
+
+    if (color){
+
+      patch.baseColor = color;
+
+      patch.grad      = colorToOrbGrad(color);
+
+      patch.glow      = colorToGlow(color, 0.4);
+
+    }
+
+    if (backend.isConfigured()){
+
+      const r = await backend.servers.patch(currentServer, patch);
+
+      if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+      if (r.error){ showToast('Could not save: '+r.error,'warn'); return; }
+
+      Object.assign(s, r.server || {});
+
+    } else {
+
+      Object.assign(s, patch);
+
+      if (newName) s.initial = newName.charAt(0).toUpperCase();
 
     }
 
@@ -9462,8 +9762,6 @@
     }
 
     document.getElementById('coverBackdrop').classList.remove('show');
-
-    // Re-sync header text and rails so the new name shows up everywhere.
 
     document.getElementById('worldHeaderTitle').textContent = '// '+s.name;
 
@@ -11877,7 +12175,15 @@
 
       } else if (r.message){
 
-        if (idx >= 0) serverChannelMessages[key][idx] = Object.assign({}, optimistic, r.message, { _pending:false });
+        if (idx >= 0){
+
+          const merged = Object.assign({}, optimistic, r.message, { _pending:false });
+
+          _expandChannelMessage(merged);
+
+          serverChannelMessages[key][idx] = merged;
+
+        }
 
       }
 
@@ -11893,7 +12199,7 @@
 
   // Channel message actions (reply / forward / copy / pin / delete)
 
-  document.getElementById('wsChannelMsgs').addEventListener('click', e => {
+  document.getElementById('wsChannelMsgs').addEventListener('click', async e => {
 
     // Tapping a channel-msg avatar opens that sender's profile.
 
@@ -11997,7 +12303,19 @@
 
       const tc = s.textChannels.find(c => c.id === currentTextChannel);
 
-      if (!tc.pinnedMsgId || tc.pinnedMsgId !== id){ tc.pinnedMsgId = id; tc.pinnedMsg = m.text||'(image)'; tc.pinnedBy = m.user; showToast('Pinned in #'+tc.name,'success'); }
+      const willPin = !tc.pinnedMsgId || tc.pinnedMsgId !== id;
+
+      if (backend.isConfigured()){
+
+        const r = await backend.servers.pinChannelMessage(currentServer, currentTextChannel, willPin ? id : null);
+
+        if (r.error){ showToast('Could not pin: '+r.error,'warn'); return; }
+
+        if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+      }
+
+      if (willPin){ tc.pinnedMsgId = id; tc.pinnedMsg = m.text||'(image)'; tc.pinnedBy = m.user; showToast('Pinned in #'+tc.name,'success'); }
 
       else { tc.pinnedMsgId = null; tc.pinnedMsg = null; tc.pinnedBy = null; showToast('Unpinned','warn'); }
 
@@ -12485,51 +12803,49 @@
 
     const s = servers[currentServer];
 
-    appConfirm('Transfer ownership of "'+s.name+'" to '+target+'? This cannot be undone from your side.', {title:'TRANSFER OWNERSHIP', confirmLabel:'TRANSFER', danger:true}).then(ok => {
+    appConfirm('Transfer ownership of "'+s.name+'" to '+target+'? This cannot be undone from your side.', {title:'TRANSFER OWNERSHIP', confirmLabel:'TRANSFER', danger:true}).then(async ok => {
 
       if (!ok) return;
 
-      const owner = s.roles.find(r => r.id === 'owner');
+      // Resolve target user id from the server's memberDetails.
 
-      if (!owner) return;
+      const md = (s.memberDetails || []).find(m => m.name === target);
 
-      // Strip target from any other role first (single-role rule).
+      if (backend.isConfigured()){
 
-      s.roles.forEach(r => { r.members = (r.members||[]).filter(m => m !== target); });
+        if (!md){ showToast('Cannot resolve member id','warn'); return; }
 
-      owner.members = [target];
+        const r = await backend.servers.transferOwnership(currentServer, md.id);
 
-      // Make sure owner remains an admin too (legacy admins[] array).
+        if (r.offline){ showToast('Cannot reach the server','warn'); return; }
 
-      if (!s.admins.includes(target)) s.admins.unshift(target);
+        if (r.error){ showToast('Could not transfer: '+r.error,'warn'); return; }
 
-      // The previous owner loses admin powers immediately. Strip them from the
-
-      // legacy admins[] list so isAdmin / settings menus reflect the change.
-
-      const me = selfProfile.name;
-
-      if (me && me !== target){
-
-        s.admins = (s.admins||[]).filter(m => m !== me);
+        Object.assign(s, r.server || {});
 
       }
 
-      // Recompute the local user's admin flag for the currently-viewed server.
+      const owner = s.roles && s.roles.find(r => r.id === 'owner');
+
+      if (owner) owner.members = [target];
+
+      if (s.roles) s.roles.forEach(r => { if (r.id !== 'owner') r.members = (r.members||[]).filter(m => m !== target); });
+
+      if (!s.admins.includes(target)) s.admins.unshift(target);
+
+      const me = selfProfile.name;
+
+      if (me && me !== target) s.admins = (s.admins||[]).filter(m => m !== me);
 
       isAdmin = (s.admins||[]).includes(me);
 
       document.getElementById('ownerTransferBackdrop').classList.remove('show');
 
-      // Close the server-identity modal too — the previous owner can't edit it any more.
-
       document.getElementById('coverBackdrop').classList.remove('show');
 
-      // Roles modal stays open so the new ownership is visible, but re-render
+      if (typeof renderRolesList === 'function') renderRolesList();
 
-      // it without admin-only controls.
-
-      renderRolesList(); renderRoleEditor();
+      if (typeof renderRoleEditor === 'function') renderRoleEditor();
 
       renderServerOverview();
 
@@ -12661,7 +12977,7 @@
 
   });
 
-  document.getElementById('chanSettingsSave').addEventListener('click', () => {
+  document.getElementById('chanSettingsSave').addEventListener('click', async () => {
 
     if (!currentServer || !chanSettingsTarget) return;
 
@@ -12669,15 +12985,29 @@
 
     const newName = (document.getElementById('chanSettingsName').value||'').trim();
 
+    const tType = chanSettingsTarget.type;
+
+    if (newName && backend.isConfigured()){
+
+      let r = null;
+
+      if (tType === 'text')      r = await backend.servers.patchTextChannel(currentServer, ent.id, { name: newName });
+
+      else if (tType === 'voice') r = await backend.servers.patchVoiceChannel(currentServer, ent.id, { name: newName.toUpperCase() });
+
+      else if (tType === 'cat')   r = await backend.servers.patchCategory(currentServer, ent.id, { name: newName });
+
+      if (r && r.error){ showToast('Could not save: '+r.error,'warn'); return; }
+
+      if (r && r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+    }
+
     if (newName){
 
-      ent.name = newName;
+      ent.name = (tType === 'voice') ? newName.toUpperCase() : newName;
 
-      // For voice channels, channelData[chKey].name is the source of truth used by
-
-      // marked orbs / orbits / voice users. Sync it here so renames apply everywhere.
-
-      if (chanSettingsTarget.type === 'voice'){
+      if (tType === 'voice'){
 
         const chKey = vcChannelKey(ent);
 
