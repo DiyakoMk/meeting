@@ -1,50 +1,17 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+# Frontend
+public/*.bak
 
-# Virtual environments
-venv/
-env/
-ENV/
+# Backend
+server/node_modules/
+server/.env
+server/uploads/*
+!server/uploads/.gitkeep
+server/package-lock.json
 
-# Environment variables
-.env
-.env.local
-.env.production
-
-# Telegram session files
-*.session
-*.session-journal
-
-# IDE
-.vscode/
-.idea/
+# OS / editors
+.DS_Store
 *.swp
 *.swo
 
-# Logs
-*.log
-logs/
-
-# Database
-*.db
-*.sqlite3
+# Local DBs (only if you ever run a sandbox MariaDB inside the repo)
+/tmp_db/
