@@ -216,6 +216,34 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .orb-col{width:240px;min-width:220px;display:flex;flex-direction:column;padding:14px 10px;flex-shrink:0;position:relative}
 
+.orb-slide.empty-state .planet{filter:saturate(0) brightness(0.55)!important;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.12),#2a2a32 55%,#0a0a0f)!important;box-shadow:none!important}
+
+.orb-slide.empty-state .atmo,.orb-slide.empty-state .lring,.orb-slide.empty-state .otrack,.orb-slide.empty-state .orbiter{opacity:0.18}
+
+.orb-slide.empty-state .vlabel{color:var(--t3);background:none;-webkit-background-clip:initial;-webkit-text-fill-color:initial;background-clip:initial}
+
+.orb-slide.empty-state .vstatus{color:var(--t3)}
+
+.orb-slide.empty-state .vstatus::before{background:var(--t3);animation:none}
+
+.orb-col.is-empty .orb-actions,.orb-col.is-empty .otimer,.orb-col.is-empty .orb-hud,.orb-col.is-empty .orb-edit-btn,.orb-col.is-empty .orb-nav-arrow,.orb-col.is-empty .marked-channels{display:none!important}
+
+.orb-col.is-empty .orb-conn-banner{cursor:default}
+
+.orb-col.is-empty #orbEmptyActions{display:flex!important}
+
+.orb-empty-actions{display:flex;flex-direction:column;gap:6px;width:100%;margin-top:12px}
+
+.orb-empty-actions .ob-empty-btn{width:100%;padding:9px 10px;border-radius:10px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;letter-spacing:1.5px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid;cursor:pointer;transition:all 0.18s}
+
+.orb-empty-actions .ob-empty-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(185,28,74,0.35)}
+
+.orb-empty-actions .ob-empty-btn.primary:hover{box-shadow:0 6px 18px rgba(185,28,74,0.5)}
+
+.orb-empty-actions .ob-empty-btn.cancel{background:rgba(255,255,255,0.04);color:var(--t2);border-color:var(--gb)}
+
+.orb-empty-actions .ob-empty-btn.cancel:hover{background:rgba(255,255,255,0.08);color:var(--t1)}
+
 .orb-col.disconnected .planet,.orb-col.disconnected .atmo{filter:saturate(0.4) brightness(0.7)}
 
 .orb-conn-banner{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;letter-spacing:1.5px;margin-bottom:8px;align-self:center;border:1px solid;transition:all 0.3s;cursor:pointer}
@@ -1332,6 +1360,26 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .world-msgs{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:8px}
 
+.world-empty-orb{width:140px;height:140px;position:relative;display:flex;align-items:center;justify-content:center}
+
+.world-empty-core{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),var(--accent) 60%,#1e1b4b);box-shadow:0 0 30px rgba(185,28,74,0.55),inset 0 0 18px rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;color:#fff;animation:oglow 3.5s ease-in-out infinite;position:relative;z-index:2}
+
+.world-empty-ring{position:absolute;border-radius:50%;border:1.5px dashed rgba(185,28,74,0.3);animation:hospin 18s linear infinite}
+
+.world-empty-r1{width:90px;height:90px}
+
+.world-empty-r2{width:120px;height:120px;animation-direction:reverse;animation-duration:24s}
+
+.world-empty-r3{width:150px;height:150px;border-style:solid;border-color:rgba(185,28,74,0.1)}
+
+.world-empty-eyebrow{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:2.5px;color:var(--accent);margin-bottom:8px}
+
+.world-empty-title{font-family:'Space Grotesk','Vazirmatn',sans-serif;font-size:1.05rem;font-weight:600;color:var(--t1);margin-bottom:6px;line-height:1.4}
+
+.world-empty-sub{font-size:0.78rem;color:var(--t2);max-width:340px;line-height:1.55;margin:0 auto}
+
+.world-empty-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+
 .wmsg{display:flex;gap:10px;animation:dmIn 0.25s ease-out;position:relative;padding:6px 4px;border-radius:10px;transition:background 0.15s}
 
 .wmsg:hover{background:rgba(255,255,255,0.02)}
@@ -2242,6 +2290,16 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 #profileModal.is-self .profile-actions-self{display:flex}
 
+/* Saved Messages: only the MESSAGE action is meaningful — hide call/friend/share/block. */
+
+#profileModal.is-saved .profile-actions-other > *:not(#modalMessage){display:none}
+
+#profileModal.is-saved #modalMessage{grid-column:span 2}
+
+#profileModal.is-saved .profile-handle-copy,
+
+#profileModal.is-saved #modalSharedRow{display:none}
+
 /* Edit-form bits */
 
 .profile-edit-avatar-row{display:flex;align-items:center;gap:12px;justify-content:center}
@@ -2942,6 +3000,14 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         </div>
 
+        <div class="orb-empty-actions" id="orbEmptyActions" style="display:none">
+
+          <button class="ob-empty-btn primary" id="orbEmptyCreateBtn" type="button"><i data-lucide="plus" style="width:11px;height:11px"></i>CREATE SERVER</button>
+
+          <button class="ob-empty-btn cancel" id="orbEmptyJoinBtn" type="button"><i data-lucide="link" style="width:11px;height:11px"></i>JOIN SERVER</button>
+
+        </div>
+
       </div>
 
       <div class="marked-channels" id="markedChannels" style="display:none">
@@ -3402,99 +3468,37 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <div class="ws-channel-strip" id="wsChannelStrip" style="display:none"></div>
 
-            <!-- DEFAULT WORLD VIEW (shown only if no server selected) -->
+            <!-- DEFAULT WORLD VIEW (shown only if user is in no server) -->
 
-            <div id="worldDefaultView" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
+            <div id="worldDefaultView" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;align-items:center;justify-content:center;padding:30px;text-align:center;gap:22px">
 
-              <div class="world-hero">
+              <div class="world-empty-orb">
 
-                <div class="world-hero-emblem"><i data-lucide="globe" style="width:22px;height:22px"></i></div>
+                <div class="world-empty-core"><i data-lucide="globe" style="width:26px;height:26px"></i></div>
 
-                <div class="world-hero-info">
+                <div class="world-empty-ring world-empty-r1"></div>
 
-                  <div class="world-eyebrow"><span class="we-pulse"></span>BROADCASTING ON ALL FREQUENCIES</div>
+                <div class="world-empty-ring world-empty-r2"></div>
 
-                  <h1 class="world-title">WORLD</h1>
-
-                </div>
-
-                <div class="world-stats">
-
-                  <div class="world-stat live"><div class="world-stat-n">1.2K</div><div class="world-stat-l">ONLINE</div></div>
-
-                  <div class="world-stat"><div class="world-stat-n">42</div><div class="world-stat-l">VOICE</div></div>
-
-                  <div class="world-stat"><div class="world-stat-n">8</div><div class="world-stat-l">CHANNELS</div></div>
-
-                </div>
+                <div class="world-empty-ring world-empty-r3"></div>
 
               </div>
 
-              <div class="world-pinned" id="worldPinned">
+              <div>
 
-                <i data-lucide="pin" style="width:13px;height:13px"></i>
+                <div class="world-empty-eyebrow">NO SIGNAL</div>
 
-                <div class="world-pinned-text"><b>PINNED</b>WORLD WAVE: New legendary orb "SOLARIS" discovered — first sighting in sector 7G!</div>
+                <div class="world-empty-title">شما در هیچ سروری عضو نیستید</div>
 
-                <div class="world-pinned-by">— NEXUS</div>
-
-              </div>
-
-              <div class="world-filters" id="worldFilters">
-
-                <button class="wf-pill active" data-filter="all"><span class="wf-dot"></span>ALL</button>
-
-                <button class="wf-pill" data-filter="news"><i data-lucide="zap" style="width:9px;height:9px"></i>NEWS</button>
-
-                <button class="wf-pill" data-filter="discovery"><i data-lucide="sparkles" style="width:9px;height:9px"></i>DISCOVERY</button>
-
-                <button class="wf-pill" data-filter="voice"><i data-lucide="mic" style="width:9px;height:9px"></i>VOICE</button>
-
-                <button class="wf-pill" data-filter="media"><i data-lucide="image" style="width:9px;height:9px"></i>MEDIA</button>
-
-                <button class="wf-pill" data-filter="mention"><i data-lucide="at-sign" style="width:9px;height:9px"></i>MENTIONS</button>
+                <div class="world-empty-sub">یک سرور بسازید یا با لینک دعوت به یکی بپیوندید تا کانال‌ها و orbits اینجا ظاهر شوند.</div>
 
               </div>
 
-              <div class="world-chat">
+              <div class="world-empty-actions">
 
-                <div class="world-msgs" id="worldMsgs"></div>
+                <button class="sm-btn primary" id="worldEmptyCreate"><i data-lucide="plus" style="width:11px;height:11px"></i>CREATE SERVER</button>
 
-                <div class="dm-input-wrap">
-
-                  <div class="dm-ibox-label">BROADCASTING TO WORLD</div>
-
-                  <div class="dm-attach-preview" id="worldAttachPreview" style="display:none">
-
-                    <img id="worldAttachThumb" src="" alt="" />
-
-                    <div class="ap-info">
-
-                      <div class="ap-n" id="worldAttachName">image.png</div>
-
-                      <div class="ap-s" id="worldAttachSize">128 KB</div>
-
-                    </div>
-
-                    <button class="ap-x" id="worldAttachClose"><i data-lucide="x" style="width:14px;height:14px"></i></button>
-
-                  </div>
-
-                  <div class="dm-ibox" id="worldIbox">
-
-                    <button class="dm-i-btn" id="worldAttachBtn" title="Attach image"><i data-lucide="image-plus" style="width:16px;height:16px"></i></button>
-
-                    <button class="dm-i-btn" data-popup="emojiPop" id="worldEmojiBtn" title="Emoji"><i data-lucide="smile" style="width:16px;height:16px"></i></button>
-
-                    <textarea class="dm-input" id="worldInput" placeholder="Broadcast to the world..." rows="1"></textarea>
-
-                    <button class="dm-i-btn send disabled" id="worldSend" title="Send"><i data-lucide="send" style="width:14px;height:14px"></i></button>
-
-                  </div>
-
-                  <input type="file" id="worldFileInput" accept="image/*" style="display:none" />
-
-                </div>
+                <button class="sm-btn cancel" id="worldEmptyJoin"><i data-lucide="link" style="width:11px;height:11px"></i>JOIN BY LINK</button>
 
               </div>
 
@@ -4896,7 +4900,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     inferno:  { name:'INFERNO',  users:['Mann','KIPP','TARS','Cooper','CASE','NEXUS','Doyle'],color:'rgba(249,115,22,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fed7aa 20%,#f97316 55%,#7c2d12)', atmoColor:'rgba(249,115,22,0.6)', orbiterColor:'rgba(249,115,22,0.7)', avBorder:'#fdba74', emoji:'🔥', tier:'legendary', skin:'flame' },
 
-    coop:     { name:'COOPER',   users:[],                                    color:'rgba(34,197,94,',  planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#22c55e 60%,#14532d)', atmoColor:'rgba(34,197,94,0.4)', orbiterColor:'rgba(34,197,94,0.7)', avBorder:'#4ade80', emoji:'🌱', tier:'common' }
+    coop:     { name:'COOPER',   users:[],                                    color:'rgba(34,197,94,',  planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#22c55e 60%,#14532d)', atmoColor:'rgba(34,197,94,0.4)', orbiterColor:'rgba(34,197,94,0.7)', avBorder:'#4ade80', emoji:'🌱', tier:'common' },
+
+    __empty__:{ name:'EMPTY',    users:[],                                    color:'rgba(120,120,140,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.18),#3a3a44 55%,#0f0f14)', atmoColor:'rgba(120,120,140,0.18)', orbiterColor:'rgba(120,120,140,0.4)', avBorder:'#6b7280', emoji:'∅', tier:'common', isEmpty:true }
 
   };
 
@@ -5404,9 +5410,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     out = out.filter(canSeeVoiceKey);
 
-    // Fallback: when nothing is marked, show favorites so the carousel never collapses.
+    // Empty state: when the user has no servers and no marked orbits, show
 
-    if (out.length === 0) return [...favorites, ...allChannels.filter(c=>!favorites.includes(c))].filter(canSeeVoiceKey);
+    // a single placeholder "EMPTY" orb that cannot be joined.
+
+    if (out.length === 0) return ['__empty__'];
 
     return out;
 
@@ -5459,6 +5467,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       if (isLegendary) cls += ' legendary';
 
       if (data.skin) cls += ' skin-'+data.skin;
+
+      if (data.isEmpty) cls += ' empty-state';
 
       if (i === currentSlideIndex) cls += ' default-channel';
 
@@ -5716,6 +5726,12 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const orbCol = document.getElementById('orbCol');
 
+    const list = getAllChannels();
+
+    const isEmpty = list.length === 1 && list[0] === '__empty__';
+
+    orbCol.classList.toggle('is-empty', isEmpty);
+
     if (inVoice && channelData[connectedChannel]){
 
       banner.className = 'orb-conn-banner connected';
@@ -5728,7 +5744,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       banner.className = 'orb-conn-banner disconnected';
 
-      txt.textContent = 'NOT CONNECTED';
+      txt.textContent = isEmpty ? 'NO ORBITS' : 'NOT CONNECTED';
 
       orbCol.classList.add('disconnected');
 
@@ -5987,6 +6003,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
   }
 
   function joinVoiceChannel(ch){
+
+    if (ch === '__empty__'){ showToast('No orbits yet — create or join a server first','warn'); return; }
 
     const wasConnectedTo = inVoice ? connectedChannel : null;
 
@@ -6924,6 +6942,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const sendBtn = document.getElementById('worldSend');
 
+    if (!sendBtn) return;
+
     const has = (inp && inp.value.trim().length>0) || worldAttachData;
 
     sendBtn.classList.toggle('disabled', !has);
@@ -7174,11 +7194,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     worldAttachData = null;
 
-    document.getElementById('worldAttachPreview').style.display = 'none';
+    const prev = document.getElementById('worldAttachPreview'); if (prev) prev.style.display = 'none';
 
-    document.getElementById('worldIbox').classList.remove('has-attach');
+    const ibox = document.getElementById('worldIbox'); if (ibox) ibox.classList.remove('has-attach');
 
-    document.getElementById('worldFileInput').value = '';
+    const fi = document.getElementById('worldFileInput'); if (fi) fi.value = '';
 
     updateWorldSendBtn();
 
@@ -7189,6 +7209,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
   function renderWorldMessages(){
 
     const el = document.getElementById('worldMsgs');
+
+    if (!el) return;
 
     const filtered = worldMessages.filter(m => activeWorldFilter==='all' || m.cat===activeWorldFilter);
 
@@ -8031,6 +8053,62 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       goBtn.style.display = 'flex';
 
     }
+
+  }
+
+  // ============== SERVER CLEANUP ==============
+
+  // Removes every dangling reference to a server the user no longer belongs to:
+
+  // marked orbits, marked text channels, in-flight share state, and any cached
+
+  // forwarded messages that point at it. Call this whenever Cooper leaves or
+
+  // deletes a server.
+
+  function purgeServerReferences(sid){
+
+    const s = servers[sid];
+
+    if (!s) return;
+
+    // 1) Marked voice orbs that lived in this server.
+
+    const orbKeys = (s.voiceChannels||[]).map(v => channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id));
+
+    if (orbKeys.length){
+
+      marked = marked.filter(k => !orbKeys.includes(k));
+
+    }
+
+    // 2) Marked text channels keyed by serverId__channelId.
+
+    markedTextChannels = markedTextChannels.filter(k => !k.startsWith(sid+'__'));
+
+    // 3) Cached channel chat history.
+
+    Object.keys(serverChannelMessages).forEach(k => { if (k.startsWith(sid+'__')) delete serverChannelMessages[k]; });
+
+    // 4) Strip server/channel cards out of every DM thread so the user can't
+
+    //    reshare a server they're no longer part of.
+
+    Object.keys(messages).forEach(k => {
+
+      const list = messages[k]; if (!Array.isArray(list)) return;
+
+      messages[k] = list.filter(m => {
+
+        if (m.type === 'serverCard' && m.serverCard && m.serverCard.id === sid) return false;
+
+        if (m.type === 'channelCard' && m.channelCard && m.channelCard.serverId === sid) return false;
+
+        return true;
+
+      });
+
+    });
 
   }
 
@@ -9701,6 +9779,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     const modal = document.getElementById('profileModal');
 
     modal.classList.toggle('is-self', isSelf);
+
+    modal.classList.toggle('is-saved', !!data.isSaved);
 
     modal.classList.remove('is-editing');
 
@@ -12848,13 +12928,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       }
 
+      purgeServerReferences(sid);
+
       delete servers[sid];
 
       myServers = myServers.filter(x => x !== sid);
-
-      markedTextChannels = markedTextChannels.filter(k => !k.startsWith(sid+'__'));
-
-      Object.keys(serverChannelMessages).forEach(k => { if (k.startsWith(sid+'__')) delete serverChannelMessages[k]; });
 
       currentServer = null; currentTextChannel = null;
 
@@ -12869,6 +12947,12 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       renderHomeMyServers();
 
       renderServerRails();
+
+      renderHomeMarkedOrbits();
+
+      renderOrbSlides();
+
+      if (currentConversation) renderConversation();
 
       renderMarkedPanel();
 
@@ -13290,9 +13374,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         s.admins = (s.admins||[]).filter(m => m !== 'Cooper');
 
-        myServers = myServers.filter(x => x !== sid);
+        purgeServerReferences(sid);
 
-        markedTextChannels = markedTextChannels.filter(k => !k.startsWith(sid+'__'));
+        myServers = myServers.filter(x => x !== sid);
 
         currentServer = null; currentTextChannel = null;
 
@@ -13307,6 +13391,12 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
         renderServerRails();
 
         renderMarkedPanel();
+
+        renderHomeMarkedOrbits();
+
+        renderOrbSlides();
+
+        if (currentConversation) renderConversation();
 
         showToast('Left '+s.name,'warn');
 
@@ -13912,6 +14002,10 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   document.getElementById('btnConnect').addEventListener('click', () => joinVoiceChannel(selectedSlideChannel));
 
+  document.getElementById('orbEmptyCreateBtn').addEventListener('click', () => openCreateServer());
+
+  document.getElementById('orbEmptyJoinBtn').addEventListener('click', () => { openCreateServer(); const joinTab = document.querySelector('[data-cs-tab="join"]'); if (joinTab) joinTab.click(); });
+
   document.getElementById('btnEnd').addEventListener('click', endVoiceCall);
 
   document.getElementById('btnMic').addEventListener('click', () => {
@@ -14460,15 +14554,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   document.getElementById('dmSend').addEventListener('click', sendDM);
 
-  // World input
+  // World empty-state actions
 
-  const worldInputEl = document.getElementById('worldInput');
+  document.getElementById('worldEmptyCreate').addEventListener('click', () => openCreateServer());
 
-  worldInputEl.addEventListener('input', e => { autoResizeInput(e.target); updateWorldSendBtn(); });
-
-  worldInputEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendWorld(); } });
-
-  document.getElementById('worldSend').addEventListener('click', sendWorld);
+  document.getElementById('worldEmptyJoin').addEventListener('click', () => { openCreateServer(); const joinTab = document.querySelector('[data-cs-tab="join"]'); if (joinTab) joinTab.click(); });
 
   // Reply / edit close
 
@@ -14478,17 +14568,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   document.getElementById('dmAttachClose').addEventListener('click', clearDmAttach);
 
-  document.getElementById('worldAttachClose').addEventListener('click', clearWorldAttach);
-
   // Attach
 
   document.getElementById('dmAttachBtn').addEventListener('click', () => document.getElementById('dmFileInput').click());
 
   document.getElementById('dmFileInput').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) setDmAttach(f); });
-
-  document.getElementById('worldAttachBtn').addEventListener('click', () => document.getElementById('worldFileInput').click());
-
-  document.getElementById('worldFileInput').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) setWorldAttach(f); });
 
   // DM message: bubble click → show actions; image click → viewer; reply preview click → jump
 
@@ -14665,174 +14749,6 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       return;
 
     }
-
-  });
-
-  // World msg actions
-
-  document.getElementById('worldMsgs').addEventListener('click', e => {
-
-    const scJoinW = e.target.closest('[data-server-card-join]');
-
-    if (scJoinW){
-
-      e.stopPropagation();
-
-      try { openServerJoinModal(JSON.parse(decodeURIComponent(scJoinW.dataset.serverCardJoin))); } catch(_){}
-
-      return;
-
-    }
-
-    const ccOpenW = e.target.closest('[data-channel-card-open]');
-
-    if (ccOpenW){ e.stopPropagation(); handleChannelCardOpen(ccOpenW.dataset.channelCardOpen); return; }
-
-    const ucOpenW = e.target.closest('[data-user-card-open]');
-
-    if (ucOpenW){ e.stopPropagation(); handleUserCardOpen(ucOpenW.dataset.userCardOpen); return; }
-
-    const actBtn = e.target.closest('[data-world-action]');
-
-    if (actBtn){
-
-      e.stopPropagation();
-
-      const action = actBtn.dataset.worldAction;
-
-      const id = actBtn.dataset.worldId;
-
-      const m = worldMessages.find(x=>x.id===id);
-
-      if (!m) return;
-
-      if (action === 'copy'){ if (navigator.clipboard) navigator.clipboard.writeText(m.text||'').catch(()=>{}); showToast('Copied','success'); }
-
-      else if (action === 'forward') openForwardModal({...m, type:m.type==='image'?'image':'text'});
-
-      else if (action === 'reply') showToast('Reply added to compose','success');
-
-      return;
-
-    }
-
-    const reactBtn = e.target.closest('[data-world-react]');
-
-    if (reactBtn){
-
-      e.stopPropagation();
-
-      const id = reactBtn.dataset.worldReact;
-
-      const emoji = reactBtn.dataset.emoji;
-
-      const m = worldMessages.find(x=>x.id===id);
-
-      if (!m) return;
-
-      if (!m.myReact) m.myReact = {};
-
-      if (m.myReact[emoji]){
-
-        m.reactions[emoji] = Math.max(0, (m.reactions[emoji]||1) - 1);
-
-        if (m.reactions[emoji] === 0) delete m.reactions[emoji];
-
-        delete m.myReact[emoji];
-
-      } else {
-
-        m.reactions[emoji] = (m.reactions[emoji]||0) + 1;
-
-        m.myReact[emoji] = true;
-
-      }
-
-      renderWorldMessages();
-
-      return;
-
-    }
-
-    const reactAddBtn = e.target.closest('[data-world-react-add]');
-
-    if (reactAddBtn){
-
-      e.stopPropagation();
-
-      const id = reactAddBtn.dataset.worldReactAdd;
-
-      const m = worldMessages.find(x=>x.id===id);
-
-      if (!m) return;
-
-      const opts = ['👍','❤','😂','🔥','✨','🌌'];
-
-      const pick = opts[Math.floor(Math.random()*opts.length)];
-
-      if (!m.myReact) m.myReact = {};
-
-      m.reactions[pick] = (m.reactions[pick]||0) + 1;
-
-      m.myReact[pick] = true;
-
-      renderWorldMessages();
-
-      showToast('Reacted with '+pick,'success');
-
-      return;
-
-    }
-
-    const img = e.target.closest('[data-world-img]');
-
-    if (img){
-
-      const id = img.dataset.worldImg;
-
-      const m = worldMessages.find(x=>x.id===id);
-
-      if (m && m.src){ openImageViewer(m.src, { sender: m.sender, time: m.time, av: m.av }); }
-
-      return;
-
-    }
-
-    const av = e.target.closest('[data-world-av]');
-
-    if (av){
-
-      const id = av.dataset.worldAv;
-
-      const m = worldMessages.find(x=>x.id===id);
-
-      if (!m) return;
-
-      openProfileByName(m.sender);
-
-    }
-
-  });
-
-  // World filters
-
-  document.getElementById('worldFilters').addEventListener('click', e => {
-
-    const p = e.target.closest('.wf-pill'); if (!p) return;
-
-    activeWorldFilter = p.dataset.filter;
-
-    document.querySelectorAll('.wf-pill').forEach(x => x.classList.toggle('active', x === p));
-
-    renderWorldMessages();
-
-  });
-
-  document.getElementById('worldPinned').addEventListener('click', () => {
-
-    const pinned = worldMessages.find(m => m.pinned);
-
-    if (pinned){ const el = document.querySelector('[data-world-row="'+pinned.id+'"]'); if (el) el.scrollIntoView({behavior:'smooth', block:'center'}); }
 
   });
 
