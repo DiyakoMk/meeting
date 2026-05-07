@@ -3878,6 +3878,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             <button class="settings-side-item" data-st-tab="notif" type="button"><i data-lucide="bell"></i>Notifications</button>
 
+            <button class="settings-side-item" data-st-action="voice" type="button"><i data-lucide="mic"></i>Voice &amp; audio<i data-lucide="external-link" style="margin-left:auto;width:11px;height:11px;opacity:0.6"></i></button>
+
           </div>
 
           <div class="settings-content">
@@ -5500,7 +5502,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   // from this one set so the lists never drift apart.
 
-  let friendsList = ['murph','brand','tars','case','doyle']; // ordered DM keys
+  // Demo friends. Doyle/Mann/KIPP intentionally excluded — they're seeded as
+
+  // incoming friend requests below, so they shouldn't show up as friends yet.
+
+  let friendsList = ['murph','brand','tars','case']; // ordered DM keys
 
   function isFriend(key){ if (!key) return false; return friendsList.includes(key.toLowerCase()); }
 
@@ -5692,15 +5698,31 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   }
 
+  // The most recently-joined voice channel sticks at the front of the orb
+
+  // carousel even after disconnect, until the user joins a different orb.
+
+  // Marked orbs and the currently-connected orb still take precedence.
+
+  let lastJoinedChannel = null;
+
   // ============== ORB CAROUSEL ==============
 
   function getAllChannels(){
 
-    // Only marked channels appear in the ORBITS carousel.
-
-    // The currently connected channel is always visible even if unmarked.
-
     let out = marked.filter(c => channelData[c]).slice();
+
+    // Prepend the last-joined orb if it isn't already in the list (and is
+
+    // visible to the user). The currently-connected orb wins over everything.
+
+    if (lastJoinedChannel && lastJoinedChannel !== connectedChannel
+
+        && channelData[lastJoinedChannel] && !out.includes(lastJoinedChannel)){
+
+      out.unshift(lastJoinedChannel);
+
+    }
 
     if (inVoice && connectedChannel && !out.includes(connectedChannel) && channelData[connectedChannel]) out.unshift(connectedChannel);
 
@@ -6012,7 +6034,23 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     updateOrbStates();
 
-    if (voiceUsersSidebarOpen) renderVoiceUsers();
+    // Auto-open the voice users sidebar when previewing a real orb so the user
+
+    // can scrub through orbits and immediately see who's there. Skip the empty
+
+    // placeholder.
+
+    const ch = list[idx];
+
+    if (ch && ch !== '__empty__' && channelData[ch] && (channelData[ch].users||[]).length > 0){
+
+      setVoiceUsers(true);
+
+    } else if (voiceUsersSidebarOpen){
+
+      renderVoiceUsers();
+
+    }
 
   }
 
@@ -6319,6 +6357,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     inVoice = true;
 
     connectedChannel = ch;
+
+    lastJoinedChannel = ch;
 
     // The joined channel must show up in the ORBITS carousel.
 
@@ -8086,6 +8126,14 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     document.querySelectorAll('.fr-tab').forEach(t => t.classList.toggle('active', t.dataset.frTab === frActiveTab));
 
+    // Always refresh both tab counts so the OUTGOING badge reflects the live
+
+    // outgoing array, not just whatever updateBadges last computed.
+
+    const inEl  = document.getElementById('frInCount');  if (inEl)  inEl.textContent  = friendRequests.incoming.length;
+
+    const outEl = document.getElementById('frOutCount'); if (outEl) outEl.textContent = friendRequests.outgoing.length;
+
     const items = friendRequests[frActiveTab] || [];
 
     if (items.length === 0){
@@ -8523,6 +8571,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     if (orbKeys.length){
 
       marked = marked.filter(k => !orbKeys.includes(k));
+
+      if (lastJoinedChannel && orbKeys.includes(lastJoinedChannel)) lastJoinedChannel = null;
 
     }
 
@@ -10150,7 +10200,17 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     });
 
-    Object.values(channelData).forEach(d => { if (Array.isArray(d.users)) d.users = swap(d.users); });
+    // For voice channels we DROP 'Cooper' instead of renaming. Otherwise the
+
+    // local user appears as already-connected to a bunch of demo orbs before
+
+    // they have actually joined anything (and re-appears after disconnect).
+
+    Object.values(channelData).forEach(d => {
+
+      if (Array.isArray(d.users)) d.users = d.users.filter(x => x !== 'Cooper' && x !== toName);
+
+    });
 
   }
 
@@ -13262,6 +13322,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   document.querySelectorAll('.settings-side-item').forEach(t => t.addEventListener('click', () => {
 
+    if (t.dataset.stAction === 'voice'){ openVoiceSettings(); return; }
+
     setSettingsTab(t.dataset.stTab);
 
   }));
@@ -13754,7 +13816,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (!v){ showToast('Enter an ID or handle','warn'); return; }
 
-    const newId = 200 + friendRequests.outgoing.length;
+    const newId = Date.now();
 
     friendRequests.outgoing.push({ id:newId, name:v.replace('@',''), handle: v.startsWith('@')?v:'@'+v.toLowerCase().replace(/[^a-z0-9_]/g,''), initial:v.replace('@','').charAt(0).toUpperCase(), avColor:'linear-gradient(135deg,#818cf8,#1e1b4b)', meta:'sent just now' });
 
