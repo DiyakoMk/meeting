@@ -536,11 +536,11 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ph-purple-orb.active{box-shadow:0 0 28px rgba(190,18,60,0.85),inset 0 0 12px rgba(255,255,255,0.4)}
 
-.ph-server-rail{display:flex;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;max-width:0;opacity:0;transition:max-width 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.25s;scrollbar-width:none;flex:1;padding:4px 0}
+.ph-server-rail{display:flex;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;max-width:0;opacity:0;visibility:hidden;transition:max-width 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.2s,visibility 0s linear 0.2s;scrollbar-width:none;flex:1;padding:4px 0}
 
 .ph-server-rail::-webkit-scrollbar{display:none}
 
-.ph-server-rail.open{max-width:600px;opacity:1}
+.ph-server-rail.open{max-width:600px;opacity:1;visibility:visible;transition:max-width 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.2s,visibility 0s linear 0s}
 
 .srv-orb{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono','Vazirmatn',monospace;font-weight:700;font-size:0.75rem;color:white;cursor:pointer;flex-shrink:0;border:2px solid transparent;transition:all 0.2s;position:relative;background:var(--srv-grad,linear-gradient(135deg,#6366f1,#1e1b4b));overflow:hidden}
 
@@ -5132,9 +5132,33 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     coop:     { name:'COOPER',   users:[],                                    color:'rgba(34,197,94,',  planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#22c55e 60%,#14532d)', atmoColor:'rgba(34,197,94,0.4)', orbiterColor:'rgba(34,197,94,0.7)', avBorder:'#4ade80', emoji:'🌱', tier:'common' },
 
-    __empty__:{ name:'EMPTY',    users:[],                                    color:'rgba(120,120,140,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.18),#3a3a44 55%,#0f0f14)', atmoColor:'rgba(120,120,140,0.18)', orbiterColor:'rgba(120,120,140,0.4)', avBorder:'#6b7280', emoji:'∅', tier:'common', isEmpty:true }
+    __empty__:{ name:'EMPTY',    users:[],                                    color:'rgba(120,120,140,',planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.18),#3a3a44 55%,#0f0f14)', atmoColor:'rgba(120,120,140,0.18)', orbiterColor:'rgba(120,120,140,0.4)', avBorder:'#6b7280', emoji:'∅', tier:'common', isEmpty:true },
+
+    // Sub-channels of seeded servers — each gets its own carousel-friendly entry
+
+    // so the orb column shows the channel's own name, not the parent's.
+
+    'endurance-bridge': { name:'BRIDGE', users:['Case','Doyle'], color:'rgba(244,114,182,', planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#f472b6 60%,#831843)', atmoColor:'rgba(244,114,182,0.4)', orbiterColor:'rgba(244,114,182,0.7)', avBorder:'#f9a8d4', emoji:'🛰', tier:'rare' },
+
+    'cooper-talk':      { name:'TALK',   users:[],               color:'rgba(34,197,94,',  planetGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#22c55e 60%,#14532d)', atmoColor:'rgba(34,197,94,0.4)', orbiterColor:'rgba(34,197,94,0.7)', avBorder:'#4ade80', emoji:'💬', tier:'common' }
 
   };
+
+  // Resolve a server-side voiceChannel record to the channelData key. Each
+
+  // entry that has its own channelData uses its own id. This used to fall back
+
+  // to the parent server key for a couple of seeded sub-channels, which made
+
+  // the orb column show the wrong name on join.
+
+  function vcChannelKey(vc){
+
+    if (!vc) return null;
+
+    return vc.id;
+
+  }
 
   const allChannels = ['orbit','endurance','solaris','glacius','verdant','inferno','gargantua','miller','coop'];
 
@@ -6136,7 +6160,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         (srv.voiceChannels||[]).forEach(v => {
 
-          const k = channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id);
+          const k = vcChannelKey(v);
 
           if (seen.has(k) || !channelData[k]) return;
 
@@ -7890,7 +7914,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         if ((sv.voiceChannels||[]).some(v => {
 
-          const k = channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id);
+          const k = vcChannelKey(v);
 
           return k === ch;
 
@@ -8284,59 +8308,59 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   let dmsRailOpen = false;
 
-  function toggleDmsRail(){
+  // The purple-orb server rail is a single shared piece of state across the
 
-    dmsRailOpen = !dmsRailOpen;
+  // home, dms and world page headers. Toggling it on any page mirrors to all
 
-    const orb = document.getElementById('dmsPurpleOrb');
+  // three so the user doesn't need to re-open it after switching tabs.
 
-    const rail = document.getElementById('dmsServerRail');
+  function applyRailState(){
 
-    const dt = document.getElementById('dmsDefaultText');
+    const open = !!railOpen;
 
-    if (orb) orb.classList.toggle('active', dmsRailOpen);
+    [
 
-    if (dt) dt.classList.toggle('hidden', dmsRailOpen);
+      ['homePurpleOrb','homeDefaultText','homeServerRail'],
 
-    if (rail) rail.classList.toggle('open', dmsRailOpen);
+      ['dmsPurpleOrb','dmsDefaultText','dmsServerRail'],
 
-  }
+      ['worldPurpleOrb','worldDefaultText','worldServerRail']
 
-  function toggleHomeRail(){
+    ].forEach(([orbId, txtId, railId]) => {
 
-    homeRailOpen = !homeRailOpen;
+      const orb  = document.getElementById(orbId);
 
-    document.getElementById('homePurpleOrb').classList.toggle('active', homeRailOpen);
+      const txt  = document.getElementById(txtId);
 
-    document.getElementById('homeDefaultText').classList.toggle('hidden', homeRailOpen);
+      const rail = document.getElementById(railId);
 
-    document.getElementById('homeServerRail').classList.toggle('open', homeRailOpen);
+      if (orb)  orb.classList.toggle('active', open);
 
-  }
+      if (txt)  txt.classList.toggle('hidden', open);
 
-  function toggleWorldRail(){
+      if (rail) rail.classList.toggle('open', open);
 
-    worldRailOpen = !worldRailOpen;
+    });
 
-    document.getElementById('worldPurpleOrb').classList.toggle('active', worldRailOpen);
+    homeRailOpen = open;
 
-    document.getElementById('worldDefaultText').classList.toggle('hidden', worldRailOpen);
+    dmsRailOpen  = open;
 
-    document.getElementById('worldServerRail').classList.toggle('open', worldRailOpen);
-
-  }
-
-  function closeWorldRail(){
-
-    worldRailOpen = false;
-
-    document.getElementById('worldPurpleOrb').classList.remove('active');
-
-    document.getElementById('worldDefaultText').classList.remove('hidden');
-
-    document.getElementById('worldServerRail').classList.remove('open');
+    worldRailOpen = open;
 
   }
+
+  let railOpen = false;
+
+  function setRailOpen(v){ railOpen = !!v; applyRailState(); }
+
+  function toggleDmsRail(){ setRailOpen(!railOpen); }
+
+  function toggleHomeRail(){ setRailOpen(!railOpen); }
+
+  function toggleWorldRail(){ setRailOpen(!railOpen); }
+
+  function closeWorldRail(){ setRailOpen(false); }
 
   // ============== SERVER OVERVIEW (store-like) ==============
 
@@ -8466,7 +8490,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       const vc = (s.voiceChannels||[]).find(v => {
 
-        const k = channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id);
+        const k = vcChannelKey(v);
 
         return k === chKey;
 
@@ -8566,7 +8590,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     // 1) Marked voice orbs that lived in this server.
 
-    const orbKeys = (s.voiceChannels||[]).map(v => channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id));
+    const orbKeys = (s.voiceChannels||[]).map(v => vcChannelKey(v));
 
     if (orbKeys.length){
 
@@ -9228,7 +9252,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             const style = voiceStyles[vc.style] || voiceStyles.indigo;
 
-            const chKey = channelData[vc.id] ? vc.id : (vc.id==='endurance-bridge'?'endurance':vc.id==='cooper-talk'?'coop':vc.id);
+            const chKey = vcChannelKey(vc);
 
             const data = channelData[chKey];
 
@@ -11010,7 +11034,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (card.kind === 'text'){ openTextChannel(card.channelId); return; }
 
-    const chKey = channelData[ent.id] ? ent.id : (ent.id==='endurance-bridge'?'endurance':ent.id==='cooper-talk'?'coop':ent.id);
+    const chKey = vcChannelKey(ent);
 
     if (!channelData[chKey]){ showToast('Voice orb data missing','warn'); return; }
 
@@ -11334,7 +11358,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       const vc = s.voiceChannels.find(x => x.id === chId); if (!vc) return;
 
-      const chKey = channelData[vc.id] ? vc.id : (vc.id==="endurance-bridge"?"endurance":vc.id==="cooper-talk"?"coop":vc.id);
+      const chKey = vcChannelKey(vc);
 
       const data = channelData[chKey] || {};
 
@@ -13994,7 +14018,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         const isOurs = (s.voiceChannels||[]).some(v => {
 
-          const k = channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id);
+          const k = vcChannelKey(v);
 
           return k === connectedChannel;
 
@@ -14436,7 +14460,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
           const isOurs = (s.voiceChannels||[]).some(v => {
 
-            const k = channelData[v.id] ? v.id : (v.id==='endurance-bridge'?'endurance':v.id==='cooper-talk'?'coop':v.id);
+            const k = vcChannelKey(v);
 
             return k === connectedChannel;
 
@@ -14580,7 +14604,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         (s.categories||[]).forEach(cat => { cat.voiceChannels = (cat.voiceChannels||[]).filter(x => x !== id); });
 
-        const chKey = channelData[vc.id] ? vc.id : (vc.id==='endurance-bridge'?'endurance':vc.id==='cooper-talk'?'coop':vc.id);
+        const chKey = vcChannelKey(vc);
 
         if (connectedChannel === chKey) endVoiceCall();
 
@@ -15354,7 +15378,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (chanSettingsTarget.type === 'voice'){
 
-        const chKey = channelData[ent.id] ? ent.id : (ent.id==='endurance-bridge'?'endurance':ent.id==='cooper-talk'?'coop':ent.id);
+        const chKey = vcChannelKey(ent);
 
         if (channelData[chKey]) channelData[chKey].name = newName.toUpperCase();
 
