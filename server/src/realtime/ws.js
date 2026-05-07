@@ -56,8 +56,11 @@ export function attachWs(httpServer) {
       } catch (_) { /* ignore malformed */ }
     });
 
-    // Ack so the client knows auth succeeded.
-    ws.send(JSON.stringify({ type: 'hello', uid, name: user.name }));
+    // Ack so the client knows auth succeeded. Include the current online
+    // user set so a freshly-connected client can paint presence without
+    // waiting for the next presence event.
+    const onlineUids = Array.from(clients.keys()).filter(u => u !== uid);
+    ws.send(JSON.stringify({ type: 'hello', uid, name: user.name, online: onlineUids }));
   });
 }
 
