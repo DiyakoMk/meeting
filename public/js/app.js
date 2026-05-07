@@ -1579,6 +1579,28 @@
 
     setTimeout(()=>{ const inp = document.getElementById('dmInput'); if (inp) inp.focus(); }, 100);
 
+    // Lazy-load DM history from the backend so messages survive reloads.
+
+    // Saved Messages also persists, but the snapshot ships its array empty.
+
+    if (backend.isConfigured() && key && conversations[key]){
+
+      const peerKey = conversations[key].isSaved ? 'saved' : key;
+
+      backend.dms.list(peerKey).then(r => {
+
+        if (r && Array.isArray(r.messages)){
+
+          messages[key] = r.messages;
+
+          if (currentConversation === key) renderConversation();
+
+        }
+
+      }).catch(()=>{});
+
+    }
+
   }
 
   // Friends-only compose gate. When the local user has the privacy toggle on
@@ -8547,12 +8569,6 @@
 
       s.categories = s.categories || [];
 
-      // Persist to backend so other members see the category. Server returns
-
-      // the canonical id so the local copy matches what /me/snapshot will
-
-      // hydrate with on the next session.
-
       let cid = 'cat-'+uid();
 
       if (backend.isConfigured()){
@@ -8567,7 +8583,15 @@
 
       }
 
-      s.categories.push({ id:cid, name:name.toUpperCase(), textChannels:[], voiceChannels:[] });
+      // The realtime `server:category-added` event may have already arrived
+
+      // before this POST resolved — guard against duplicate inserts.
+
+      if (!s.categories.find(c => c.id === cid)){
+
+        s.categories.push({ id:cid, name:name.toUpperCase(), textChannels:[], voiceChannels:[] });
+
+      }
 
       document.getElementById('createChannelBackdrop').classList.remove('show');
 
@@ -8623,9 +8647,19 @@
 
       }
 
-      s.textChannels.push({ id:newId, name, style: ccSelectedStyle, unread:0 });
+      // De-dup against the realtime `server:channel-added` echo that may
 
-      cat.textChannels = cat.textChannels || []; cat.textChannels.push(newId);
+      // have already inserted this channel before our POST resolved.
+
+      if (!s.textChannels.find(t => t.id === newId)){
+
+        s.textChannels.push({ id:newId, name, style: ccSelectedStyle, unread:0 });
+
+      }
+
+      cat.textChannels = cat.textChannels || [];
+
+      if (!cat.textChannels.includes(newId)) cat.textChannels.push(newId);
 
       showToast('Text channel #'+name+' created','success');
 
@@ -8645,7 +8679,11 @@
 
       }
 
-      s.voiceChannels.push({ id:newId, name: name.toUpperCase(), style: ccSelectedStyle });
+      if (!s.voiceChannels.find(v => v.id === newId)){
+
+        s.voiceChannels.push({ id:newId, name: name.toUpperCase(), style: ccSelectedStyle });
+
+      }
 
       if (!channelData[newId]){
 
@@ -8659,7 +8697,9 @@
 
       }
 
-      cat.voiceChannels = cat.voiceChannels || []; cat.voiceChannels.push(newId);
+      cat.voiceChannels = cat.voiceChannels || [];
+
+      if (!cat.voiceChannels.includes(newId)) cat.voiceChannels.push(newId);
 
       showToast('Voice orb '+name+' created','success');
 
@@ -12922,6 +12962,42 @@
       servers[r.server.id] = r.server;
 
       if (!myServers.includes(r.server.id)) myServers.push(r.server.id);
+
+      // Materialise channelData entries for every voice channel in the
+
+      // newly-joined server so the orb UI can find them. Without this the
+
+      // guest has to reload before joining a voice channel actually works.
+
+      (r.server.voiceChannels || []).forEach(vc => {
+
+        if (channelData[vc.id]) return;
+
+        const st = voiceStyles[vc.style] || voiceStyles.indigo;
+
+        const m = (st.glow||'rgba(99,102,241,0.4)').match(/rgba\((\d+),(\d+),(\d+),/);
+
+        channelData[vc.id] = {
+
+          name: vc.name, users: [],
+
+          color: 'rgba('+(m?m[1]:99)+','+(m?m[2]:102)+','+(m?m[3]:241)+',',
+
+          planetGrad: st.grad, atmoColor: st.glow, orbiterColor: st.c,
+
+          avBorder:'#fff', emoji:'🪐',
+
+          tier: st.skin ? 'legendary' : 'common', skin: st.skin || undefined
+
+        };
+
+      });
+
+      // Pull the latest snapshot too so other server-scoped state (live voice
+
+      // members, recent text-channel pin status) is up to date.
+
+      if (typeof _hydrateAndRefresh === 'function') _hydrateAndRefresh().catch(()=>{});
 
       renderServerRails(); renderHomeMyServers();
 
