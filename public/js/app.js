@@ -5373,7 +5373,25 @@
 
     catch (e){ console.warn('[orblood] ws connect failed', e); _scheduleWsRetry(); return; }
 
-    _ws.addEventListener('open',  () => { _wsRetry = 0; });
+    _ws.addEventListener('open',  () => {
+
+      const wasReconnect = _wsRetry > 0;
+
+      _wsRetry = 0;
+
+      // After a reconnect, pull a fresh snapshot so we don't miss events that
+
+      // the server pushed while we were offline (friend accepts, new
+
+      // channels, member joins, etc.).
+
+      if (wasReconnect && typeof _hydrateAndRefresh === 'function'){
+
+        _hydrateAndRefresh().catch(()=>{});
+
+      }
+
+    });
 
     _ws.addEventListener('close', () => { _ws = null; _scheduleWsRetry(); });
 
@@ -7961,7 +7979,7 @@
 
   }
 
-  function submitCreateChannel(){
+  async function submitCreateChannel(){
 
     if (!currentServer){ showToast('Open a server first','warn'); return; }
 
@@ -7977,7 +7995,27 @@
 
       s.categories = s.categories || [];
 
-      s.categories.push({ id:'cat-'+uid(), name:name.toUpperCase(), textChannels:[], voiceChannels:[] });
+      // Persist to backend so other members see the category. Server returns
+
+      // the canonical id so the local copy matches what /me/snapshot will
+
+      // hydrate with on the next session.
+
+      let cid = 'cat-'+uid();
+
+      if (backend.isConfigured()){
+
+        const r = await backend.servers.addCategory(currentServer, { name: name.toUpperCase() });
+
+        if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+        if (r.error){ showToast('Could not create category: '+r.error,'warn'); return; }
+
+        cid = r.category.id;
+
+      }
+
+      s.categories.push({ id:cid, name:name.toUpperCase(), textChannels:[], voiceChannels:[] });
 
       document.getElementById('createChannelBackdrop').classList.remove('show');
 
@@ -8021,6 +8059,18 @@
 
       newId = uid();
 
+      if (backend.isConfigured()){
+
+        const r = await backend.channels.addTextChannel(currentServer, { name, style: ccSelectedStyle, categoryId: cat.id });
+
+        if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+        if (r.error){ showToast('Could not create channel: '+r.error,'warn'); return; }
+
+        newId = r.channel.id;
+
+      }
+
       s.textChannels.push({ id:newId, name, style: ccSelectedStyle, unread:0 });
 
       cat.textChannels = cat.textChannels || []; cat.textChannels.push(newId);
@@ -8030,6 +8080,18 @@
     } else {
 
       newId = 'custom-'+uid();
+
+      if (backend.isConfigured()){
+
+        const r = await backend.channels.addVoiceChannel(currentServer, { name: name.toUpperCase(), style: ccSelectedStyle, categoryId: cat.id });
+
+        if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+        if (r.error){ showToast('Could not create voice channel: '+r.error,'warn'); return; }
+
+        newId = r.channel.id;
+
+      }
 
       s.voiceChannels.push({ id:newId, name: name.toUpperCase(), style: ccSelectedStyle });
 
