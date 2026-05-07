@@ -20,17 +20,24 @@ orblood/
 │   │   │   ├── hash.js         # bcrypt
 │   │   │   ├── jwt.js          # sign/verify with HS256
 │   │   │   └── middleware.js   # attachUser (decode bearer), requireAuth
-│   │   ├── lib/userShape.js    # publicUser/foreignUser DB → JSON adapter
+│   │   ├── lib/
+│   │   │   ├── userShape.js    # publicUser/foreignUser DB → JSON
+│   │   │   ├── ids.js          # uid + invite-key generators
+│   │   │   └── access.js       # membership / admin / friend / block checks
 │   │   ├── routes/
-│   │   │   ├── health.js       # GET /api/healthz                       ✓ phase 1
-│   │   │   ├── voice-config.js # GET /api/voice/config (TURN/STUN)      ✓ phase 1
-│   │   │   ├── auth.js         # /api/auth/{signup,login,logout}        ✓ phase 2
-│   │   │   ├── me.js           # /api/me, PATCH /me, /api/me/snapshot   ✓ phase 2
-│   │   │   ├── servers.js      # CRUD + categories                      ✗ phase 3
-│   │   │   ├── channels.js     # text + voice channels                  ✗ phase 3
-│   │   │   ├── dms.js          # 1:1 messages                           ✗ phase 3
-│   │   │   ├── friends.js      # requests, friendships, marks           ✗ phase 3
-│   │   │   └── users.js        # search, block / unblock                ✗ phase 3
+│   │   │   ├── health.js       # GET /api/healthz                         ✓ phase 1
+│   │   │   ├── voice-config.js # GET /api/voice/config (TURN/STUN)        ✓ phase 1
+│   │   │   ├── auth.js         # /api/auth/{signup,login,logout}          ✓ phase 2
+│   │   │   ├── me.js           # /api/me, PATCH /me, /api/me/snapshot     ✓ phase 2
+│   │   │   ├── servers.js      # create / patch / delete / lookup / join  ✓ phase 3
+│   │   │   │                   # /transfer-ownership, categories CRUD
+│   │   │   ├── channels.js     # text + voice channels CRUD,              ✓ phase 3
+│   │   │   │                   # /text/:c/messages send + read + delete,
+│   │   │   │                   # /voice/:c/{join,leave}
+│   │   │   ├── dms.js          # /dms/:peer GET/POST/clear/DELETE :mid    ✓ phase 3
+│   │   │   ├── friends.js      # /request /accept /reject (cancel) /remove ✓ phase 3
+│   │   │   ├── users.js        # /search, /:id/block, /:id/unblock        ✓ phase 3
+│   │   │   └── uploads.js      # POST /uploads/image (multipart, 5MB cap) ✓ phase 3
 │   │   ├── realtime/           # Phase 4: WebSocket push + voice signaling
 │   │   └── scripts/init-db.js  # Creates the database from schema.sql
 │   ├── uploads/                # Avatars + covers (gitignored)
@@ -43,40 +50,75 @@ orblood/
 └── README.md
 ```
 
-## What's wired up after Phase 2
+## What's wired up after Phase 3
 
-The frontend's existing auth modal now talks to the real backend whenever a
-`<meta name="orblood-api" content="...">` is present in `public/index.html`
-(the default value is `/api`, which works behind the supplied `nginx.conf`).
+When `<meta name="orblood-api">` resolves to a reachable backend, every user
+action persists to MySQL:
 
-End-to-end:
+**Auth**
+- signup / login / logout / me / patch / snapshot (phase 2).
+- Token in `Authorization: Bearer …`, stored in `localStorage.orblood_token_v1`.
 
-- `POST /api/auth/signup` → bcrypt-hashed user, JWT issued, Saved Messages
-  thread auto-created.
-- `POST /api/auth/login` → JWT for valid email+password.
-- `GET  /api/me` → fresh profile.
-- `PATCH /api/me` → name, handle, email, password, bio, baseColor, avImage,
-  bannerImage, phone, rank, friendsOnly. Uniqueness checked, password
-  rehashed.
-- `GET  /api/me/snapshot` → full hydration payload that mirrors the in-memory
-  shape the frontend already used. Conversations is seeded with `saved`,
-  every other store is empty until phase 3.
-- `POST /api/auth/logout` → no-op for stateless JWTs (token clears
-  client-side); a hook for future session tracking.
+**Profile**
+- PATCH `/api/me` — name, handle, email, password, bio, baseColor, phone,
+  rank, friendsOnly. Avatars + covers via image upload.
+- POST `/api/uploads/image` — multipart, returns `{url}` pointing at
+  `/uploads/<random>.<ext>`. Frontend then PATCHes `/me` with the URL.
 
-Inputs validated with Zod (returns `{error:'validation_failed', field, message}`
-on any malformed body). The auth surface has a per-IP rate limit of 8/min.
+**Servers**
+- POST `/api/servers` — caller becomes first member + admin.
+- GET  `/api/servers/lookup/:keyOrId` — preview without joining.
+- POST `/api/servers/:keyOrId/join` — honours `is_private`.
+- PATCH `/api/servers/:id`, DELETE `/api/servers/:id`,
+  POST `/api/servers/:id/leave` (last-admin guard),
+  POST `/api/servers/:id/transfer-ownership`.
+- POST `/api/servers/:id/categories`, DELETE `/api/servers/:id/categories/:cid`.
 
-Errors emitted to the frontend (matched in `_authErrorLabel()` in `app.js`):
+**Channels**
+- POST `/api/channels/text/:sid`, DELETE `/api/channels/text/:sid/:cid`.
+- POST `/api/channels/voice/:sid`, DELETE `/api/channels/voice/:sid/:cid`.
+- GET / POST / DELETE `/api/channels/text/:sid/:cid/messages[/:mid]`.
+- POST `/api/channels/voice/:sid/:cid/{join,leave}` — tracks who's connected.
 
-| code                    | meaning                            | HTTP |
-|-------------------------|------------------------------------|------|
-| `validation_failed`     | Zod rejected a field               | 400  |
-| `invalid_credentials`   | Wrong email or password            | 401  |
-| `email_or_handle_taken` | Signup conflict on email or handle | 409  |
-| `email_taken`           | PATCH /me email collision          | 409  |
-| `handle_taken`          | PATCH /me handle collision         | 409  |
-| `unauthorized`          | Missing or invalid bearer token    | 401  |
+**DMs**
+- GET / POST `/api/dms/:peerKey` — `peerKey` is a handle (or `saved`).
+- POST `/api/dms/:peerKey/clear`, DELETE `/api/dms/:peerKey/:mid`.
+- Honours block list + `friends_only` flag on the peer.
+
+**Friends**
+- POST `/api/friends/request` (`{target}` = handle or email).
+- POST `/api/friends/:rid/accept`, `/reject`.
+- DELETE `/api/friends/:rid` (cancel outgoing).
+- POST `/api/friends/remove/:userId`.
+
+**Users**
+- GET  `/api/users/search?q=…`.
+- POST `/api/users/:id/block`, `/api/users/:id/unblock`.
+
+The frontend's `backend.*` adapter in `public/js/app.js` mirrors all of these
+1:1. When the API is unreachable, the page falls back to in-memory state and
+logs a warning.
+
+## Error codes
+
+| code                        | HTTP | when |
+|-----------------------------|-----:|------|
+| `validation_failed`         | 400  | Zod rejected a field |
+| `invalid_credentials`       | 401  | Bad email/password |
+| `unauthorized`              | 401  | Missing or invalid bearer token |
+| `not_a_member`              | 403  | Acting on a server you're not in |
+| `admin_required`            | 403  | Member-only action attempted by non-admin |
+| `private_server`            | 403  | Joining a private server |
+| `blocked`                   | 403  | DM target blocked you (or vice-versa) |
+| `friends_only`              | 403  | DM target accepts only friends |
+| `forbidden`                 | 403  | Generic permission denial |
+| `last_admin_must_transfer`  | 409  | Owner trying to leave their own server |
+| `email_or_handle_taken`     | 409  | Signup conflict |
+| `email_taken` / `handle_taken` | 409 | PATCH /me conflict |
+| `already_friends`           | 409  | Friend request to an existing friend |
+| `request_already_pending`   | 409  | Duplicate friend request |
+| `not_found`                 | 404  | Lookup miss |
+| `user_not_found`            | 404  | Friend-request target absent |
 
 ## Local development
 
@@ -97,7 +139,7 @@ cd ../public && python3 -m http.server 5173
 
 If the frontend runs on a different origin than the backend (e.g. 5173 vs 4000),
 set `PUBLIC_ORIGIN=http://localhost:5173` in `server/.env` and update the
-`<meta name="orblood-api">` to `http://localhost:4000/api`.
+`<meta name="orblood-api">` in `public/index.html` to `http://localhost:4000/api`.
 
 For an all-in-one local stack with nginx in front, `docker compose up` and
 visit http://localhost:8080 instead.
@@ -106,8 +148,8 @@ visit http://localhost:8080 instead.
 
 - [x] Phase 1: split monolithic `orblood.html` into `public/` + `server/` skeleton.
 - [x] Phase 2: real auth (signup/login + JWT) + `/me/snapshot` hydration.
-- [ ] Phase 3: hook every frontend mutation (create server, send DM, friend
-      request, block, …) to the backend.
+- [x] Phase 3: REST mutations (servers, channels, DMs, friends, blocks,
+      profile, image uploads).
 - [ ] Phase 4: WebSocket realtime + ExpressTurn-backed WebRTC voice.
 
 ## Production deploy outline
