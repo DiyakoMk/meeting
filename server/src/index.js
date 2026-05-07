@@ -15,6 +15,8 @@ import { friendsRouter } from './routes/friends.js';
 import { usersRouter } from "./routes/users.js";
 import { uploadsRouter } from "./routes/uploads.js";
 import { voiceConfigRouter } from './routes/voice-config.js';
+import { attachWs } from './realtime/ws.js';
+import http from 'node:http';
 
 const app = express();
 
@@ -63,7 +65,20 @@ app.use((err, _req, res, _next) => {
     console.warn('[server] db unreachable at startup:', e.message);
     console.warn('[server] continuing — fix the connection then restart.');
   }
-  app.listen(config.port, () => {
+  // Wrap Express in a bare HTTP server so we can also attach the WebSocket
+
+  // upgrade handler on the same port. nginx reverse-proxies /ws → backend.
+
+  const httpServer = http.createServer(app);
+
+  attachWs(httpServer);
+
+  httpServer.listen(config.port, () => {
+
     console.log(`[server] listening on http://localhost:${config.port}`);
+
+    console.log(`[server] websocket on    ws://localhost:${config.port}/ws`);
+
   });
+
 })();

@@ -5,6 +5,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { uid } from '../lib/ids.js';
 import { requireMember, requireAdmin } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
+import { emitChannelMessage, emitVoiceJoin, emitVoiceLeave } from '../realtime/events.js';
 
 export const channelsRouter = Router();
 channelsRouter.use(requireAuth);
@@ -85,7 +86,9 @@ channelsRouter.post('/voice/:sid/:cid/join', async (req, res, next) => {
     const members = await q(
       `SELECT u.name FROM voice_channel_members vm JOIN users u ON u.id = vm.user_id WHERE vm.channel_id = ?`,
       [cid]);
-    res.json({ ok: true, members: members.map(m => m.name) });
+    const names = members.map(m => m.name);
+    res.json({ ok: true, members: names });
+    emitVoiceJoin(sid, cid, req.user.name, names);
   } catch (e) { next(e); }
 });
 
@@ -94,7 +97,12 @@ channelsRouter.post('/voice/:sid/:cid/leave', async (req, res, next) => {
     const { sid, cid } = req.params;
     if (!await requireMember(req, res, sid)) return;
     await q('DELETE FROM voice_channel_members WHERE channel_id = ? AND user_id = ?', [cid, req.user.id]);
+    const members = await q(
+      `SELECT u.name FROM voice_channel_members vm JOIN users u ON u.id = vm.user_id WHERE vm.channel_id = ?`,
+      [cid]);
+    const names = members.map(m => m.name);
     res.json({ ok: true });
+    emitVoiceLeave(sid, cid, req.user.name, names);
   } catch (e) { next(e); }
 });
 
@@ -141,16 +149,16 @@ channelsRouter.post('/text/:sid/:cid/messages', async (req, res, next) => {
        VALUES (?, ?, ?, ?, ?)`,
       [cid, req.user.id, body.text || '', body.payload ? JSON.stringify(body.payload) : null, body.replyTo || null]
     );
-    res.status(201).json({
-      message: {
-        id: result.insertId,
-        user: req.user.name,
-        text: body.text || '',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        replyTo: body.replyTo || null,
-        payload: body.payload || null
-      }
-    });
+    const messagePayload = {
+      id: result.insertId,
+      user: req.user.name,
+      text: body.text || '',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      replyTo: body.replyTo || null,
+      payload: body.payload || null
+    };
+    res.status(201).json({ message: messagePayload });
+    emitChannelMessage(sid, cid, messagePayload);
   } catch (e) { next(e); }
 });
 

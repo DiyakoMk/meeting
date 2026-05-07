@@ -5,6 +5,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { uid, inviteKey } from '../lib/ids.js';
 import { requireMember, requireAdmin, isAdmin as isAdminOf } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
+import { emitServerMemberJoined, emitServerMemberLeft } from '../realtime/events.js';
 
 export const serversRouter = Router();
 serversRouter.use(requireAuth);
@@ -184,11 +185,10 @@ serversRouter.post('/:id/leave', async (req, res, next) => {
     }
     await q('DELETE FROM server_members WHERE server_id = ? AND user_id = ?', [sid, req.user.id]);
     res.json({ ok: true });
+    emitServerMemberLeft(sid, req.user.name);
   } catch (e) { next(e); }
 });
 
-// Join a server by invite key (or by id when public). Returns the freshly-
-// hydrated server payload so the frontend can plug it straight in.
 serversRouter.post('/:keyOrId/join', async (req, res, next) => {
   try {
     const k = (req.params.keyOrId || '').trim();
@@ -205,7 +205,9 @@ serversRouter.post('/:keyOrId/join', async (req, res, next) => {
     if (row.is_private) return res.status(403).json({ error: 'private_server' });
     await q('INSERT INTO server_members (server_id, user_id, is_admin) VALUES (?, ?, 0)',
       [row.id, req.user.id]);
-    res.status(201).json({ server: await buildServerPayload(row.id) });
+    const payload = await buildServerPayload(row.id);
+    res.status(201).json({ server: payload });
+    emitServerMemberJoined(row.id, req.user.name);
   } catch (e) { next(e); }
 });
 

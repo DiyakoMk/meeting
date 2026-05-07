@@ -4,6 +4,7 @@ import { pool, q, one } from '../db.js';
 import { requireAuth } from '../auth/middleware.js';
 import { areFriends, isBlocked } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
+import { emitNewDm } from '../realtime/events.js';
 
 export const dmsRouter = Router();
 dmsRouter.use(requireAuth);
@@ -82,16 +83,29 @@ dmsRouter.post('/:peerKey', async (req, res, next) => {
       [thread.id, req.user.id, body.text || '', body.payload ? JSON.stringify(body.payload) : null]
     );
     await q('UPDATE dm_threads SET last_msg_at = CURRENT_TIMESTAMP WHERE id = ?', [thread.id]);
-    res.status(201).json({
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const day  = new Date().toLocaleDateString().toUpperCase();
+    const responsePayload = {
       message: {
         id: result.insertId,
         sender: 'me',
         text: body.text || '',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        day: new Date().toLocaleDateString().toUpperCase(),
+        time, day,
         status: 'sent'
       }
-    });
+    };
+    res.status(201).json(responsePayload);
+    // Push to the peer in realtime. They see `sender:'them'` for the same row.
+    if (peer && peer.id !== req.user.id){
+      emitNewDm(req.user.id, peer.id, {
+        id: result.insertId,
+        sender: 'them',
+        text: body.text || '',
+        time, day,
+        peerHandle: req.user.handle ? '@' + req.user.handle : null,
+        peerName: req.user.name
+      });
+    }
   } catch (e) { next(e); }
 });
 

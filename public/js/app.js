@@ -1241,6 +1241,34 @@
 
     playVoiceCue('join');
 
+    // Tell the backend (so other members get a voice:join push, and persistence
+
+    // tracks who's connected). On success we also kick off WebRTC.
+
+    if (backend.isConfigured() && currentServer){
+
+      const sid = currentServer;
+
+      backend.servers.voiceJoin(sid, ch).then(r => {
+
+        if (r && !r.error && !r.offline){
+
+          // Reflect the authoritative member list in case it differs.
+
+          if (Array.isArray(r.members)) channelData[ch].users = r.members.slice();
+
+          updateOrbStates();
+
+          if (typeof renderVoiceUsers === 'function' && voiceUsersSidebarOpen) renderVoiceUsers();
+
+        }
+
+      }).catch(()=>{});
+
+      voice.start(sid, ch).catch(()=>{});
+
+    }
+
   }
 
   function endVoiceCall(){
@@ -1252,6 +1280,14 @@
     const ch = connectedChannel;
 
     if (channelData[ch]) channelData[ch].users = channelData[ch].users.filter(u=>u!==selfProfile.name);
+
+    if (backend.isConfigured() && currentServer){
+
+      backend.servers.voiceLeave(currentServer, ch).catch(()=>{});
+
+    }
+
+    try { voice.stop(); } catch(_){}
 
     inVoice = false;
 
@@ -5271,6 +5307,756 @@
 
   }
 
+  // ============== REALTIME (WebSocket) ==============
+
+  //
+
+  // One persistent connection per logged-in tab. The server pushes events
+
+  // (new DM, friend request, channel message, voice join/leave, presence,
+
+  // typing) and we mutate in-memory state then re-render the affected piece.
+
+  //
+
+  // The connection auto-reconnects with backoff. If no backend is configured
+
+  // we never open one, so the page stays usable offline.
+
+  let _ws = null;
+
+  let _wsRetry = 0;
+
+  let _wsTimer = null;
+
+  function _wsUrl(){
+
+    const base = _backendBase();
+
+    if (!base) return null;
+
+    // Convert /api → /ws on the same origin.
+
+    if (base.startsWith('/')){
+
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+
+      return proto + '//' + location.host + '/ws';
+
+    }
+
+    const u = new URL(base);
+
+    u.protocol = u.protocol === 'https:' ? 'wss:' : 'ws:';
+
+    u.pathname = '/ws';
+
+    return u.toString().replace(/\/+$/, '');
+
+  }
+
+  function connectRealtime(){
+
+    if (!backend.isConfigured()) return;
+
+    const tok = backend.token.read();
+
+    if (!tok) return;
+
+    const url = _wsUrl();
+
+    if (!url) return;
+
+    if (_ws && (_ws.readyState === 0 || _ws.readyState === 1)) return;
+
+    try { _ws = new WebSocket(url + '?token=' + encodeURIComponent(tok)); }
+
+    catch (e){ console.warn('[orblood] ws connect failed', e); _scheduleWsRetry(); return; }
+
+    _ws.addEventListener('open',  () => { _wsRetry = 0; });
+
+    _ws.addEventListener('close', () => { _ws = null; _scheduleWsRetry(); });
+
+    _ws.addEventListener('error', () => { /* close handler will fire next */ });
+
+    _ws.addEventListener('message', e => {
+
+      let msg = null; try { msg = JSON.parse(e.data); } catch(_){}
+
+      if (!msg || !msg.type) return;
+
+      _handleRealtimeEvent(msg);
+
+    });
+
+  }
+
+  function _scheduleWsRetry(){
+
+    if (_wsTimer) return;
+
+    const delay = Math.min(15000, 500 * Math.pow(2, _wsRetry++));
+
+    _wsTimer = setTimeout(() => { _wsTimer = null; connectRealtime(); }, delay);
+
+  }
+
+  function disconnectRealtime(){
+
+    if (_ws){ try { _ws.close(); } catch(_){} _ws = null; }
+
+    if (_wsTimer){ clearTimeout(_wsTimer); _wsTimer = null; }
+
+    _wsRetry = 0;
+
+  }
+
+  function wsSend(payload){
+
+    if (_ws && _ws.readyState === 1){
+
+      try { _ws.send(JSON.stringify(payload)); } catch(_){}
+
+    }
+
+  }
+
+  function _handleRealtimeEvent(msg){
+
+    switch (msg.type){
+
+      case 'hello':
+
+        // Server confirmed auth.
+
+        break;
+
+      case 'presence':
+
+        _onPresence(msg);
+
+        break;
+
+      case 'dm:new':
+
+        _onIncomingDm(msg);
+
+        break;
+
+      case 'channel:message':
+
+        _onChannelMessage(msg);
+
+        break;
+
+      case 'voice:join':
+
+      case 'voice:leave':
+
+        _onVoiceMembership(msg);
+
+        break;
+
+      case 'server:member-joined':
+
+      case 'server:member-left':
+
+        _onServerMembership(msg);
+
+        break;
+
+      case 'friend:request':
+
+        _onFriendRequest(msg);
+
+        break;
+
+      case 'friend:accepted':
+
+        _onFriendAccepted(msg);
+
+        break;
+
+      case 'typing':
+
+        _onTyping(msg);
+
+        break;
+
+      case 'voice-signal':
+
+        if (typeof voice !== 'undefined' && voice.handleSignal) voice.handleSignal(msg);
+
+        break;
+
+    }
+
+  }
+
+  function _onPresence({ name, online }){
+
+    // Mirror onto every conversation that maps to this user. We don't have
+
+    // uid on conversations, so match by display name.
+
+    Object.values(conversations).forEach(c => {
+
+      if (c.name === name) c.online = !!online;
+
+    });
+
+    if (typeof renderHomeFriends === 'function') renderHomeFriends();
+
+    if (typeof renderDmList === 'function') renderDmList();
+
+    if (currentConversation && conversations[currentConversation] &&
+
+        conversations[currentConversation].name === name &&
+
+        typeof renderConversation === 'function'){
+
+      renderConversation();
+
+    }
+
+  }
+
+  function _onIncomingDm({ message }){
+
+    if (!message) return;
+
+    // The peer's handle is what the frontend keys conversations by.
+
+    const k = (message.peerHandle || '').replace(/^@/,'').toLowerCase();
+
+    if (!k) return;
+
+    if (!conversations[k]){
+
+      conversations[k] = {
+
+        name: message.peerName || k,
+
+        online: true, unread: 0,
+
+        avColor: 'linear-gradient(135deg,#a78bfa,#1e1b4b)',
+
+        initial: (message.peerName||k).charAt(0).toUpperCase(),
+
+        handle: '@'+k, bio:''
+
+      };
+
+    }
+
+    if (!messages[k]) messages[k] = [];
+
+    messages[k].push({
+
+      id: message.id,
+
+      sender: 'them',
+
+      text: message.text || '',
+
+      time: message.time, day: message.day,
+
+      status: 'delivered'
+
+    });
+
+    if (currentConversation !== k){
+
+      conversations[k].unread = (conversations[k].unread || 0) + 1;
+
+    }
+
+    bumpDmList(k);
+
+    if (typeof renderDmList === 'function') renderDmList();
+
+    if (currentConversation === k && typeof renderConversation === 'function') renderConversation();
+
+    if (typeof updateBadges === 'function') updateBadges();
+
+    _playNotifSound();
+
+  }
+
+  function _onChannelMessage({ serverId, channelId, message }){
+
+    const key = serverId + '__' + channelId;
+
+    if (!serverChannelMessages[key]) serverChannelMessages[key] = [];
+
+    // Skip if this is the echo of our own send (REST already added it).
+
+    if (message.user === selfProfile.name) return;
+
+    serverChannelMessages[key].push(message);
+
+    if (currentServer === serverId && currentTextChannel === channelId &&
+
+        typeof renderChannelView === 'function'){
+
+      renderChannelView();
+
+    } else {
+
+      // Bump unread on the channel.
+
+      const s = servers[serverId];
+
+      if (s){
+
+        const tc = (s.textChannels||[]).find(t => t.id === channelId);
+
+        if (tc) tc.unread = (tc.unread || 0) + 1;
+
+        if (typeof renderServerOverview === 'function' && currentServer === serverId) renderServerOverview();
+
+        if (typeof updateBadges === 'function') updateBadges();
+
+      }
+
+    }
+
+  }
+
+  function _onVoiceMembership({ type, serverId, channelId, members }){
+
+    const s = servers[serverId];
+
+    if (!s) return;
+
+    const ch = (s.voiceChannels||[]).find(v => v.id === channelId);
+
+    if (ch && channelData[ch.id]){
+
+      channelData[ch.id].users = (members||[]).slice();
+
+    }
+
+    if (typeof updateOrbStates === 'function') updateOrbStates();
+
+    if (typeof renderServerOverview === 'function' && currentServer === serverId) renderServerOverview();
+
+    if (typeof renderVoiceUsers === 'function' && voiceUsersSidebarOpen) renderVoiceUsers();
+
+    // For voice signaling: when someone joins our channel, voice.onPeerJoined
+
+    // fires and we initiate an offer.
+
+    if (type === 'voice:join' && typeof voice !== 'undefined' && voice.onPeerJoined){
+
+      voice.onPeerJoined(serverId, channelId, members);
+
+    }
+
+    if (type === 'voice:leave' && typeof voice !== 'undefined' && voice.onPeerLeft){
+
+      voice.onPeerLeft(serverId, channelId, members);
+
+    }
+
+  }
+
+  function _onServerMembership({ type, serverId, name }){
+
+    const s = servers[serverId];
+
+    if (!s) return;
+
+    if (type === 'server:member-joined'){
+
+      if (!(s.members||[]).includes(name)) s.members = (s.members||[]).concat([name]);
+
+    } else {
+
+      s.members = (s.members||[]).filter(m => m !== name);
+
+      s.admins  = (s.admins ||[]).filter(m => m !== name);
+
+    }
+
+    if (currentServer === serverId){
+
+      if (typeof renderServerOverview === 'function') renderServerOverview();
+
+      if (typeof renderMembers === 'function' && membersOpen) renderMembers();
+
+    }
+
+  }
+
+  function _onFriendRequest({ request }){
+
+    if (!request) return;
+
+    // Avoid duplicates if the user already has it from the snapshot.
+
+    if (friendRequests.incoming.some(r => r.id === request.id)) return;
+
+    friendRequests.incoming.push(request);
+
+    if (typeof renderFriendRequestsHome === 'function') renderFriendRequestsHome();
+
+    if (typeof renderFriendsLists === 'function') renderFriendsLists();
+
+    if (typeof updateBadges === 'function') updateBadges();
+
+    showToast(request.name+' sent you a friend request','success');
+
+    _playNotifSound();
+
+  }
+
+  function _onFriendAccepted({ peer }){
+
+    if (!peer) return;
+
+    const k = (peer.handle||'').replace(/^@/,'').toLowerCase();
+
+    if (k && !friendsList.includes(k)) friendsList.push(k);
+
+    // Drop the matching outgoing request.
+
+    friendRequests.outgoing = friendRequests.outgoing.filter(r =>
+
+      (r.handle||'').replace(/^@/,'').toLowerCase() !== k);
+
+    if (k && !conversations[k]){
+
+      conversations[k] = {
+
+        name: peer.name,
+
+        online: true, unread: 0,
+
+        avColor: peer.avColor,
+
+        avImage: peer.avImage || null,
+
+        initial: peer.initial,
+
+        handle: peer.handle, bio: peer.bio || ''
+
+      };
+
+    }
+
+    if (typeof renderHomeFriends === 'function') renderHomeFriends();
+
+    if (typeof renderFriendRequestsHome === 'function') renderFriendRequestsHome();
+
+    if (typeof renderFriendsLists === 'function') renderFriendsLists();
+
+    showToast(peer.name+' accepted your friend request','success');
+
+    _playNotifSound();
+
+  }
+
+  function _onTyping({ from }){
+
+    const k = (from||'').replace(/^@/,'').toLowerCase();
+
+    const conv = conversations[k]; if (!conv) return;
+
+    conv.typing = true;
+
+    if (typeof renderDmList === 'function') renderDmList();
+
+    clearTimeout(conv._typingTimer);
+
+    conv._typingTimer = setTimeout(() => {
+
+      conv.typing = false;
+
+      if (typeof renderDmList === 'function') renderDmList();
+
+    }, 4000);
+
+  }
+
+  function _playNotifSound(){
+
+    // Reuse the existing voice cue if available; otherwise silent.
+
+    try { if (typeof playVoiceCue === 'function') playVoiceCue('join'); } catch(_){}
+
+  }
+
+  // ============== VOICE (WebRTC + ExpressTurn) ==============
+
+  //
+
+  // One peer connection per remote user in the same voice channel.
+
+  // The server is the signaling relay (voice-signal envelope over the WS).
+
+  //
+
+  //   voice.start(serverId, channelId)  → grab mic + announce to peers
+
+  //   voice.stop()                      → tear down all PCs + release mic
+
+  //   voice.onPeerJoined / onPeerLeft   → called by the WS handler
+
+  //   voice.handleSignal                → consume a relayed offer/answer/ICE
+
+  //
+
+  // Audio elements are appended to <body> so the user hears every remote.
+
+  const voice = (() => {
+
+    let localStream = null;
+
+    let serverId = null, channelId = null;
+
+    const peers = new Map();    // peerName → { pc, audioEl, polite }
+
+    let iceServers = [{ urls: ['stun:stun.l.google.com:19302'] }];
+
+    async function loadIceConfig(){
+
+      if (!backend.isConfigured()) return;
+
+      const r = await fetch(_backendBase()+'/voice/config', {
+
+        headers: { 'Authorization': 'Bearer '+(backend.token.read()||'') }
+
+      }).then(x => x.json()).catch(()=>null);
+
+      if (r && Array.isArray(r.iceServers) && r.iceServers.length) iceServers = r.iceServers;
+
+    }
+
+    async function ensureMic(){
+
+      if (localStream) return localStream;
+
+      try {
+
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      } catch(e){
+
+        showToast('Microphone permission denied','warn');
+
+        throw e;
+
+      }
+
+      return localStream;
+
+    }
+
+    function newPc(peerName){
+
+      const pc = new RTCPeerConnection({ iceServers });
+
+      const audioEl = document.createElement('audio');
+
+      audioEl.autoplay = true;
+
+      audioEl.dataset.voicePeer = peerName;
+
+      document.body.appendChild(audioEl);
+
+      pc.ontrack = ev => { audioEl.srcObject = ev.streams[0]; };
+
+      pc.onicecandidate = ev => {
+
+        if (ev.candidate){
+
+          _signal(peerName, { kind:'ice', candidate: ev.candidate });
+
+        }
+
+      };
+
+      if (localStream){
+
+        localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+      }
+
+      const rec = { pc, audioEl, polite: false };
+
+      peers.set(peerName, rec);
+
+      return rec;
+
+    }
+
+    function _signal(peerName, signal){
+
+      // peerName is the *display name* — server will route to that user's
+
+      // sockets. Backend voice-signal uses uid; for simplicity we relay by
+
+      // finding their handle from conversations.
+
+      const conv = Object.values(conversations).find(c => c.name === peerName);
+
+      const handle = conv && conv.handle ? conv.handle.replace(/^@/,'') : null;
+
+      if (!handle) return;
+
+      wsSend({ type:'voice-signal', to: handle, signal });
+
+    }
+
+    async function _makeOffer(peerName){
+
+      const rec = peers.get(peerName) || newPc(peerName);
+
+      const offer = await rec.pc.createOffer();
+
+      await rec.pc.setLocalDescription(offer);
+
+      _signal(peerName, { kind:'sdp', sdp: rec.pc.localDescription });
+
+    }
+
+    async function _onSdp(peerName, sdp){
+
+      let rec = peers.get(peerName);
+
+      if (!rec) rec = newPc(peerName);
+
+      await rec.pc.setRemoteDescription(sdp);
+
+      if (sdp.type === 'offer'){
+
+        const answer = await rec.pc.createAnswer();
+
+        await rec.pc.setLocalDescription(answer);
+
+        _signal(peerName, { kind:'sdp', sdp: rec.pc.localDescription });
+
+      }
+
+    }
+
+    async function _onIce(peerName, candidate){
+
+      const rec = peers.get(peerName);
+
+      if (!rec) return;
+
+      try { await rec.pc.addIceCandidate(candidate); } catch(_){}
+
+    }
+
+    function tearDownPeer(peerName){
+
+      const rec = peers.get(peerName); if (!rec) return;
+
+      try { rec.pc.close(); } catch(_){}
+
+      if (rec.audioEl && rec.audioEl.parentNode) rec.audioEl.parentNode.removeChild(rec.audioEl);
+
+      peers.delete(peerName);
+
+    }
+
+    return {
+
+      async start(sid, cid){
+
+        if (!backend.isConfigured()) return;
+
+        await loadIceConfig();
+
+        try { await ensureMic(); } catch(_){ return; }
+
+        serverId = sid; channelId = cid;
+
+      },
+
+      stop(){
+
+        peers.forEach((_, name) => tearDownPeer(name));
+
+        if (localStream){ localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+
+        serverId = null; channelId = null;
+
+      },
+
+      mute(on){
+
+        if (!localStream) return;
+
+        localStream.getAudioTracks().forEach(t => t.enabled = !on);
+
+      },
+
+      onPeerJoined(sid, cid, members){
+
+        if (sid !== serverId || cid !== channelId) return;
+
+        // Initiate connections to anyone in `members` we don't already have a
+
+        // PC for, except ourselves. The "first to join" rule decides who
+
+        // makes the offer to avoid glare.
+
+        members.forEach(name => {
+
+          if (name === selfProfile.name) return;
+
+          if (peers.has(name)) return;
+
+          // Deterministic: lexicographically smaller name initiates.
+
+          if (selfProfile.name < name) _makeOffer(name);
+
+          else newPc(name);  // wait for offer
+
+        });
+
+      },
+
+      onPeerLeft(sid, cid, members){
+
+        if (sid !== serverId || cid !== channelId) return;
+
+        // Anyone we have a PC for who isn't in members → tear down.
+
+        for (const name of [...peers.keys()]){
+
+          if (!members.includes(name)) tearDownPeer(name);
+
+        }
+
+      },
+
+      handleSignal(msg){
+
+        if (!serverId || !channelId) return;
+
+        const peerName = msg.fromName;
+
+        if (!peerName) return;
+
+        const sig = msg.signal;
+
+        if (!sig) return;
+
+        if (sig.kind === 'sdp')  _onSdp(peerName, sig.sdp);
+
+        else if (sig.kind === 'ice') _onIce(peerName, sig.candidate);
+
+      }
+
+    };
+
+  })();
+
   // ============== AUTH (signup / login + splash) ==============
 
   const AUTH_KEY = 'nexus_auth_v1';
@@ -5477,6 +6263,8 @@
 
       }
 
+      connectRealtime();
+
       return;
 
     }
@@ -5680,6 +6468,10 @@
     if (typeof renderServerRails === 'function') renderServerRails();
 
     if (typeof updateBadges === 'function') updateBadges();
+
+    // Open the realtime channel now that we have a token + state is in sync.
+
+    connectRealtime();
 
   }
 
@@ -8887,6 +9679,10 @@
 
       backend.token.write(null);
 
+      disconnectRealtime();
+
+      try { voice.stop(); } catch(_){}
+
       clearAuth();
 
       closeProfile();
@@ -10936,6 +11732,8 @@
   document.getElementById('btnMic').addEventListener('click', () => {
 
     muted = !muted;
+
+    try { voice.mute(muted); } catch(_){}
 
     document.getElementById('btnMic').classList.toggle('muted-state', muted);
 
