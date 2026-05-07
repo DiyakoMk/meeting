@@ -61,6 +61,11 @@ meRouter.get('/snapshot', async (req, res, next) => {
   try {
     const me = await one('SELECT * FROM users WHERE id = ?', [req.user.id]);
 
+    // Pull online uids from the realtime layer to seed presence
+    // straight away. Avoids a flicker where every friend renders as offline
+    // until the first 'presence' event lands.
+    const { getOnlineUids, getAllVoiceMembers } = await import('../realtime/ws.js');
+
     // Friends + blocks + requests
     const friendRows = await q(
       `SELECT u.* FROM friendships f
@@ -93,11 +98,12 @@ meRouter.get('/snapshot', async (req, res, next) => {
         rank: 'NOTES', isSaved: true
       }
     };
+    const onlineUids = new Set(getOnlineUids ? getOnlineUids() : []);
     friendRows.forEach(row => {
       const k = row.handle.toLowerCase();
       conversations[k] = {
         name: row.name,
-        online: true, // realtime presence will refine this in phase 4
+        online: onlineUids.has(String(row.id)),
         unread: 0,
         avColor: row.base_color
           ? `linear-gradient(135deg,${row.base_color},#1e1b4b)`
@@ -174,6 +180,24 @@ meRouter.get('/snapshot', async (req, res, next) => {
          JOIN users u ON u.id = mf.friend_id
         WHERE mf.user_id = ? ORDER BY mf.position`, [me.id]);
 
+    // Live voice channel members per channel id (so guests immediately see
+    // who's already in each voice orb).
+    const allVoiceIds = [];
+    Object.values(servers).forEach(srv => (srv.voiceChannels||[]).forEach(v => allVoiceIds.push(v.id)));
+    const voiceMembersByChannel = {};
+    if (allVoiceIds.length) {
+      const rows = await q(
+        `SELECT vm.channel_id, u.name FROM voice_channel_members vm
+           JOIN users u ON u.id = vm.user_id
+          WHERE vm.channel_id IN (${allVoiceIds.map(()=>'?').join(',')})`,
+        allVoiceIds);
+      // Group by channel id, store under {users:[names]} so the frontend can
+      // merge it into channelData.
+      const grouped = {};
+      rows.forEach(r => { (grouped[r.channel_id] = grouped[r.channel_id] || []).push(r.name); });
+      Object.entries(grouped).forEach(([cid, names]) => { voiceMembersByChannel[cid] = { users: names }; });
+    }
+
     // Notifications
     const notifs = await q(
       `SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50`,
@@ -183,7 +207,7 @@ meRouter.get('/snapshot', async (req, res, next) => {
       user: publicUser(me),
       servers,
       myServers,
-      channelData: {}, // built lazily by the frontend the first time it sees a voice orb
+      channelData: voiceMembersByChannel,
       conversations,
       messages: { saved: [] }, // DM threads loaded lazily per-thread
       friendsList: friendRows.map(u => u.handle.toLowerCase()),

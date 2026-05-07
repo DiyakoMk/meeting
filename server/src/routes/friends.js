@@ -4,6 +4,7 @@ import { q, one } from '../db.js';
 import { requireAuth } from '../auth/middleware.js';
 import { parseOr400 } from '../validators.js';
 import { emitFriendRequest, emitFriendAccepted } from '../realtime/events.js';
+import { isOnline } from '../realtime/ws.js';
 
 export const friendsRouter = Router();
 friendsRouter.use(requireAuth);
@@ -81,15 +82,19 @@ friendsRouter.post('/:rid/accept', async (req, res, next) => {
       avImage: peer.av_image || null,
       bio: peer.bio || ''
     };
+    // Reflect online state for the new friend on both sides so the
+    // friend bubble appears in the correct online/offline bucket without
+    // waiting for the next presence broadcast.
+    peerShape.online = isOnline(r.from_id);
     res.json({ ok: true, peer: peerShape });
-    // Tell the original sender that we accepted.
     emitFriendAccepted(r.from_id, {
       handle: '@' + req.user.handle,
       name: req.user.name,
       initial: (req.user.name||'?').charAt(0).toUpperCase(),
       avColor: req.user.base_color ? `linear-gradient(135deg,${req.user.base_color},#1e1b4b)` : 'linear-gradient(135deg,#818cf8,#1e1b4b)',
       avImage: req.user.av_image || null,
-      bio: req.user.bio || ''
+      bio: req.user.bio || '',
+      online: isOnline(r.to_id)
     });
   } catch (e) { next(e); }
 });
