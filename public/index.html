@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8" />
+
+<link href="/favicon.ico" rel="icon shortcut">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+<meta name="theme-color" content="#020103">
+
+<title>ORBLOOD // Interstellar</title>
+
+<meta name="description" content="ORBLOOD — voice-first space chat" />
+
+<meta name="author" content="Enter" />
+
+<meta property="og:title" content="ORBLOOD // Interstellar" />
+
+<meta property="og:description" content="Voice-first space chat with multi-channel marking and orbiter UI." />
+
+<meta property="og:image" content="https://jtrrmltzqcfjkvribmwe.supabase.co/storage/v1/object/public/enter/enter-og-image-square-1.jpeg" />
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+<link rel="stylesheet" href="/styles/main.css" />
+
+</head>
+
+<body>
+
+<div class="cosmos">
+
+  <div class="stars" id="stars"></div>
+
+  <div class="nebula n1"></div>
+
+  <div class="nebula n2"></div>
+
+</div>
+
+<div class="grain"></div>
+
+<div class="device-frame">
+
+  <div class="app glass-panel" id="appShell">
+
+    <div class="app-row">
+
+    <!-- Voice Users Sidebar -->
+
+    <aside class="voice-users-sidebar" id="voiceUsersSidebar">
+
+      <div class="vu-head">
+
+        <span class="vu-head-title">VOICE</span>
+
+        <button class="vu-close" id="vuClose" title="Hide voice members"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+      </div>
+
+      <div class="voice-users-inner" id="voiceUsersInner"></div>
+
+    </aside>
+
+    <!-- Orb Column -->
+
+    <aside class="orb-col disconnected" id="orbCol">
+
+      <button class="orb-conn-banner disconnected" id="orbConnBanner" title="Toggle voice members">
+
+        <span class="banner-pulse"></span>
+
+        <span id="orbConnBannerText">NOT CONNECTED</span>
+
+      </button>
+
+      <div class="orb-top">
+
+        <div class="orb-top-title"><i data-lucide="radio" style="width:11px;height:11px"></i> ORBITS</div>
+
+        <button class="orb-edit-btn" id="orbEditBtn" title="Toggle marking mode">
+
+          <i data-lucide="edit-3" style="width:10px;height:10px"></i>
+
+          <span id="orbEditLabel">MARK</span>
+
+        </button>
+
+      </div>
+
+      <div class="orb-nav">
+
+        <button class="orb-nav-arrow" id="orbPrev" title="Previous"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>
+
+        <div class="orb-nav-dots" id="orbDots"></div>
+
+        <button class="orb-nav-arrow" id="orbNext" title="Next"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>
+
+      </div>
+
+      <div class="orb-carousel" id="orbCarousel">
+
+        <div class="orb-slides" id="orbSlides"></div>
+
+      </div>
+
+      <div class="orb-meta">
+
+        <div class="otimer" id="orbTimer">--:--</div>
+
+        <div class="orb-hud">
+
+          <span><i data-lucide="users" style="width:9px;height:9px"></i><span id="orbHudUsers">0</span></span>
+
+          <span><i data-lucide="signal" style="width:9px;height:9px"></i><span id="orbHudPing">--</span></span>
+
+        </div>
+
+        <div class="orb-actions">
+
+          <button class="ob" id="btnSetup" title="Voice settings"><i data-lucide="settings-2" style="width:14px;height:14px"></i></button>
+
+          <button class="ob primary" id="btnConnect" title="Connect"><i data-lucide="phone" style="width:16px;height:16px"></i></button>
+
+          <button class="ob" id="btnMic" title="Toggle mute" style="display:none"><i data-lucide="mic" style="width:14px;height:14px"></i></button>
+
+          <button class="ob" id="btnDeafen" title="Toggle deafen" style="display:none"><i data-lucide="headphones" style="width:14px;height:14px"></i></button>
+
+          <button class="ob danger" id="btnEnd" title="Disconnect" style="display:none"><i data-lucide="phone-off" style="width:14px;height:14px"></i></button>
+
+        </div>
+
+        <div class="orb-empty-actions" id="orbEmptyActions" style="display:none">
+
+          <button class="ob-empty-btn primary" id="orbEmptyCreateBtn" type="button"><i data-lucide="plus" style="width:11px;height:11px"></i>CREATE SERVER</button>
+
+          <button class="ob-empty-btn cancel" id="orbEmptyJoinBtn" type="button"><i data-lucide="link" style="width:11px;height:11px"></i>JOIN SERVER</button>
+
+        </div>
+
+      </div>
+
+      <div class="marked-channels" id="markedChannels" style="display:none">
+
+        <div class="mc-label"><span>MARKED</span><span class="mc-count" id="mcCount">0</span></div>
+
+        <div class="mc-list" id="mcList"></div>
+
+      </div>
+
+    </aside>
+
+    <!-- Main Content -->
+
+    <main class="main">
+
+      <!-- HOME PAGE -->
+
+      <section class="page active" id="pageHome">
+
+        <header class="page-header">
+
+          <div class="ph-left">
+
+            <button class="ph-purple-orb" id="homePurpleOrb" title="My servers"></button>
+
+            <div class="ph-default-text" id="homeDefaultText">
+
+              <div class="ph-title">// HOME</div>
+
+              <div class="ph-sep"></div>
+
+              <div class="ph-sub">Station online · all systems nominal</div>
+
+            </div>
+
+            <div class="ph-server-rail" id="homeServerRail"></div>
+
+          </div>
+
+          <div class="ph-right">
+
+            <button class="ph-icon-btn" id="homeSearchBtn" title="Search"><i data-lucide="search" style="width:14px;height:14px"></i></button>
+
+            <button class="ph-icon-btn" data-popup="notifPanel" id="homeNotifBtn" title="Notifications">
+
+              <i data-lucide="bell" style="width:14px;height:14px"></i>
+
+              <span class="ph-icon-dot" id="homeNotifDot"></span>
+
+            </button>
+
+          </div>
+
+        </header>
+
+        <div class="home-pane" id="homePane">
+
+          <div class="home-hero" id="homeHero">
+
+            <div class="home-hero-cover" id="homeHeroCover"></div>
+
+            <button class="home-hero-toggle" id="homeHeroToggle" type="button" title="Toggle profile in header"><i data-lucide="image" style="width:13px;height:13px"></i></button>
+
+            <div class="home-hero-row">
+
+              <div class="home-hero-orb" id="homeHeroOrb"><span class="home-hero-orb-letter" id="homeHeroOrbLetter"></span></div>
+
+              <div class="home-hero-text">
+
+                <div class="greet-eyebrow">SIGNAL ACTIVE · <span id="heroLocation">SECTOR 7G</span></div>
+
+                <h1 class="greet-h" id="greetGreeting">WELCOME</h1>
+
+                <p class="greet-sub">You have <b id="heroUnreadDM">0 unread transmissions</b>, <b id="heroReqs">0 friend requests</b>, and <b id="heroLegendary">0 legendary orbs</b> in view.</p>
+
+              </div>
+
+            </div>
+
+            <div class="home-hero-stats">
+
+              <button class="hero-stat" data-action="dms"><div class="hero-stat-i"><i data-lucide="message-circle" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n" id="heroStatDM">0</div><div class="hero-stat-l">UNREAD</div></div></button>
+
+              <button class="hero-stat green" data-action="voice"><div class="hero-stat-i"><i data-lucide="orbit" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n" id="heroStatLive">0</div><div class="hero-stat-l">LIVE ORBITS</div></div></button>
+
+              <button class="hero-stat pink" data-action="requests"><div class="hero-stat-i"><i data-lucide="user-plus" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n" id="heroStatReq">0</div><div class="hero-stat-l">REQUESTS</div></div></button>
+
+              <button class="hero-stat warn" data-action="codex"><div class="hero-stat-i"><i data-lucide="sparkles" style="width:15px;height:15px"></i></div><div class="hero-stat-text"><div class="hero-stat-n" id="heroStatLegendary">0</div><div class="hero-stat-l">LEGENDARY</div></div></button>
+
+            </div>
+
+          </div>
+
+          <!-- 2-COL LAYOUT: left (online friends + marked orbits + my servers) | right (quick access + quick transmit + friend requests) -->
+
+          <div class="home-twocol">
+
+            <div class="home-twocol-col">
+
+              <div class="home-section">
+
+                <div class="section-title">ONLINE FRIENDS<span class="st-link" data-action="dms">VIEW ALL →</span></div>
+
+              </div>
+
+              <div class="friends-row" id="homeFriendsRow"></div>
+
+              <div class="home-section">
+
+                <div class="section-title">MY MARKED ORBITS<span class="st-link" id="homeOrbCodexLink">CODEX →</span></div>
+
+              </div>
+
+              <div class="marked-orb-scroller" id="homeMarkedOrbits"></div>
+
+              <div class="home-section">
+
+                <div class="section-title">MY SERVERS<span class="st-link" data-action="world">OPEN WORLD →</span></div>
+
+              </div>
+
+              <div class="my-servers-row" id="homeMyServers"></div>
+
+            </div>
+
+            <div class="home-twocol-col">
+
+              <!-- MARKED QUICK ACCESS -->
+
+              <div class="home-section">
+
+                <div class="section-title">MARKED</div>
+
+              </div>
+
+              <div class="nx-box warm marked-panel" id="markedPanel">
+
+                <div class="marked-panel-head">
+
+                  <div class="marked-panel-head-l"><i data-lucide="bookmark"></i>QUICK ACCESS</div>
+
+                  <div class="marked-panel-tabs">
+
+                    <button class="mp-tab active" data-mp-tab="friends">FRIENDS</button>
+
+                    <button class="mp-tab" data-mp-tab="channels">CHANNELS</button>
+
+                  </div>
+
+                </div>
+
+                <div class="mp-list" id="markedPanelList"></div>
+
+              </div>
+
+              <!-- QUICK TRANSMIT -->
+
+              <div class="home-section">
+
+                <div class="section-title">QUICK TRANSMIT</div>
+
+              </div>
+
+              <div class="nx-box qs-box">
+
+                <div class="qs-head">
+
+                  <i data-lucide="send"></i>
+
+                  <span class="qs-head-hint">Add @handle to target friends</span>
+
+                </div>
+
+                <div class="qs-input-wrap">
+
+                  <textarea class="qs-input" id="qsInput" placeholder="Hey @murph, jumping into ORBIT now — want to join?" rows="3"></textarea>
+
+                  <div class="qs-suggest" id="qsSuggest" style="display:none"></div>
+
+                </div>
+
+                <div class="qs-tags" id="qsTags"></div>
+
+                <button class="qs-send disabled" id="qsSend"><i data-lucide="send" style="width:11px;height:11px"></i>SEND TRANSMISSION</button>
+
+              </div>
+
+              <!-- FRIEND REQUESTS -->
+
+              <div class="home-section">
+
+                <div class="section-title">FRIEND REQUESTS</div>
+
+                <div class="fr-tabs">
+
+                  <button class="fr-tab active" data-fr-tab="incoming">INCOMING<span class="fr-count" id="frInCount">0</span></button>
+
+                  <button class="fr-tab" data-fr-tab="outgoing">OUTGOING<span class="fr-count" id="frOutCount">0</span></button>
+
+                </div>
+
+              </div>
+
+              <div class="nx-box fr-panel"><div class="fr-list" id="frList"></div></div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- MESSAGES PAGE -->
+
+      <section class="page" id="pageMessages">
+
+        <header class="page-header">
+
+          <div class="ph-left">
+
+            <button class="ph-purple-orb" id="dmsPurpleOrb" title="My servers"></button>
+
+            <div class="ph-default-text" id="dmsDefaultText">
+
+              <div class="ph-title">// TRANSMISSIONS</div>
+
+              <div class="ph-sep"></div>
+
+              <div class="ph-sub" id="dmHeaderSub">5 active conversations</div>
+
+            </div>
+
+            <div class="ph-server-rail" id="dmsServerRail"></div>
+
+          </div>
+
+          <div class="ph-right">
+
+            <button class="ph-icon-btn" title="New transmission"><i data-lucide="plus" style="width:14px;height:14px"></i></button>
+
+            <button class="ph-icon-btn" id="dmSearchBtn" title="Search"><i data-lucide="search" style="width:14px;height:14px"></i></button>
+
+          </div>
+
+        </header>
+
+        <div class="dm-pane">
+
+          <div class="dm-list">
+
+            <div class="dm-search">
+
+              <div class="dm-search-box">
+
+                <i class="dm-search-icon" data-lucide="search" style="width:13px;height:13px"></i>
+
+                <input type="text" id="dmListFilter" placeholder="Filter transmissions..." />
+
+              </div>
+
+            </div>
+
+            <div class="dm-tabs">
+
+              <button class="dm-tab active" data-tab="all">ALL</button>
+
+              <button class="dm-tab" data-tab="unread">UNREAD<span class="dt-count" id="dmTabUnreadCount">5</span></button>
+
+            </div>
+
+            <div class="dm-items" id="dmItems"></div>
+
+          </div>
+
+          <div class="dm-conv" id="dmConv">
+
+            <div class="dm-empty" id="dmEmpty">
+
+              <div class="dm-empty-orb">
+
+                <div class="dm-empty-ring r1"></div>
+
+                <div class="dm-empty-ring r2"></div>
+
+                <div class="dm-empty-ring r3"></div>
+
+                <div class="dm-empty-orb-core"></div>
+
+              </div>
+
+              <div>
+
+                <div class="dm-empty-text">// AWAITING SIGNAL</div>
+
+                <div class="dm-empty-sub">Select a transmission from the list to begin secure communication.</div>
+
+              </div>
+
+            </div>
+
+            <div class="dm-head" id="dmHead" style="display:none">
+
+              <div class="dm-head-av" id="dmHeadAv">
+
+                <span id="dmHeadAvText"></span>
+
+                <div class="head-pulse" id="dmHeadPulse"></div>
+
+              </div>
+
+              <div class="dm-head-info">
+
+                <div class="dm-head-name" id="dmHeadName"></div>
+
+                <div class="dm-head-sub" id="dmHeadSub"><span class="ds-dot"></span><span id="dmHeadSubText"></span></div>
+
+              </div>
+
+              <div class="dm-head-actions">
+
+                <button class="ph-icon-btn" id="dmShareUserBtn" title="Share this user"><i data-lucide="share-2" style="width:14px;height:14px"></i></button>
+
+                <button class="ph-icon-btn" id="dmCallBtn" title="Voice call (coming soon)" disabled style="opacity:0.4;cursor:not-allowed"><i data-lucide="phone" style="width:14px;height:14px"></i></button>
+
+                <button class="ph-icon-btn" id="dmSearchInChatBtn" title="Search in chat"><i data-lucide="search" style="width:14px;height:14px"></i></button>
+
+                <button class="ph-icon-btn" id="dmMoreBtn" title="More"><i data-lucide="more-vertical" style="width:14px;height:14px"></i></button>
+
+              </div>
+
+            </div>
+
+            <div class="dm-msgs" id="dmMsgs" style="display:none"></div>
+
+            <div class="dm-typing-row" id="dmTypingRow" style="display:none">
+
+              <span id="dmTypingName">Murph is transmitting</span>
+
+              <div class="dm-typing-dots"><span></span><span></span><span></span></div>
+
+            </div>
+
+            <div class="dm-input-wrap" id="dmInputWrap" style="display:none">
+
+              <div class="dm-ibox-label" id="dmIboxLabel">TRANSMITTING</div>
+
+              <div class="dm-reply-bar" id="dmReplyBar" style="display:none">
+
+                <div class="rb-bar"></div>
+
+                <div class="rb-info">
+
+                  <div class="rb-name" id="dmReplyName"></div>
+
+                  <div class="rb-text" id="dmReplyText"></div>
+
+                </div>
+
+                <button class="rb-close" id="dmReplyClose"><i data-lucide="x" style="width:12px;height:12px"></i></button>
+
+              </div>
+
+              <div class="dm-edit-bar" id="dmEditBar" style="display:none">
+
+                <div class="rb-bar"></div>
+
+                <div class="rb-info">
+
+                  <div class="rb-name">EDITING MESSAGE</div>
+
+                  <div class="rb-text" id="dmEditText"></div>
+
+                </div>
+
+                <button class="rb-close" id="dmEditClose"><i data-lucide="x" style="width:12px;height:12px"></i></button>
+
+              </div>
+
+              <div class="dm-attach-preview" id="dmAttachPreview" style="display:none">
+
+                <img id="dmAttachThumb" src="" alt="" />
+
+                <div class="ap-info">
+
+                  <div class="ap-n" id="dmAttachName">image.png</div>
+
+                  <div class="ap-s" id="dmAttachSize">128 KB</div>
+
+                </div>
+
+                <button class="ap-x" id="dmAttachClose"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+
+              </div>
+
+              <div class="dm-ibox" id="dmIbox">
+
+                <button class="dm-i-btn" id="dmAttachBtn" title="Attach image"><i data-lucide="image-plus" style="width:16px;height:16px"></i></button>
+
+                <button class="dm-i-btn" data-popup="emojiPop" id="dmEmojiBtn" title="Emoji"><i data-lucide="smile" style="width:16px;height:16px"></i></button>
+
+                <textarea class="dm-input" id="dmInput" placeholder="Compose your transmission..." rows="1"></textarea>
+
+                <button class="dm-i-btn send disabled" id="dmSend" title="Send"><i data-lucide="send" style="width:14px;height:14px"></i></button>
+
+              </div>
+
+              <div class="dm-compose-locked" id="dmComposeLocked" style="display:none">
+
+                <i data-lucide="lock" style="width:13px;height:13px"></i>
+
+                <div class="dm-compose-locked-text"><b>ONLY FRIENDS</b><span id="dmComposeLockedSub">Send a friend request first to start chatting.</span></div>
+
+                <button class="sm-btn cancel" id="dmComposeFriendBtn" type="button"><i data-lucide="user-plus" style="width:11px;height:11px"></i>FRIEND</button>
+
+              </div>
+
+              <input type="file" id="dmFileInput" accept="image/*" style="display:none" />
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- WORLD PAGE -->
+
+      <section class="page" id="pageWorld">
+
+        <header class="page-header">
+
+          <div class="ph-left">
+
+            <button class="ph-purple-orb" id="worldPurpleOrb" title="My servers"></button>
+
+            <div class="ph-default-text" id="worldDefaultText">
+
+              <button class="ph-home-btn" id="worldGoServerMain" title="Server main" style="display:none"><i data-lucide="layout-grid" style="width:13px;height:13px"></i></button>
+
+              <div class="ph-title" id="worldHeaderTitle">// WORLD</div>
+
+              <div class="ph-sep"></div>
+
+              <div class="ph-sub" id="worldHeaderSub">Public broadcast — all stations</div>
+
+            </div>
+
+            <div class="ph-server-rail" id="worldServerRail"></div>
+
+          </div>
+
+          <div class="ph-right">
+
+            <button class="ph-icon-btn" id="worldPinServerBtn" title="Pin server to home"><i data-lucide="pin" style="width:14px;height:14px"></i></button>
+
+            <button class="ph-icon-btn" id="worldSearchBtn" title="Search"><i data-lucide="search" style="width:14px;height:14px"></i></button>
+
+            <button class="ph-icon-btn" id="worldMembersToggle" title="Members"><i data-lucide="users" style="width:14px;height:14px"></i></button>
+
+          </div>
+
+        </header>
+
+        <div class="world-pane">
+
+          <div class="world-main">
+
+            <!-- Channel quick-strip (visible only when in text-channel mode) -->
+
+            <div class="ws-channel-strip" id="wsChannelStrip" style="display:none"></div>
+
+            <!-- DEFAULT WORLD VIEW (shown only if user is in no server) -->
+
+            <div id="worldDefaultView" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;align-items:center;justify-content:center;padding:30px;text-align:center;gap:22px">
+
+              <div class="world-empty-orb">
+
+                <div class="world-empty-core"><i data-lucide="globe" style="width:26px;height:26px"></i></div>
+
+                <div class="world-empty-ring world-empty-r1"></div>
+
+                <div class="world-empty-ring world-empty-r2"></div>
+
+                <div class="world-empty-ring world-empty-r3"></div>
+
+              </div>
+
+              <div>
+
+                <div class="world-empty-eyebrow">NO SIGNAL</div>
+
+                <div class="world-empty-title">You are not a member of any server</div>
+
+                <div class="world-empty-sub">Create a server or join one with an invite link to make channels and orbits appear here.</div>
+
+              </div>
+
+              <div class="world-empty-actions">
+
+                <button class="sm-btn primary" id="worldEmptyCreate"><i data-lucide="plus" style="width:11px;height:11px"></i>CREATE SERVER</button>
+
+                <button class="sm-btn cancel" id="worldEmptyJoin"><i data-lucide="link" style="width:11px;height:11px"></i>JOIN BY LINK</button>
+
+              </div>
+
+            </div>
+
+            <!-- SERVER STORE-LIKE OVERVIEW -->
+
+            <div class="world-store" id="serverOverview" style="display:none"></div>
+
+            <!-- TEXT CHANNEL CHAT VIEW -->
+
+            <div class="ws-channel-view" id="wsChannelView" style="display:none">
+
+              <div class="ws-channel-msgs" id="wsChannelMsgs"></div>
+
+              <div class="dm-input-wrap">
+
+                <div class="dm-ibox-label" id="wsChannelInputLabel">CHANNEL</div>
+
+                <div class="ws-reply-preview" id="wsReplyPreview" style="display:none"></div>
+
+                <div class="ws-attach-preview" id="wsAttachPreview" style="display:none"></div>
+
+                <div class="dm-ibox">
+
+                  <button class="dm-i-btn" id="wsChannelImageBtn" title="Attach image"><i data-lucide="image" style="width:16px;height:16px"></i></button>
+
+                  <input type="file" id="wsChannelImageFile" accept="image/*" style="display:none" />
+
+                  <button class="dm-i-btn" data-popup="emojiPop" title="Emoji"><i data-lucide="smile" style="width:16px;height:16px"></i></button>
+
+                  <textarea class="dm-input" id="wsChannelInput" placeholder="Message #channel..." rows="1"></textarea>
+
+                  <button class="dm-i-btn send disabled" id="wsChannelSend" title="Send"><i data-lucide="send" style="width:14px;height:14px"></i></button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Members sidebar (toggleable) -->
+
+          <aside class="members-sidebar" id="membersSidebar">
+
+            <div class="ms-head">
+
+              <div class="ms-head-title"><i data-lucide="users" style="width:13px;height:13px"></i>MEMBERS</div>
+
+              <button class="ms-close" id="msClose"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+            </div>
+
+            <div class="ms-inner" id="msInner"></div>
+
+          </aside>
+
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- Popup backdrop & all popups -->
+
+    <div class="popup-backdrop" id="popupBackdrop"></div>
+
+    <div class="popup notif" id="notifPanel">
+
+      <div class="popup-head">
+
+        <div class="popup-title">// NOTIFICATIONS</div>
+
+        <button class="popup-close" data-close-popup><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+      </div>
+
+      <div class="notif-list" id="notifList"></div>
+
+      <div class="notif-foot"><button id="notifMarkRead">MARK ALL AS READ</button></div>
+
+    </div>
+
+    <div class="popup emoji-pop" id="emojiPop">
+
+      <div class="emoji-cats" id="emojiCats"></div>
+
+      <div class="emoji-grid" id="emojiGrid"></div>
+
+    </div>
+
+    <div class="popup requests-pop" id="requestsPop">
+
+      <div class="popup-head">
+
+        <div class="popup-title">// FRIEND REQUESTS</div>
+
+        <button class="popup-close" data-close-popup><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+      </div>
+
+      <div class="req-list" id="reqList"></div>
+
+    </div>
+
+    <!-- Bubble actions popup (legacy, replaced by hover toolbar) -->
+
+    <div class="dm-bubble-actions" id="bubbleActions" style="display:none"></div>
+
+    <!-- Right-click context menu (voice members) -->
+
+    <div class="ctx-menu" id="ctxMenu"></div>
+
+    <!-- Search overlay -->
+
+    <div class="search-overlay" id="searchOverlay">
+
+      <div class="search-box">
+
+        <div class="search-input-wrap">
+
+          <i data-lucide="search" style="width:16px;height:16px"></i>
+
+          <input type="text" class="search-input" id="searchInput" placeholder="Search across ORBLOOD..." />
+
+          <span class="search-kbd">ESC</span>
+
+        </div>
+
+        <div class="search-results" id="searchResults"></div>
+
+      </div>
+
+    </div>
+
+    <!-- Profile Modal -->
+
+    <div class="modal-backdrop" id="profileModalBackdrop">
+
+      <div class="smodal" id="profileModal">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title">// PROFILE</div>
+
+          <button class="smodal-close" id="modalClose"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <!-- VIEW MODE -->
+
+        <div class="smodal-body profile-view" style="padding:0;gap:0">
+
+          <div class="profile-banner" id="modalBanner"></div>
+
+          <div class="profile-head">
+
+            <div class="profile-orb">
+
+              <div class="profile-orb-core" id="modalOrbCore"></div>
+
+              <div class="profile-orb-status" id="modalStatusDot"></div>
+
+            </div>
+
+            <div class="profile-head-info">
+
+              <div class="profile-name" id="modalName"></div>
+
+              <div class="profile-handle-row"><span class="profile-handle" id="modalHandle"></span><button class="profile-handle-copy" id="modalHandleCopy" title="Copy handle"><i data-lucide="copy" style="width:11px;height:11px"></i></button></div>
+
+            </div>
+
+          </div>
+
+          <div class="profile-tags">
+
+            <span class="profile-tag" id="modalRank">EXPLORER</span>
+
+            <span class="profile-tag status" id="modalStatusV">ONLINE</span>
+
+            <span class="profile-tag" id="modalLastSeen" style="display:none"></span>
+
+          </div>
+
+          <div class="profile-bio" id="modalBio"></div>
+
+          <div class="profile-section" id="modalJoinedRow" style="display:none">
+
+            <div class="profile-section-l">JOINED</div>
+
+            <div class="profile-section-v" id="modalJoinedV"></div>
+
+          </div>
+
+          <div class="profile-section" id="modalSharedRow" style="display:none">
+
+            <div class="profile-section-l">SHARED SERVERS</div>
+
+            <div class="profile-shared-list" id="modalSharedList"></div>
+
+          </div>
+
+          <div class="profile-actions profile-actions-other">
+
+            <button class="sm-btn primary" id="modalMessage"><i data-lucide="message-circle" style="width:11px;height:11px"></i>MESSAGE</button>
+
+            <button class="sm-btn cancel" id="modalCall" disabled style="opacity:0.45;cursor:not-allowed"><i data-lucide="phone" style="width:11px;height:11px"></i>CALL</button>
+
+            <button class="sm-btn cancel" id="modalAddFriend"><i data-lucide="user-plus" style="width:11px;height:11px"></i>FRIEND</button>
+
+            <button class="sm-btn cancel" id="modalShareUser"><i data-lucide="share-2" style="width:11px;height:11px"></i>SHARE</button>
+
+            <button class="sm-btn cancel" id="modalBlock" style="color:var(--danger);border-color:rgba(239,68,68,0.3);grid-column:span 2"><i data-lucide="shield-off" style="width:11px;height:11px"></i>BLOCK</button>
+
+          </div>
+
+          <div class="profile-actions profile-actions-self">
+
+            <button class="sm-btn primary" id="modalEditBtn"><i data-lucide="settings" style="width:11px;height:11px"></i>SETTINGS</button>
+
+            <button class="sm-btn cancel" id="modalShareSelf"><i data-lucide="share-2" style="width:11px;height:11px"></i>SHARE PROFILE</button>
+
+          </div>
+
+        </div>
+
+        <!-- SETTINGS MODE — sidebar nav like the server roles modal -->
+
+        <div class="smodal-body profile-edit" style="padding:0;gap:0">
+
+          <div class="settings-side">
+
+            <div class="settings-side-h">SETTINGS</div>
+
+            <button class="settings-side-item active" data-st-tab="profile" type="button"><i data-lucide="user"></i>Profile</button>
+
+            <button class="settings-side-item" data-st-tab="account" type="button"><i data-lucide="key-round"></i>Account</button>
+
+            <button class="settings-side-item" data-st-tab="privacy" type="button"><i data-lucide="shield-check"></i>Privacy</button>
+
+            <div class="settings-side-h" style="margin-top:8px">FRIENDS</div>
+
+            <button class="settings-side-item" data-st-tab="friends" type="button"><i data-lucide="users"></i>Friends<span class="badge" id="settingsFriendsCount" style="display:none">0</span></button>
+
+            <button class="settings-side-item" data-st-tab="incoming" type="button"><i data-lucide="user-plus"></i>Incoming<span class="badge" id="settingsIncomingCount" style="display:none">0</span></button>
+
+            <button class="settings-side-item" data-st-tab="pending" type="button"><i data-lucide="clock"></i>Pending<span class="badge" id="settingsPendingCount" style="display:none">0</span></button>
+
+            <button class="settings-side-item" data-st-tab="blocked" type="button"><i data-lucide="shield-off"></i>Blocked<span class="badge" id="settingsBlockedCount" style="display:none">0</span></button>
+
+            <div class="settings-side-h" style="margin-top:8px">SYSTEM</div>
+
+            <button class="settings-side-item" data-st-tab="notif" type="button"><i data-lucide="bell"></i>Notifications</button>
+
+            <button class="settings-side-item" data-st-action="voice" type="button"><i data-lucide="mic"></i>Voice &amp; audio<i data-lucide="external-link" style="margin-left:auto;width:11px;height:11px;opacity:0.6"></i></button>
+
+          </div>
+
+          <div class="settings-content">
+
+          <div class="settings-pane active" data-st-pane="profile">
+
+            <div class="sm-field" style="align-items:center;text-align:center">
+
+              <label class="sm-label">AVATAR</label>
+
+              <div class="profile-edit-avatar-row">
+
+                <div class="profile-edit-avatar-preview" id="profileEditAvatarPreview"></div>
+
+                <div style="display:flex;flex-direction:column;gap:6px">
+
+                  <button class="sm-btn cancel" id="profileEditAvatarUploadBtn" type="button"><i data-lucide="upload" style="width:11px;height:11px"></i>UPLOAD</button>
+
+                  <button class="sm-btn cancel" id="profileEditAvatarBtn" type="button"><i data-lucide="shuffle" style="width:11px;height:11px"></i>RANDOM</button>
+
+                </div>
+
+                <input type="file" id="profileAvatarFile" accept="image/*" style="display:none" />
+
+              </div>
+
+              <input type="hidden" id="profileEditAvatarUrl" value="" />
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">PROFILE COVER</label>
+
+              <div class="profile-edit-cover-row">
+
+                <div class="profile-edit-cover-preview" id="profileEditCoverPreview"></div>
+
+                <div style="display:flex;flex-direction:column;gap:6px;flex:1">
+
+                  <button class="sm-btn cancel" id="profileEditCoverUploadBtn" type="button"><i data-lucide="upload" style="width:11px;height:11px"></i>UPLOAD COVER</button>
+
+                  <button class="sm-btn cancel" id="profileEditCoverClearBtn" type="button"><i data-lucide="x" style="width:11px;height:11px"></i>CLEAR</button>
+
+                </div>
+
+                <input type="file" id="profileCoverFile" accept="image/*" style="display:none" />
+
+              </div>
+
+              <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">Optional. When unset, your profile uses a soft tint derived from your color — your avatar image is never used as the cover.</div>
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">DEFAULT COLOR</label>
+
+              <div style="display:flex;align-items:center;gap:10px">
+
+                <label class="role-color-chip" id="profileColorChip" title="Pick color" style="background:#22c55e">
+
+                  <input type="color" id="profileColorInput" value="#22c55e" />
+
+                  <i data-lucide="droplet" style="width:13px;height:13px"></i>
+
+                </label>
+
+                <span id="profileColorHex" class="role-color-hex">#22C55E</span>
+
+              </div>
+
+              <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">Used as your fallback color when no avatar image is set, plus across orb visualisations.</div>
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">DISPLAY NAME</label>
+
+              <input class="sm-input" id="profileEditName" placeholder="Your name" />
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">USERNAME / HANDLE</label>
+
+              <div class="profile-handle-input"><span class="profile-handle-prefix">@</span><input class="sm-input" id="profileEditHandle" placeholder="cooper" /></div>
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">BIO</label>
+
+              <textarea class="sm-input sm-textarea" id="profileEditBio" placeholder="A short description"></textarea>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="account">
+
+            <div class="sm-field">
+
+              <label class="sm-label">EMAIL</label>
+
+              <input class="sm-input" id="profileEditEmail" type="email" placeholder="you@station.io" />
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">PHONE</label>
+
+              <input class="sm-input" id="profileEditPhone" type="tel" placeholder="+1 555 0140" />
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">PASSWORD</label>
+
+              <input class="sm-input" id="profileEditPassword" type="password" placeholder="leave blank to keep current" />
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">DANGER ZONE</label>
+
+              <button class="sm-btn cancel" id="profileEditLogout" type="button" style="color:var(--danger);border-color:rgba(239,68,68,0.3);justify-content:center"><i data-lucide="log-out" style="width:11px;height:11px"></i>LOG OUT</button>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="privacy">
+
+            <div class="sm-field">
+
+              <label class="sm-label">DIRECT MESSAGES</label>
+
+              <label class="vs-toggle"><input type="checkbox" id="privFriendsOnly" /> Only friends can send me messages</label>
+
+              <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">When enabled, anyone who is not on your friends list will see a locked compose box and have to send a friend request first.</div>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="friends">
+
+            <div class="sm-field">
+
+              <label class="sm-label">YOUR FRIENDS</label>
+
+              <div class="fp-list" id="settingsFriendsList"></div>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="incoming">
+
+            <div class="sm-field">
+
+              <label class="sm-label">INCOMING REQUESTS</label>
+
+              <div class="fp-list" id="settingsIncomingList"></div>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="pending">
+
+            <div class="sm-field">
+
+              <label class="sm-label">SENT REQUESTS</label>
+
+              <div class="fp-list" id="settingsPendingList"></div>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="blocked">
+
+            <div class="sm-field">
+
+              <label class="sm-label">BLOCKED USERS</label>
+
+              <div class="fp-list" id="settingsBlockedList"></div>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="notif">
+
+            <div class="sm-field">
+
+              <label class="sm-label">NOTIFICATIONS</label>
+
+              <label class="vs-toggle"><input type="checkbox" id="notifAll" checked /> Allow all notifications</label>
+
+              <label class="vs-toggle"><input type="checkbox" id="notifDM" checked /> Direct messages</label>
+
+              <label class="vs-toggle"><input type="checkbox" id="notifMentions" checked /> Mentions in servers</label>
+
+              <label class="vs-toggle"><input type="checkbox" id="notifVoice" checked /> Voice channel joins</label>
+
+              <label class="vs-toggle"><input type="checkbox" id="notifFriends" checked /> Friend requests</label>
+
+            </div>
+
+          </div>
+
+          </div>
+
+        </div>
+
+        <div class="smodal-foot profile-edit-foot">
+
+          <button class="sm-btn cancel" id="profileEditCancel">CANCEL</button>
+
+          <button class="sm-btn primary" id="profileEditSave"><i data-lucide="check" style="width:11px;height:11px"></i>SAVE</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Add Friend Modal -->
+
+    <div class="modal-backdrop" id="addFriendBackdrop">
+
+      <div class="smodal">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title">// ADD FRIEND</div>
+
+          <button class="smodal-close" data-close-smodal="addFriendBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body">
+
+          <div class="sm-field">
+
+            <label class="sm-label">FRIEND ID OR HANDLE</label>
+
+            <input class="sm-input" id="addFriendInput" placeholder="@username or NEX-12345" />
+
+          </div>
+
+          <div style="font-size:0.7rem;color:var(--t3);line-height:1.5">Enter your friend's ORBLOOD ID or @handle. They will receive a friend request and will appear in your outgoing list.</div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="addFriendBackdrop">CANCEL</button>
+
+          <button class="sm-btn primary" id="addFriendSend"><i data-lucide="send" style="width:11px;height:11px"></i>SEND REQUEST</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Create Server Modal -->
+
+    <div class="modal-backdrop" id="createServerBackdrop">
+
+      <div class="smodal">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title">// CREATE / JOIN SERVER</div>
+
+          <button class="smodal-close" data-close-smodal="createServerBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body">
+
+          <div class="sm-tabs">
+
+            <button class="sm-tab active" data-cs-tab="create">CREATE NEW</button>
+
+            <button class="sm-tab" data-cs-tab="join">JOIN BY ID</button>
+
+          </div>
+
+          <div id="csCreatePane">
+
+            <div class="sm-field">
+
+              <label class="sm-label">SERVER NAME</label>
+
+              <input class="sm-input" id="csNameInput" placeholder="My Awesome Server" />
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">DESCRIPTION (OPTIONAL)</label>
+
+              <textarea class="sm-input sm-textarea" id="csDescInput" placeholder="What's this server about?"></textarea>
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">CHOOSE EMBLEM COLOR</label>
+
+              <div class="sm-style-grid" id="csColorGrid"></div>
+
+            </div>
+
+          </div>
+
+          <div id="csJoinPane" style="display:none">
+
+            <div class="sm-field">
+
+              <label class="sm-label">SERVER INVITE ID</label>
+
+              <input class="sm-input" id="csJoinInput" placeholder="NEX-XXXXX-XXXXX" />
+
+            </div>
+
+            <div style="font-size:0.7rem;color:var(--t3);line-height:1.5">Paste an invite ID from a friend to join their server.</div>
+
+          </div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="createServerBackdrop">CANCEL</button>
+
+          <button class="sm-btn primary" id="csSubmit"><i data-lucide="check" style="width:11px;height:11px"></i>CONFIRM</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Create Channel Modal (admin) -->
+
+    <div class="modal-backdrop" id="createChannelBackdrop">
+
+      <div class="smodal">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title" id="ccTitle">// CREATE CHANNEL</div>
+
+          <button class="smodal-close" data-close-smodal="createChannelBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body">
+
+          <div class="sm-tabs">
+
+            <button class="sm-tab active" data-cc-tab="text">TEXT</button>
+
+            <button class="sm-tab" data-cc-tab="voice">VOICE / ORB</button>
+
+            <button class="sm-tab" data-cc-tab="category">CATEGORY</button>
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label" id="ccNameLabel">CHANNEL NAME</label>
+
+            <input class="sm-input" id="ccNameInput" placeholder="general" />
+
+          </div>
+
+          <div class="sm-field" id="ccCategoryField">
+
+            <label class="sm-label">CATEGORY</label>
+
+            <select class="sm-input" id="ccCategorySelect"></select>
+
+            <div class="sm-hint" id="ccCategoryHint" style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;letter-spacing:1px;color:var(--danger);display:none;margin-top:2px">Select a category before creating a channel</div>
+
+          </div>
+
+          <div class="sm-field" id="ccVoiceStyleField" style="display:none">
+
+            <label class="sm-label">VOICE ORB STYLE</label>
+
+            <div class="sm-style-grid" id="ccVoiceStyleGrid"></div>
+
+          </div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="createChannelBackdrop">CANCEL</button>
+
+          <button class="sm-btn primary" id="ccSubmit"><i data-lucide="check" style="width:11px;height:11px"></i>CREATE</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Add World Pin Modal -->
+
+    <div class="modal-backdrop" id="addPinBackdrop">
+
+      <div class="smodal">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title">// PIN TO SERVER</div>
+
+          <button class="smodal-close" data-close-smodal="addPinBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body">
+
+          <div class="sm-field">
+
+            <label class="sm-label">PINNED MESSAGE</label>
+
+            <textarea class="sm-input sm-textarea" id="pinTextInput" placeholder="Enter message to pin to the server's main page..." style="min-height:90px"></textarea>
+
+          </div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="addPinBackdrop">CANCEL</button>
+
+          <button class="sm-btn primary" id="pinSubmit"><i data-lucide="pin" style="width:11px;height:11px"></i>PIN</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Server Identity Modal (name, about, emblem, cover) -->
+
+    <div class="modal-backdrop" id="coverBackdrop">
+
+      <div class="smodal" style="max-width:480px">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title">// SERVER IDENTITY</div>
+
+          <button class="smodal-close" data-close-smodal="coverBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body">
+
+          <div class="sm-field">
+
+            <label class="sm-label">SERVER NAME</label>
+
+            <input type="text" class="sm-input" id="serverNameInput" placeholder="Server name" />
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">ABOUT</label>
+
+            <textarea class="sm-input sm-textarea" id="serverAboutInput" placeholder="What is this server about?" style="min-height:70px"></textarea>
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">SERVER EMBLEM (CIRCLE)</label>
+
+            <div style="display:flex;gap:8px;align-items:center">
+
+              <label class="role-color-chip" id="serverColorChip" title="Default color" style="background:#b91c4a">
+
+                <input type="color" id="serverColorInput" value="#b91c4a" />
+
+                <i data-lucide="droplet" style="width:13px;height:13px"></i>
+
+              </label>
+
+              <button class="sm-btn cancel" type="button" id="emblemUploadBtn" style="flex:1;justify-content:center"><i data-lucide="upload" style="width:11px;height:11px"></i>UPLOAD EMBLEM IMAGE</button>
+
+            </div>
+
+            <input type="hidden" id="emblemUrlInput" value="" />
+
+            <input type="file" id="emblemFile" accept="image/*" style="display:none" />
+
+            <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">Default color is used when no emblem image is set, plus throughout the server’s glow.</div>
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">COVER IMAGE &amp; BANNER TINT</label>
+
+            <div style="display:flex;gap:8px;align-items:center">
+
+              <label class="role-color-chip" id="serverBannerColorChip" title="Banner tint" style="background:#b91c4a">
+
+                <input type="color" id="serverBannerColor" value="#b91c4a" />
+
+                <i data-lucide="droplet" style="width:13px;height:13px"></i>
+
+              </label>
+
+              <button class="sm-btn cancel" type="button" id="coverUploadBtn" style="flex:1;justify-content:center"><i data-lucide="upload" style="width:11px;height:11px"></i>UPLOAD COVER IMAGE</button>
+
+            </div>
+
+            <input type="hidden" id="coverUrlInput" value="" />
+
+            <input type="file" id="coverFile" accept="image/*" style="display:none" />
+
+            <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">Banner tint shows behind the cover image. Cover is faded over it. Leave cover empty to show only the tint.</div>
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">PREVIEW</label>
+
+            <div id="coverPreview"></div>
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">VISIBILITY</label>
+
+            <label class="vs-toggle"><input type="checkbox" id="serverPrivateInput" /> Make this server private</label>
+
+            <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">Private servers reject all invite-key joins. People with the key see "this server is private — try again later" instead of the join button.</div>
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">INVITE / SHARE KEY</label>
+
+            <div style="display:flex;gap:8px">
+
+              <input type="text" class="sm-input" id="serverInviteKey" readonly style="flex:1;font-family:Space Mono,monospace;letter-spacing:1.5px" />
+
+              <button class="sm-btn cancel" type="button" id="serverInviteCopy"><i data-lucide="copy" style="width:11px;height:11px"></i>COPY</button>
+
+            </div>
+
+            <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">Anyone with this key can join the server (unless visibility is set to private).</div>
+
+          </div>
+
+          <div class="sm-field" style="margin-top:6px">
+
+            <label class="sm-label" style="color:var(--danger)">DANGER ZONE</label>
+
+            <button class="sm-btn cancel" type="button" id="serverRemoveBtn" style="color:var(--danger);border-color:rgba(239,68,68,0.35);justify-content:center"><i data-lucide="trash-2" style="width:11px;height:11px"></i>DELETE SERVER</button>
+
+          </div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="coverBackdrop">CANCEL</button>
+
+          <button class="sm-btn primary" id="coverSubmit"><i data-lucide="image" style="width:11px;height:11px"></i>SAVE</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Add Category Modal -->
+
+    <!-- Voice Settings Modal -->
+
+    <!-- Confirm Modal -->
+
+    <!-- Server Join Modal -->
+
+    <!-- Owner Transfer Modal -->
+
+    <!-- Channel/Category Settings Modal -->
+
+    <div class="modal-backdrop" id="chanSettingsBackdrop">
+
+      <div class="smodal" style="max-width:460px">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title" id="chanSettingsTitle">// CHANNEL SETTINGS</div>
+
+          <button class="smodal-close" data-close-smodal="chanSettingsBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body" style="gap:14px">
+
+          <div class="sm-field">
+
+            <label class="sm-label" id="chanSettingsNameLbl">NAME</label>
+
+            <input type="text" class="sm-input" id="chanSettingsName" placeholder="Name" />
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">VISIBILITY</label>
+
+            <div class="cs-vis-row">
+
+              <button class="cs-vis-btn active" data-cs-vis="all" type="button"><i data-lucide="globe" style="width:11px;height:11px"></i>VISIBLE TO EVERYONE</button>
+
+              <button class="cs-vis-btn" data-cs-vis="roles" type="button"><i data-lucide="shield" style="width:11px;height:11px"></i>RESTRICT TO ROLES</button>
+
+            </div>
+
+            <div id="chanSettingsRoles" class="cs-role-grid" style="display:none"></div>
+
+            <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;letter-spacing:1px;color:var(--t3);margin-top:6px">Members without a selected role won’t see this. Owner and admins always see everything.</div>
+
+          </div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="chanSettingsBackdrop">CANCEL</button>
+
+          <button class="sm-btn primary" id="chanSettingsSave"><i data-lucide="check" style="width:11px;height:11px"></i>SAVE</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="modal-backdrop" id="ownerTransferBackdrop">
+
+      <div class="smodal" style="max-width:420px">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title">// TRANSFER OWNERSHIP</div>
+
+          <button class="smodal-close" data-close-smodal="ownerTransferBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body">
+
+          <div style="font-size:0.78rem;color:var(--t2);line-height:1.55">Choose a member to become the new Owner of this server. You will keep your other roles, but will lose Owner-level powers immediately.</div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">SEARCH MEMBER</label>
+
+            <input type="text" class="sm-input" id="ownerTransferSearch" placeholder="Type a name..." />
+
+          </div>
+
+          <div id="ownerTransferList" class="role-search-results" style="max-height:260px;display:block;position:relative;overflow-y:auto"></div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="ownerTransferBackdrop">CANCEL</button>
+
+          <button class="sm-btn primary" id="ownerTransferConfirm" disabled style="opacity:0.5;cursor:not-allowed"><i data-lucide="crown" style="width:11px;height:11px"></i>TRANSFER</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="modal-backdrop" id="serverJoinBackdrop">
+
+      <div class="smodal" style="max-width:440px;overflow:hidden">
+
+        <div class="sj-banner" id="sjBanner">
+
+          <div class="sj-banner-cover" id="sjCover"></div>
+
+          <button class="smodal-close" data-close-smodal="serverJoinBackdrop" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.5);width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+          <div class="sj-emblem" id="sjEmblem"></div>
+
+        </div>
+
+        <div class="smodal-body" style="padding:16px 18px 6px">
+
+          <div class="sj-eyebrow">SERVER INVITE</div>
+
+          <div class="sj-name" id="sjName"></div>
+
+          <div class="sj-meta" id="sjMeta"></div>
+
+          <div class="sj-private-tag" id="sjPrivateTag" style="display:none"><i data-lucide="lock" style="width:11px;height:11px"></i>PRIVATE SERVER</div>
+
+          <div class="sj-desc" id="sjDesc"></div>
+
+          <div class="sj-key-row">
+
+            <div class="sj-key-l">INVITE KEY</div>
+
+            <div class="sj-key-v" id="sjKey"></div>
+
+          </div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="serverJoinBackdrop">CANCEL</button>
+
+          <button class="sm-btn primary" id="sjJoinBtn"><i data-lucide="log-in" style="width:11px;height:11px"></i>JOIN SERVER</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="modal-backdrop" id="authBackdrop" style="background:rgba(2,1,3,0.92);backdrop-filter:blur(14px)">
+
+      <div class="smodal" style="max-width:420px">
+
+        <div class="smodal-head"><div class="smodal-title" id="authTitle">// SIGN IN</div></div>
+
+        <div class="smodal-body">
+
+          <div class="auth-tabs">
+
+            <button class="auth-tab active" data-auth-tab="login" type="button">SIGN IN</button>
+
+            <button class="auth-tab" data-auth-tab="signup" type="button">CREATE ACCOUNT</button>
+
+          </div>
+
+          <div class="sm-field" data-auth-fld="signup-name" style="display:none">
+
+            <label class="sm-label">DISPLAY NAME</label>
+
+            <input type="text" class="sm-input" id="authName" placeholder="Your display name" />
+
+          </div>
+
+          <div class="sm-field" data-auth-fld="signup-handle" style="display:none">
+
+            <label class="sm-label">USERNAME</label>
+
+            <input type="text" class="sm-input" id="authHandle" placeholder="cooper" />
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">EMAIL</label>
+
+            <input type="email" class="sm-input" id="authEmail" placeholder="you@station.io" autocomplete="email" />
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">PASSWORD</label>
+
+            <input type="password" class="sm-input" id="authPassword" placeholder="enter your password" autocomplete="current-password" />
+
+          </div>
+
+          <div id="authError" style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1px;color:var(--danger);min-height:14px"></div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn primary" id="authSubmit" style="flex:1;justify-content:center"><i data-lucide="log-in" style="width:11px;height:11px"></i><span id="authSubmitLbl">SIGN IN</span></button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="auth-splash" id="authSplash">
+
+      <div class="auth-splash-orb"><span></span><span></span><span></span></div>
+
+      <div class="auth-splash-l" id="authSplashLbl">LOADING TRANSMISSIONS</div>
+
+    </div>
+
+    <div class="modal-backdrop" id="confirmBackdrop">
+
+      <div class="smodal" style="max-width:380px">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title" id="confirmTitle">// CONFIRM</div>
+
+        </div>
+
+        <div class="smodal-body" style="padding:18px">
+
+          <div id="confirmMessage" style="font-size:0.85rem;color:var(--t1);line-height:1.65;white-space:pre-line"></div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" id="confirmNo">CANCEL</button>
+
+          <button class="sm-btn primary" id="confirmYes">CONFIRM</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="modal-backdrop" id="voiceSettingsBackdrop">
+
+      <div class="smodal" style="max-width:480px">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title">// VOICE SETTINGS</div>
+
+          <button class="smodal-close" data-close-smodal="voiceSettingsBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body" style="gap:16px">
+
+          <div class="sm-field">
+
+            <label class="sm-label">INPUT DEVICE (MICROPHONE)</label>
+
+            <select class="sm-input" id="vsInputSelect"></select>
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">OUTPUT DEVICE (SPEAKERS)</label>
+
+            <select class="sm-input" id="vsOutputSelect"></select>
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">INPUT VOLUME <span id="vsInputVolLbl" style="color:var(--t2)">100%</span></label>
+
+            <input type="range" min="0" max="100" value="100" id="vsInputVol" class="vs-slider" />
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">OUTPUT VOLUME <span id="vsOutputVolLbl" style="color:var(--t2)">100%</span></label>
+
+            <input type="range" min="0" max="100" value="100" id="vsOutputVol" class="vs-slider" />
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">INPUT MODE</label>
+
+            <div class="vs-mode-row">
+
+              <button class="vs-mode-btn active" data-vs-mode="vad" type="button"><i data-lucide="activity" style="width:11px;height:11px"></i>VOICE ACTIVITY</button>
+
+              <button class="vs-mode-btn" data-vs-mode="ptt" type="button"><i data-lucide="hand" style="width:11px;height:11px"></i>PUSH-TO-TALK</button>
+
+            </div>
+
+          </div>
+
+          <div class="sm-field" id="vsPttRow" style="display:none">
+
+            <label class="sm-label">PUSH-TO-TALK KEY</label>
+
+            <button class="sm-input" id="vsPttKey" type="button" style="text-align:center;cursor:pointer">Click and press a key...</button>
+
+          </div>
+
+          <div class="sm-field" id="vsVadRow">
+
+            <label class="sm-label">INPUT SENSITIVITY <span id="vsSensLbl" style="color:var(--t2)">-50 dB</span></label>
+
+            <input type="range" min="-100" max="0" value="-50" id="vsSens" class="vs-slider" />
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">PROCESSING</label>
+
+            <div class="vs-toggle-row">
+
+              <label class="vs-toggle"><input type="checkbox" id="vsEcho" checked /> Echo cancellation</label>
+
+              <label class="vs-toggle"><input type="checkbox" id="vsNoise" checked /> Noise suppression</label>
+
+              <label class="vs-toggle"><input type="checkbox" id="vsAgc" /> Auto gain control</label>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="voiceSettingsBackdrop">CLOSE</button>
+
+          <button class="sm-btn primary" id="vsSave"><i data-lucide="check" style="width:11px;height:11px"></i>SAVE</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Roles & Permissions Modal -->
+
+    <div class="modal-backdrop" id="rolesBackdrop">
+
+      <div class="smodal roles-modal">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title">// ROLES &amp; PERMISSIONS</div>
+
+          <button class="smodal-close" data-close-smodal="rolesBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body roles-body">
+
+          <div class="roles-col-list">
+
+            <div class="roles-col-h">ROLES</div>
+
+            <div class="roles-list" id="rolesList"></div>
+
+            <button class="ws-add-btn" id="roleAddBtn" style="margin-top:6px;width:100%;justify-content:center"><i data-lucide="plus" style="width:9px;height:9px"></i>NEW ROLE</button>
+
+          </div>
+
+          <div class="roles-col-edit" id="roleEditPane">
+
+            <div class="roles-empty">Select a role on the left to edit.</div>
+
+          </div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="rolesBackdrop">CLOSE</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Forward Modal (CENTER) -->
+
+    <div class="modal-backdrop" id="forwardBackdrop">
+
+      <div class="fwd-modal">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title">// FORWARD TO</div>
+
+          <button class="smodal-close" data-close-smodal="forwardBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div style="padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.05)">
+
+          <div class="dm-search-box" style="position:relative">
+
+            <i class="dm-search-icon" data-lucide="search" style="width:13px;height:13px"></i>
+
+            <input type="text" id="fwdFilter" placeholder="Search friends & channels..." style="width:100%;background:rgba(255,255,255,0.03);border:1px solid var(--gb);border-radius:8px;padding:7px 10px 7px 30px;color:var(--t1);font-size:0.78rem;font-family:inherit;outline:none" />
+
+          </div>
+
+        </div>
+
+        <div class="fwd-list" id="fwdList"></div>
+
+        <div class="fwd-foot">
+
+          <div class="fwd-foot-info" id="fwdFootInfo">SELECT RECIPIENTS</div>
+
+          <button class="fwd-send-btn disabled" id="fwdSendBtn"><i data-lucide="send" style="width:12px;height:12px"></i>SEND</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Image Viewer -->
+
+    <div class="imgview" id="imgView">
+
+      <div class="imgview-toolbar">
+
+        <div class="imgview-info">
+
+          <div class="imgview-info-av" id="imgViewAv">M</div>
+
+          <div class="imgview-info-text"><span id="imgViewSender">Murph</span><small id="imgViewTime">2 min ago</small></div>
+
+        </div>
+
+        <div class="imgview-actions">
+
+          <button class="imgview-btn" id="imgViewDownload" title="Download"><i data-lucide="download" style="width:16px;height:16px"></i></button>
+
+          <button class="imgview-btn" id="imgViewForward" title="Forward"><i data-lucide="share-2" style="width:16px;height:16px"></i></button>
+
+          <button class="imgview-btn danger" id="imgViewClose" title="Close"><i data-lucide="x" style="width:16px;height:16px"></i></button>
+
+        </div>
+
+      </div>
+
+      <div class="imgview-stage" id="imgViewStage">
+
+        <img class="imgview-img" id="imgViewImg" src="" alt="" />
+
+      </div>
+
+      <div class="imgview-zoom-bar">
+
+        <button class="imgview-btn" id="imgViewZoomOut" style="width:30px;height:30px" title="Zoom out"><i data-lucide="minus" style="width:14px;height:14px"></i></button>
+
+        <span class="imgview-zoom-level" id="imgViewZoomLevel">100%</span>
+
+        <button class="imgview-btn" id="imgViewZoomIn" style="width:30px;height:30px" title="Zoom in"><i data-lucide="plus" style="width:14px;height:14px"></i></button>
+
+        <button class="imgview-btn" id="imgViewReset" style="width:30px;height:30px;margin-left:6px" title="Reset"><i data-lucide="refresh-ccw" style="width:14px;height:14px"></i></button>
+
+      </div>
+
+    </div>
+
+    <!-- Toast -->
+
+    <div class="toast" id="toast">
+
+      <div class="toast-icon" id="toastIcon"><i data-lucide="info" style="width:13px;height:13px"></i></div>
+
+      <div class="toast-text" id="toastText">Hello</div>
+
+    </div>
+
+    </div><!-- /.app-row -->
+
+    <!-- Taskbar / Nav (inside app) -->
+
+    <nav class="taskbar">
+
+      <div class="taskbar-left">
+
+        <button class="tb-logo" id="tbLogo" title="ORBLOOD">O</button>
+
+      </div>
+
+      <div class="taskbar-mid">
+
+        <button class="tb active" data-page="pageHome"><i data-lucide="home"></i><span>HOME</span></button>
+
+        <button class="tb" data-page="pageMessages"><i data-lucide="message-circle"></i><span>DMS</span><span class="tb-badge" id="tbDmBadge">5</span></button>
+
+        <button class="tb" data-page="pageWorld"><i data-lucide="globe"></i><span>WORLD</span></button>
+
+      </div>
+
+      <div class="taskbar-right">
+
+        <div class="tb-avatar" id="tbAvatar" title="My profile">C</div>
+
+      </div>
+
+    </nav>
+
+  </div>
+
+</div>
+
+<script src="/js/app.js" defer></script>
+
+</body>
+
+</html>
