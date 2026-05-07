@@ -2991,3 +2991,39 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
 }
 
+
+/* ---- async-button loading dots ----
+   Any button that triggers a fetch / async action gets a 3-dot pulse appended
+   while the request is in flight. Wired up in app.js (init bottom). */
+button.is-loading{position:relative;pointer-events:none;opacity:0.85}
+button.is-loading > *{visibility:hidden}
+button.is-loading::after{
+  content:'';position:absolute;left:50%;top:50%;
+  width:24px;height:6px;transform:translate(-50%,-50%);
+  background-image:
+    radial-gradient(circle,currentColor 45%,transparent 46%),
+    radial-gradient(circle,currentColor 45%,transparent 46%),
+    radial-gradient(circle,currentColor 45%,transparent 46%);
+  background-size:6px 6px;background-repeat:no-repeat;
+  background-position:0 50%, 9px 50%, 18px 50%;
+  animation:btnDots 1s linear infinite;
+}
+@keyframes btnDots{
+  0%  {opacity:.25}
+  20% {background-position:0 50%, 9px 50%, 18px 50%;opacity:.5}
+  40% {opacity:.85}
+  60% {opacity:.5}
+  100%{opacity:.25}
+}
+button.is-loading::before{
+  content:'';position:absolute;left:50%;top:50%;
+  width:18px;height:18px;border-radius:50%;
+  border:1.5px solid currentColor;border-top-color:transparent;
+  transform:translate(-50%,-50%);
+  animation:btnSpin .7s linear infinite;
+  opacity:.55;
+}
+@keyframes btnSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+/* When both ::before spinner and ::after dots are defined, the spinner wins.
+   Drop the dots so we don't double-render. */
+button.is-loading::after{display:none}
