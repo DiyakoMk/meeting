@@ -5383,7 +5383,13 @@
 
     if (!email || !email.includes('@')){ showAuthError('Enter a valid email'); return; }
 
-    if (pwd.length < 4){ showAuthError('Password must be at least 4 characters'); return; }
+    // Length cap matches the backend's password rule (min 8). When no backend
+
+    // is wired up we still allow the legacy >= 4 path so local demos work.
+
+    const minPwd = backend.isConfigured() ? 8 : 4;
+
+    if (pwd.length < minPwd){ showAuthError('Password must be at least '+minPwd+' characters'); return; }
 
     if (authMode === 'signup'){
 
@@ -5395,11 +5401,45 @@
 
       if (!handle){ showAuthError('Username is required'); return; }
 
+      // Backend path
+
+      if (backend.isConfigured()){
+
+        const r = await backend.auth.signup({ email, password:pwd, name, handle });
+
+        if (r.offline){ showAuthError('Cannot reach the server. Try again.'); return; }
+
+        if (r.error){ showAuthError(_authErrorLabel(r.error)); return; }
+
+        backend.token.write(r.token);
+
+        writeAuth(r.user);
+
+        resetSelfProfileForSignup(r.user);
+
+        applyProfileFromAuth(r.user);
+
+        rebrandLocalUser(selfProfile.name);
+
+        refreshSelfAvatarsEverywhere();
+
+        hideAuthModal();
+
+        await runSplash('PROVISIONING YOUR ORBIT', 800);
+
+        await _hydrateAndRefresh();
+
+        showToast('Welcome aboard, '+r.user.name,'success');
+
+        return;
+
+      }
+
+      // Local-only fallback
+
       const user = { email, name, handle, avImage:null, createdAt:Date.now() };
 
       writeAuth(user);
-
-      // Reset selfProfile from scratch (default Cooper persona is wiped).
 
       resetSelfProfileForSignup(user);
 
@@ -5413,21 +5453,25 @@
 
       showToast('Welcome aboard, '+name,'success');
 
-    } else {
+      return;
 
-      // Demo login: any email/password >= 4 chars works.
+    }
 
-      const existing = readAuth();
+    // Login
 
-      const user = existing && existing.email === email
+    if (backend.isConfigured()){
 
-        ? existing
+      const r = await backend.auth.login({ email, password:pwd });
 
-        : { email, name: email.split('@')[0].replace(/^./, x=>x.toUpperCase()), handle: email.split('@')[0].toLowerCase(), avImage:null, createdAt:Date.now() };
+      if (r.offline){ showAuthError('Cannot reach the server. Try again.'); return; }
 
-      writeAuth(user);
+      if (r.error){ showAuthError(_authErrorLabel(r.error)); return; }
 
-      applyProfileFromAuth(user);
+      backend.token.write(r.token);
+
+      writeAuth(r.user);
+
+      applyProfileFromAuth(r.user);
 
       rebrandLocalUser(selfProfile.name);
 
@@ -5435,13 +5479,95 @@
 
       hideAuthModal();
 
-      await runSplash('LOADING YOUR TRANSMISSIONS', 1100);
+      await runSplash('LOADING YOUR TRANSMISSIONS', 800);
 
-      showToast('Signed in as '+user.name,'success');
+      await _hydrateAndRefresh();
+
+      showToast('Signed in as '+r.user.name,'success');
+
+      return;
 
     }
 
+    // Local-only fallback
+
+    const existing = readAuth();
+
+    const user = existing && existing.email === email
+
+      ? existing
+
+      : { email, name: email.split('@')[0].replace(/^./, x=>x.toUpperCase()), handle: email.split('@')[0].toLowerCase(), avImage:null, createdAt:Date.now() };
+
+    writeAuth(user);
+
+    applyProfileFromAuth(user);
+
+    rebrandLocalUser(selfProfile.name);
+
+    refreshSelfAvatarsEverywhere();
+
+    hideAuthModal();
+
+    await runSplash('LOADING YOUR TRANSMISSIONS', 1100);
+
+    showToast('Signed in as '+user.name,'success');
+
   });
+
+  // Map backend error codes to human-readable strings for the auth modal.
+
+  function _authErrorLabel(code){
+
+    switch (code){
+
+      case 'invalid_credentials':    return 'Wrong email or password.';
+
+      case 'email_or_handle_taken':  return 'That email or username is already in use.';
+
+      case 'handle_taken':           return 'That username is already taken.';
+
+      case 'email_taken':            return 'That email is already in use.';
+
+      case 'validation_failed':      return 'Some fields are invalid.';
+
+      default:                       return 'Sign-in failed: ' + code;
+
+    }
+
+  }
+
+  // Pull a fresh snapshot from the backend and re-render every section that
+
+  // reads from in-memory stores. Called after login/signup so the UI doesn't
+
+  // briefly show empty state before the snapshot arrives.
+
+  async function _hydrateAndRefresh(){
+
+    const ok = await hydrateFromBackend();
+
+    if (!ok) return;
+
+    if (typeof renderHomeFriends === 'function') renderHomeFriends();
+
+    if (typeof renderHomeMyServers === 'function') renderHomeMyServers();
+
+    if (typeof renderHomeMarkedOrbits === 'function') renderHomeMarkedOrbits();
+
+    if (typeof renderDmList === 'function') renderDmList();
+
+    if (typeof renderMarkedPanel === 'function') renderMarkedPanel();
+
+    if (typeof renderFriendRequestsHome === 'function') renderFriendRequestsHome();
+
+    if (typeof renderOrbSlides === 'function') renderOrbSlides();
+
+    if (typeof renderServerRails === 'function') renderServerRails();
+
+    if (typeof updateBadges === 'function') updateBadges();
+
+  }
 
   function refreshSelfAvatarsEverywhere(){
 
@@ -8565,9 +8691,21 @@
 
   document.getElementById('profileEditLogout').addEventListener('click', () => {
 
-    appConfirm('Log out of NEXUS?', {title:'LOG OUT', confirmLabel:'LOG OUT', danger:true}).then(ok => {
+    appConfirm('Log out of NEXUS?', {title:'LOG OUT', confirmLabel:'LOG OUT', danger:true}).then(async ok => {
 
       if (!ok) return;
+
+      // Best-effort backend logout. Stateless JWTs mean the token would expire
+
+      // on its own, but we still tell the server in case it tracks sessions.
+
+      if (backend.isConfigured()){
+
+        try { await backend.auth.logout(); } catch(_){}
+
+      }
+
+      backend.token.write(null);
 
       clearAuth();
 
