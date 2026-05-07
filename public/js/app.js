@@ -9771,6 +9771,92 @@
 
       closeProfile();
 
+      // Wipe the in-memory profile + every store so nothing from the previous
+
+      // user bleeds through behind the auth modal. Without this, the layout
+
+      // (server rails, friend bubbles, DM list, profile name/handle) shows
+
+      // the old account while the user types new credentials.
+
+      selfProfile.name = '';
+
+      selfProfile.handle = '';
+
+      selfProfile.email = '';
+
+      selfProfile.initial = '?';
+
+      selfProfile.avImage = null;
+
+      selfProfile.bannerImage = null;
+
+      selfProfile.bio = '';
+
+      selfProfile.baseColor = null;
+
+      selfProfile.avColor = 'linear-gradient(135deg,#a78bfa,#1e1b4b)';
+
+      selfProfile.orbColor = '#a78bfa';
+
+      selfProfile.orbGrad = 'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),#a78bfa 55%,#1e1b4b)';
+
+      Object.keys(servers).forEach(k => delete servers[k]);
+
+      myServers.length = 0;
+
+      Object.keys(channelData).forEach(k => { if (k !== '__empty__') delete channelData[k]; });
+
+      Object.keys(conversations).forEach(k => { if (k !== 'saved') delete conversations[k]; });
+
+      Object.keys(messages).forEach(k => delete messages[k]);
+
+      messages.saved = [];
+
+      friendsList.length = 0;
+
+      markedFriends.length = 0;
+
+      markedTextChannels.length = 0;
+
+      marked.length = 0;
+
+      notifications.length = 0;
+
+      blockedUsers.clear();
+
+      friendRequests.incoming.length = 0;
+
+      friendRequests.outgoing.length = 0;
+
+      currentServer = null;
+
+      currentTextChannel = null;
+
+      currentConversation = null;
+
+      // Re-render the now-empty surfaces so the modal sits over a clean page.
+
+      if (typeof renderHomeFriends === 'function') renderHomeFriends();
+
+      if (typeof renderHomeMyServers === 'function') renderHomeMyServers();
+
+      if (typeof renderHomeMarkedOrbits === 'function') renderHomeMarkedOrbits();
+
+      if (typeof renderDmList === 'function') renderDmList();
+
+      if (typeof renderMarkedPanel === 'function') renderMarkedPanel();
+
+      if (typeof renderFriendRequestsHome === 'function') renderFriendRequestsHome();
+
+      if (typeof renderOrbSlides === 'function') renderOrbSlides();
+
+      if (typeof renderServerRails === 'function') renderServerRails();
+
+      if (typeof refreshSelfAvatarsEverywhere === 'function') refreshSelfAvatarsEverywhere();
+
+      if (typeof updateBadges === 'function') updateBadges();
+
       setAuthTab('login');
 
       ['authEmail','authPassword','authName','authHandle'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
