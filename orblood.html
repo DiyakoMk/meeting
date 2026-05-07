@@ -572,6 +572,24 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .home-hero{position:relative;padding:24px 22px 22px;overflow:hidden;border-bottom:1px solid rgba(255,255,255,0.04);background:radial-gradient(ellipse at 80% 20%,rgba(185,28,74,0.18),transparent 55%),radial-gradient(ellipse at 10% 100%,rgba(190,18,60,0.12),transparent 55%)}
 
+.home-hero-cover{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 0.25s;pointer-events:none;z-index:0}
+
+.home-hero-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(2,1,3,0.55),rgba(2,1,3,0.85))}
+
+.home-hero.has-identity .home-hero-cover{opacity:1}
+
+.home-hero-toggle{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:8px;background:rgba(0,0,0,0.45);border:1px solid var(--gb);color:var(--t2);display:flex;align-items:center;justify-content:center;z-index:3;cursor:pointer;transition:all 0.15s}
+
+.home-hero-toggle:hover{background:rgba(0,0,0,0.7);color:var(--t1);border-color:rgba(185,28,74,0.4)}
+
+.home-hero.has-identity .home-hero-toggle{color:var(--accent);border-color:rgba(185,28,74,0.5)}
+
+.home-hero-orb-letter{font-family:'Space Grotesk','Vazirmatn',sans-serif;font-weight:700;color:#fff;font-size:1.6rem;text-shadow:0 0 8px rgba(0,0,0,0.5);position:relative;z-index:2;display:none}
+
+.home-hero.has-identity .home-hero-orb-letter{display:block}
+
+.home-hero-orb{display:flex;align-items:center;justify-content:center}
+
 .home-hero::before{content:'';position:absolute;top:0;right:0;width:280px;height:280px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><circle cx='100' cy='100' r='95' fill='none' stroke='%236366f1' stroke-width='0.4' opacity='0.3'/><circle cx='100' cy='100' r='75' fill='none' stroke='%238b5cf6' stroke-width='0.4' opacity='0.3' stroke-dasharray='3 4'/><circle cx='100' cy='100' r='55' fill='none' stroke='%23ec4899' stroke-width='0.4' opacity='0.3'/></svg>") center/contain no-repeat;animation:hospin 60s linear infinite;opacity:0.6;pointer-events:none}
 
 .home-hero-row{display:flex;align-items:center;gap:18px;position:relative;z-index:2}
@@ -1033,6 +1051,8 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .dm-head-sub .ds-dot{width:5px;height:5px;border-radius:50%;background:var(--success);box-shadow:0 0 4px var(--success)}
 
 .dm-head-sub.offline .ds-dot{background:var(--t3);box-shadow:none}
+
+.dm-head-sub.is-saved .ds-dot{display:none}
 
 .dm-head-actions{display:flex;align-items:center;gap:4px}
 
@@ -2304,6 +2324,10 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .profile-edit-avatar-row{display:flex;align-items:center;gap:12px;justify-content:center}
 
+.profile-edit-cover-row{display:flex;align-items:center;gap:12px}
+
+.profile-edit-cover-preview{width:120px;height:64px;border-radius:10px;background:radial-gradient(ellipse at 50% 0%,rgba(185,28,74,0.32),transparent 70%),linear-gradient(180deg,rgba(255,255,255,0.05),transparent);background-size:cover;background-position:center;border:1px solid var(--gb);flex-shrink:0}
+
 .profile-edit-avatar-preview{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk','Vazirmatn',sans-serif;font-size:1.4rem;font-weight:700;color:#fff;box-shadow:0 0 14px rgba(185,28,74,0.3),inset 0 0 10px rgba(255,255,255,0.18);flex-shrink:0}
 
 .profile-handle-input{display:flex;align-items:center;background:rgba(255,255,255,0.03);border:1px solid var(--gb);border-radius:10px;overflow:hidden;transition:all 0.2s}
@@ -3066,11 +3090,15 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         <div class="home-pane" id="homePane">
 
-          <div class="home-hero">
+          <div class="home-hero" id="homeHero">
+
+            <div class="home-hero-cover" id="homeHeroCover"></div>
+
+            <button class="home-hero-toggle" id="homeHeroToggle" type="button" title="Toggle profile in header"><i data-lucide="image" style="width:13px;height:13px"></i></button>
 
             <div class="home-hero-row">
 
-              <div class="home-hero-orb"></div>
+              <div class="home-hero-orb" id="homeHeroOrb"><span class="home-hero-orb-letter" id="homeHeroOrbLetter"></span></div>
 
               <div class="home-hero-text">
 
@@ -3488,9 +3516,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
                 <div class="world-empty-eyebrow">NO SIGNAL</div>
 
-                <div class="world-empty-title">شما در هیچ سروری عضو نیستید</div>
+                <div class="world-empty-title">You are not a member of any server</div>
 
-                <div class="world-empty-sub">یک سرور بسازید یا با لینک دعوت به یکی بپیوندید تا کانال‌ها و orbits اینجا ظاهر شوند.</div>
+                <div class="world-empty-sub">Create a server or join one with an invite link to make channels and orbits appear here.</div>
 
               </div>
 
@@ -3765,6 +3793,30 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
               </div>
 
               <input type="hidden" id="profileEditAvatarUrl" value="" />
+
+            </div>
+
+            <div class="sm-field">
+
+              <label class="sm-label">PROFILE COVER</label>
+
+              <div class="profile-edit-cover-row">
+
+                <div class="profile-edit-cover-preview" id="profileEditCoverPreview"></div>
+
+                <div style="display:flex;flex-direction:column;gap:6px;flex:1">
+
+                  <button class="sm-btn cancel" id="profileEditCoverUploadBtn" type="button"><i data-lucide="upload" style="width:11px;height:11px"></i>UPLOAD COVER</button>
+
+                  <button class="sm-btn cancel" id="profileEditCoverClearBtn" type="button"><i data-lucide="x" style="width:11px;height:11px"></i>CLEAR</button>
+
+                </div>
+
+                <input type="file" id="profileCoverFile" accept="image/*" style="display:none" />
+
+              </div>
+
+              <div style="font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);letter-spacing:1px;margin-top:6px">Optional. When unset, your profile uses a soft tint derived from your color — your avatar image is never used as the cover.</div>
 
             </div>
 
@@ -4948,7 +5000,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     endurance: {
 
-      id:'endurance', name:'ENDURANCE', initial:'E', desc:'Mission control for the Endurance crew. Coordinate jumps, share readings, debate the Cooper paradox.',
+      id:'endurance', name:'ENDURANCE', initial:'E', desc:'Mission control for the Endurance crew. Coordinate jumps, share readings, debate gravity equations.',
 
       grad:'linear-gradient(135deg,#ec4899,#831843)', glow:'rgba(236,72,153,0.55)', bannerC1:'rgba(236,72,153,0.2)', bannerC2:'rgba(190,18,60,0.12)',
 
@@ -5276,7 +5328,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     murph: [
 
-      { id:'m1', sender:'them', text:'Cooper, the data stream is back online.', time:'18:04', day:'TODAY', status:'read' },
+      { id:'m1', sender:'them', text:'The data stream is back online.', time:'18:04', day:'TODAY', status:'read' },
 
       { id:'m2', sender:'them', text:'Quantum equation just sent — check it.', time:'18:04', day:'TODAY', status:'read' },
 
@@ -5331,8 +5383,6 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
   let worldMessages = [
 
     { id:'w1', sender:'TARS', initial:'T', av:'linear-gradient(135deg,#22d3ee,#155e75)', role:'AI', roleCls:'bot', text:'Mission log: arrived at sector 7G. All systems nominal.', time:'19:02', cat:'news', reactions:{ '🤖':3, '👍':5 } },
-
-    { id:'w2', sender:'Cooper', initial:'C', av:'linear-gradient(135deg,#22c55e,#15803d)', role:'COMMANDER', text:'Anyone got eyes on the new orbit? Stunning auroras.', time:'19:08', cat:'discovery', reactions:{ '✨':8, '🌌':4 } },
 
     { id:'w3', sender:'NEXUS', initial:'N', av:'linear-gradient(135deg,#fbbf24,#ec4899)', role:'BROADCAST', roleCls:'legend', text:'WORLD WAVE: New legendary orb "SOLARIS" discovered!', time:'19:15', cat:'discovery', special:true, pinned:true, reactions:{ '🔥':24, '⭐':18, '🌟':12 } },
 
@@ -6328,21 +6378,43 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     document.getElementById('dmHeadAv').style.background = conv.avColor;
 
-    document.getElementById('dmHeadAv').style.boxShadow = '0 0 18px '+(conv.online?'rgba(34,197,94,0.4)':'rgba(185,28,74,0.3)');
+    const showPresence = !conv.isSaved;
 
-    document.getElementById('dmHeadPulse').style.borderColor = conv.online ? 'var(--success)' : 'var(--t3)';
+    document.getElementById('dmHeadAv').style.boxShadow = showPresence ? '0 0 18px '+(conv.online?'rgba(34,197,94,0.4)':'rgba(185,28,74,0.3)') : 'none';
 
-    document.getElementById('dmHeadPulse').style.opacity = conv.online ? '1' : '0';
+    const pulseEl = document.getElementById('dmHeadPulse');
 
-    document.getElementById('dmHeadName').innerHTML = escapeHtml(conv.name)+'<span class="verified"><i data-lucide="badge-check" style="width:14px;height:14px"></i></span>';
+    pulseEl.style.display = showPresence ? '' : 'none';
+
+    pulseEl.style.borderColor = conv.online ? 'var(--success)' : 'var(--t3)';
+
+    pulseEl.style.opacity = conv.online ? '1' : '0';
+
+    const nameHtml = conv.isSaved
+
+      ? escapeHtml(conv.name)
+
+      : escapeHtml(conv.name)+'<span class="verified"><i data-lucide="badge-check" style="width:14px;height:14px"></i></span>';
+
+    document.getElementById('dmHeadName').innerHTML = nameHtml;
 
     const sub = document.getElementById('dmHeadSub');
 
     sub.classList.toggle('offline', !conv.online);
 
-    document.getElementById('dmHeadSubText').textContent = conv.online ? 'ONLINE · ENCRYPTED CHANNEL' : 'OFFLINE · LAST SEEN '+conv.lastSeen.toUpperCase();
+    sub.classList.toggle('is-saved', !!conv.isSaved);
 
-    document.getElementById('dmIboxLabel').textContent = 'TRANSMITTING TO '+conv.name.toUpperCase();
+    document.getElementById('dmHeadSubText').textContent = conv.isSaved
+
+      ? 'PERSONAL NOTES · ONLY YOU'
+
+      : (conv.online ? 'ONLINE · ENCRYPTED CHANNEL' : 'OFFLINE · LAST SEEN '+conv.lastSeen.toUpperCase());
+
+    document.getElementById('dmIboxLabel').textContent = conv.isSaved
+
+      ? 'NOTE TO YOURSELF'
+
+      : 'TRANSMITTING TO '+conv.name.toUpperCase();
 
     cancelReply(); cancelEdit(); clearDmAttach();
 
@@ -7032,7 +7104,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       const conv = conversations[currentConversation];
 
-      if (!conv) return;
+      if (!conv || conv.isSaved) return;
 
       conv.typing = true;
 
@@ -7042,7 +7114,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         conv.typing = false;
 
-        const replies = ["Acknowledged.","Copy that.","On it.","Got your transmission, Cooper.","Stay safe.","Roger."];
+        const replies = ["Acknowledged.","Copy that.","On it.","Got your transmission.","Stay safe.","Roger."];
 
         const reply = { id:uid(), sender:'them', text: replies[Math.floor(Math.random()*replies.length)], time:nowTime(), day:'TODAY', status:'read' };
 
@@ -7692,7 +7764,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   const activityFeed = [
 
-    { dot:'M', dotCls:'pink', title:'Murph sent you a transmission', desc:'"Cooper, the data stream is back online..."', time:'2m', action:{type:'conv',id:'murph'} },
+    { dot:'M', dotCls:'pink', title:'Murph sent you a transmission', desc:'"The data stream is back online..."', time:'2m', action:{type:'conv',id:'murph'} },
 
     { dot:'B', dotCls:'green', title:'Brand joined ORBIT', desc:'Voice channel · 4 members now active', time:'12m', action:{type:'voice',id:'orbit'} },
 
@@ -9554,6 +9626,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     selfProfile.avImage = null;
 
+    selfProfile.bannerImage = null;
+
     selfProfile.baseColor = '#a78bfa';
 
     selfProfile.orbColor  = '#a78bfa';
@@ -9603,6 +9677,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     if (user.phone) selfProfile.phone = user.phone;
 
     if (user.avImage) selfProfile.avImage = user.avImage;
+
+    if (typeof user.bannerImage !== 'undefined') selfProfile.bannerImage = user.bannerImage;
 
     if (user.baseColor){
 
@@ -9732,11 +9808,79 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (tb){ tb.style.background = selfAvStyle(); tb.textContent = selfAvInner(); tb.style.color = selfProfile.avImage ? 'transparent' : ''; }
 
+    refreshHomeHeroIdentity();
+
     if (typeof renderConversation === 'function' && currentConversation) renderConversation();
 
     if (typeof renderVoiceUsers === 'function' && voiceUsersSidebarOpen) renderVoiceUsers();
 
     if (typeof updateOrbStates === 'function') updateOrbStates();
+
+  }
+
+  // Drives the home hero badge: paints the user's avatar onto the red orb and
+
+  // their cover behind the whole hero panel. Toggleable via the gear button
+
+  // in the corner; the on/off preference is remembered in localStorage.
+
+  const HOME_HERO_KEY = 'orblood_home_hero_identity_v1';
+
+  function readHomeHeroOn(){ try { return localStorage.getItem(HOME_HERO_KEY) !== '0'; } catch(_){ return true; } }
+
+  function writeHomeHeroOn(on){ try { localStorage.setItem(HOME_HERO_KEY, on?'1':'0'); } catch(_){} }
+
+  function refreshHomeHeroIdentity(){
+
+    const hero  = document.getElementById('homeHero');
+
+    const cover = document.getElementById('homeHeroCover');
+
+    const orb   = document.getElementById('homeHeroOrb');
+
+    const lett  = document.getElementById('homeHeroOrbLetter');
+
+    if (!hero || !cover || !orb || !lett) return;
+
+    const on = readHomeHeroOn();
+
+    hero.classList.toggle('has-identity', !!on);
+
+    if (on){
+
+      // Orb: avatar image (or a flat colored disc with the user's initial).
+
+      if (selfProfile.avImage){
+
+        orb.style.background = '#0a070f url('+selfProfile.avImage+') center/cover no-repeat';
+
+        lett.textContent = '';
+
+      } else {
+
+        orb.style.background = selfProfile.orbGrad || selfProfile.avColor || 'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.4),'+(selfProfile.orbColor||'#22c55e')+' 60%,#14532d)';
+
+        lett.textContent = selfProfile.initial || (selfProfile.name||'?').charAt(0).toUpperCase();
+
+      }
+
+      // Cover: explicit bannerImage only — never the avatar.
+
+      cover.style.background = selfProfile.bannerImage
+
+        ? '#0a070f url('+selfProfile.bannerImage+') center/cover no-repeat'
+
+        : '';
+
+    } else {
+
+      orb.style.background = '';
+
+      cover.style.background = '';
+
+      lett.textContent = '';
+
+    }
 
   }
 
@@ -9850,15 +9994,15 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     else lastSeenEl.style.display = 'none';
 
-    // Banner: prefer self.bannerImage / data.bannerImage; fallback derives a soft tint from orb color.
+    // Banner: only use an explicitly-set bannerImage. We deliberately do NOT
+
+    // fall back to the avatar image — covers are independent of avatars.
 
     const banner = document.getElementById('modalBanner');
 
-    const bannerImg = data.bannerImage || (data.avImage ? data.avImage : null);
+    if (data.bannerImage){
 
-    if (bannerImg){
-
-      banner.style.background = 'linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(2,1,3,0.85)) , #0a070f url('+bannerImg+') center/cover no-repeat';
+      banner.style.background = 'linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(2,1,3,0.85)) , #0a070f url('+data.bannerImage+') center/cover no-repeat';
 
     } else {
 
@@ -9927,6 +10071,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       if (colorInp)  colorInp.value = baseColor;
 
       const hexEl = document.getElementById('profileColorHex'); if (hexEl) hexEl.textContent = baseColor.toUpperCase();
+
+      syncCoverPreview();
 
       // Reset to PROFILE tab whenever the modal opens fresh.
 
@@ -10034,6 +10180,12 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     refreshSelfAvatarsEverywhere();
 
+    refreshHomeGreeting();
+
+    auth.bannerImage = selfProfile.bannerImage || null;
+
+    writeAuth(auth);
+
     showToast('Profile updated','success');
 
   }
@@ -10073,6 +10225,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     const prev = document.getElementById('profileEditAvatarPreview');
 
     prev.style.background = p.grad;
+
+    refreshHomeHeroIdentity();
 
   }
 
@@ -10538,11 +10692,15 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     // Build the text-channel list across every server the user is a member of.
 
-    // Voice orbs are NOT valid forward targets.
+    // Voice orbs are NOT valid forward targets. Servers Cooper has left/deleted
+
+    // are excluded so we never expose channels he can no longer access.
 
     const tcEntries = [];
 
-    Object.values(servers).forEach(srv => {
+    myServers.forEach(sid => {
+
+      const srv = servers[sid]; if (!srv) return;
 
       (srv.textChannels||[]).forEach(tc => {
 
@@ -10554,17 +10712,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     });
 
-    const showWorld = !q || 'world feed'.includes(q);
+    if (tcEntries.length){
 
-    if (tcEntries.length || showWorld){
-
-      html += '<div class="fwd-section-h">CHANNELS / WORLD</div>';
-
-      if (showWorld){
-
-        html += '<div class="fwd-item'+(fwdSelectedTargets.has('world')?' checked':'')+'" data-fwd-target="world"><div class="fwd-item-av channel"><i data-lucide="globe" style="width:14px;height:14px"></i></div><div class="fwd-item-name">World Feed</div><div class="fwd-item-check"><i data-lucide="check" style="width:11px;height:11px"></i></div></div>';
-
-      }
+      html += '<div class="fwd-section-h">CHANNELS</div>';
 
       html += tcEntries.map(({srv, tc}) => {
 
@@ -10680,7 +10830,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         const time = nowTime();
 
-        const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:'Cooper', text:src.text||'', time, forwarded:true };
+        const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:selfProfile.name, text:src.text||'', time, forwarded:true };
 
         if (src.type==='serverCard'){
 
@@ -10706,22 +10856,6 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         const srv = servers[srvId]; if (srv){ const tc = srv.textChannels.find(x => x.id === chId); if (tc && !(currentServer===srvId && currentTextChannel===chId)){ tc.unread = (tc.unread||0)+1; updateBadges(); } }
 
-      } else if (target === 'world'){
-
-        const time = nowTime();
-
-        const newMsg = { id:uid(), sender:'Cooper', initial:'C', av:'linear-gradient(135deg,#22c55e,#15803d)', role:'COMMANDER', time, special:false, cat:'news', reactions:{}, text:'[FWD] '+(src.text||src.caption||'') };
-
-        if (src.type==='serverCard'){ newMsg.type='serverCard'; newMsg.text=''; newMsg.serverCard = { id:src.serverId, name:src.serverName, desc:src.serverDesc, emblem:src.serverEmblem, grad:src.serverGrad, glow:src.serverGlow, initial:src.serverInitial, invite:src.serverInvite, members:src.serverMembers }; newMsg.cat='news'; }
-
-        else if (src.type==='channelCard'){ newMsg.type='channelCard'; newMsg.text=''; newMsg.channelCard = { kind:src.kind, serverId:src.serverId, serverName:src.serverName, serverEmblem:src.serverEmblem, serverGrad:src.serverGrad, serverGlow:src.serverGlow, serverInitial:src.serverInitial, channelId:src.channelId, channelName:src.channelName, channelStyle:src.channelStyle, channelMembers:src.channelMembers }; newMsg.cat='news'; }
-
-        else if (src.type==='userCard'){ newMsg.type='userCard'; newMsg.text=''; newMsg.userCard = { userKey:src.userKey, name:src.name, handle:src.handle, initial:src.initial, avColor:src.avColor, avImage:src.avImage, bio:src.bio }; newMsg.cat='news'; }
-
-        else if (src.type==='image'){ newMsg.type='image'; newMsg.src = src.src; newMsg.cat='media'; }
-
-        worldMessages.push(newMsg);
-
       }
 
     });
@@ -10733,8 +10867,6 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
     if (currentConversation) renderConversation();
 
     if (currentServer && currentTextChannel) renderChannelView();
-
-    renderWorldMessages();
 
     renderDmList();
 
@@ -11720,13 +11852,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (!text){ cat.pinned = null; showToast('Category pin removed','warn'); }
 
-      else { cat.pinned = { text, by:'Cooper', time:'just now' }; showToast('Pinned to category','success'); }
+      else { cat.pinned = { text, by:selfProfile.name, time:'just now' }; showToast('Pinned to category','success'); }
 
     } else {
 
       if (!text){ s.pinned = null; showToast('Pin removed','warn'); }
 
-      else { s.pinned = { text, by:'Cooper', time:'just now' }; showToast('Pinned to server','success'); }
+      else { s.pinned = { text, by:selfProfile.name, time:'just now' }; showToast('Pinned to server','success'); }
 
     }
 
@@ -12470,6 +12602,14 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   }));
 
+  // Color picker streams 'input' events on every cursor move. Only update the
+
+  // local preview chip + avatar preview live; defer the heavy avatar refresh
+
+  // (re-renders DM list, voice users, orbits) until the picker commits via
+
+  // 'change'. Otherwise the picker UI feels laggy.
+
   document.getElementById('profileColorInput').addEventListener('input', e => {
 
     const v = e.target.value;
@@ -12486,9 +12626,13 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     selfProfile.avColor  = colorToFlatGrad(v);
 
-    refreshSelfAvatarsEverywhere();
-
     applyProfileAvatarPreview();
+
+  });
+
+  document.getElementById('profileColorInput').addEventListener('change', () => {
+
+    refreshSelfAvatarsEverywhere();
 
   });
 
@@ -12690,11 +12834,53 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     const rd = new FileReader();
 
-    rd.onload = ev => { selfProfile.avImage = ev.target.result; applyProfileAvatarPreview(); document.getElementById('profileEditAvatarUrl').value = ''; };
+    rd.onload = ev => { selfProfile.avImage = ev.target.result; applyProfileAvatarPreview(); refreshHomeHeroIdentity(); document.getElementById('profileEditAvatarUrl').value = ''; };
 
     rd.readAsDataURL(f);
 
   });
+
+  // Profile cover (banner) — independent from avatar.
+
+  document.getElementById('profileEditCoverUploadBtn').addEventListener('click', () => document.getElementById('profileCoverFile').click());
+
+  document.getElementById('profileEditCoverClearBtn').addEventListener('click', () => { selfProfile.bannerImage = null; syncCoverPreview(); refreshHomeHeroIdentity(); });
+
+  document.getElementById('profileCoverFile').addEventListener('change', e => {
+
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+
+    if (!f.type.startsWith('image/')){ showToast('Pick an image file','warn'); return; }
+
+    const rd = new FileReader();
+
+    rd.onload = ev => { selfProfile.bannerImage = ev.target.result; syncCoverPreview(); refreshHomeHeroIdentity(); };
+
+    rd.readAsDataURL(f);
+
+  });
+
+  function syncCoverPreview(){
+
+    const prev = document.getElementById('profileEditCoverPreview');
+
+    if (!prev) return;
+
+    if (selfProfile.bannerImage){
+
+      prev.style.background = '#0a070f url('+selfProfile.bannerImage+') center/cover no-repeat';
+
+    } else {
+
+      const c = selfProfile.orbColor || '#22c55e';
+
+      const r = parseInt(c.slice(1,3),16), g = parseInt(c.slice(3,5),16), b = parseInt(c.slice(5,7),16);
+
+      prev.style.background = 'radial-gradient(ellipse at 50% 0%,rgba('+r+','+g+','+b+',0.4),transparent 70%),linear-gradient(180deg,rgba(255,255,255,0.05),transparent)';
+
+    }
+
+  }
 
   function applyProfileAvatarPreview(){
 
@@ -13648,7 +13834,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     serverChannelMessages[key] = serverChannelMessages[key] || [];
 
-    const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:'Cooper', text:txt, time:'now' };
+    const newMsg = { id:Date.now()+Math.floor(Math.random()*1000), user:selfProfile.name, text:txt, time:'now' };
 
     if (wsAttachImage){ newMsg.type = 'image'; newMsg.src = wsAttachImage; }
 
@@ -15192,21 +15378,39 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
   bootAuth();
 
-  (function setGreeting(){
+  function refreshHomeGreeting(){
 
     const h = new Date().getHours();
 
-    let g = 'GOOD EVENING, COOPER';
+    const name = (selfProfile.name || 'Cooper').toUpperCase();
 
-    if (h<12) g = 'GOOD MORNING, COOPER';
+    let g = 'GOOD EVENING, '+name;
 
-    else if (h<18) g = 'GOOD AFTERNOON, COOPER';
+    if (h<12) g = 'GOOD MORNING, '+name;
 
-    else if (h>=22 || h<5) g = 'GOOD NIGHT, COOPER';
+    else if (h<18) g = 'GOOD AFTERNOON, '+name;
+
+    else if (h>=22 || h<5) g = 'GOOD NIGHT, '+name;
 
     const el = document.getElementById('greetGreeting'); if (el) el.textContent = g;
 
-  })();
+  }
+
+  refreshHomeGreeting();
+
+  refreshHomeHeroIdentity();
+
+  document.getElementById('homeHeroToggle').addEventListener('click', () => {
+
+    const next = !readHomeHeroOn();
+
+    writeHomeHeroOn(next);
+
+    refreshHomeHeroIdentity();
+
+    showToast(next ? 'Profile preview enabled' : 'Profile preview hidden','success');
+
+  });
 
   refreshIcons();
 
