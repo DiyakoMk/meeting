@@ -277,6 +277,12 @@
 
     blockedUsers.add(key);
 
+    // Fire-and-forget on the backend. The local state already reflects the
+
+    // intent; if the backend rejects, the snapshot will reconcile next time.
+
+    if (backend.isConfigured()){ backend.users.block(key).catch(()=>{}); }
+
     if (currentConversation === key) renderConversation();
 
   }
@@ -284,6 +290,8 @@
   function unblockUser(key){
 
     blockedUsers.delete(key);
+
+    if (backend.isConfigured()){ backend.users.unblock(key).catch(()=>{}); }
 
     if (currentConversation === key) renderConversation();
 
@@ -375,6 +383,8 @@
 
     friendsList = friendsList.filter(x => x !== k);
 
+    if (backend.isConfigured()){ backend.friends.remove(k).catch(()=>{}); }
+
     // Also drop them from marked friends and DM list ordering hints, but keep
 
     // their conversation around so message history isn't lost.
@@ -385,11 +395,21 @@
 
   // User-controlled gate: only friends can DM me. Persisted across sessions.
 
+  // Mirrored to the backend's users.friends_only column when an API is wired
+
+  // up — that's where the *server* enforces the rule for incoming DMs.
+
   const FRIENDS_ONLY_KEY = 'orblood_friends_only_v1';
 
   function readFriendsOnly(){ try { return localStorage.getItem(FRIENDS_ONLY_KEY) === '1'; } catch(_){ return false; } }
 
-  function writeFriendsOnly(on){ try { localStorage.setItem(FRIENDS_ONLY_KEY, on?'1':'0'); } catch(_){} }
+  function writeFriendsOnly(on){
+
+    try { localStorage.setItem(FRIENDS_ONLY_KEY, on?'1':'0'); } catch(_){}
+
+    if (backend.isConfigured()){ backend.me.patch({ friendsOnly: !!on }).catch(()=>{}); }
+
+  }
 
   // Conversation messages — keyed by conversation id. Saved Messages ships
 
@@ -1933,9 +1953,19 @@
 
   // ============== DM SELECT MODE / CLEAR CHAT / PIN ==============
 
-  function clearDmChat(){
+  async function clearDmChat(){
 
     if (!currentConversation) return;
+
+    if (backend.isConfigured()){
+
+      const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
+
+      const r = await backend.dms.clear(peerKey);
+
+      if (r.error){ showToast('Could not clear: '+r.error,'warn'); return; }
+
+    }
 
     // Reset message state. Wipe local stale UI bits (selection, pinned banner,
 
@@ -2201,7 +2231,7 @@
 
   }
 
-  function sendDM(){
+  async function sendDM(){
 
     if (!currentConversation) return;
 
@@ -2220,6 +2250,54 @@
     const text = inp.value.trim();
 
     if (!text && !dmAttachData) return;
+
+    // Backend send. For now we only persist text + reply pointer; image data
+
+    // URLs go through the local-only path below until uploads are wired in.
+
+    if (backend.isConfigured() && !dmEditingId && !dmAttachData){
+
+      const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
+
+      const r = await backend.dms.send(peerKey, {
+
+        text,
+
+        replyTo: dmReplyTo ? dmReplyTo.id : undefined
+
+      });
+
+      if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+      if (r.error === 'blocked'){ showToast('You can\'t message this user','warn'); return; }
+
+      if (r.error === 'friends_only'){ showToast('They only accept messages from friends','warn'); return; }
+
+      if (r.error){ showToast('Send failed: '+r.error,'warn'); return; }
+
+      const msg = { ...r.message };
+
+      if (dmReplyTo) msg.replyTo = dmReplyTo.id;
+
+      if (!messages[currentConversation]) messages[currentConversation] = [];
+
+      messages[currentConversation].push(msg);
+
+      bumpDmList(currentConversation);
+
+      inp.value = '';
+
+      autoResizeInput(inp);
+
+      cancelReply(); clearDmAttach(); updateSendBtn();
+
+      renderConversation(); renderDmList();
+
+      inp.focus();
+
+      return;
+
+    }
 
     if (dmEditingId){
 
@@ -5023,21 +5101,57 @@
 
       leave:   id           => _apiRequest('POST',   '/servers/'+encodeURIComponent(id)+'/leave'),
 
+      lookup:  keyOrId      => _apiRequest('GET',    '/servers/lookup/'+encodeURIComponent(keyOrId)),
+
+      join:    keyOrId      => _apiRequest('POST',   '/servers/'+encodeURIComponent(keyOrId)+'/join', {}),
+
+      transferOwnership: (sid, targetUserId) => _apiRequest('POST', '/servers/'+encodeURIComponent(sid)+'/transfer-ownership', { targetUserId }),
+
       addCategory: (sid, p) => _apiRequest('POST',   '/servers/'+encodeURIComponent(sid)+'/categories', p),
 
       delCategory: (sid, c) => _apiRequest('DELETE', '/servers/'+encodeURIComponent(sid)+'/categories/'+encodeURIComponent(c)),
 
-      addTextChannel:  (sid, p) => _apiRequest('POST',   '/servers/'+encodeURIComponent(sid)+'/text-channels',  p),
+      addTextChannel:  (sid, p) => _apiRequest('POST',   '/channels/text/'+encodeURIComponent(sid), p),
 
-      delTextChannel:  (sid, c) => _apiRequest('DELETE', '/servers/'+encodeURIComponent(sid)+'/text-channels/'+encodeURIComponent(c)),
+      delTextChannel:  (sid, c) => _apiRequest('DELETE', '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)),
 
-      addVoiceChannel: (sid, p) => _apiRequest('POST',   '/servers/'+encodeURIComponent(sid)+'/voice-channels', p),
+      addVoiceChannel: (sid, p) => _apiRequest('POST',   '/channels/voice/'+encodeURIComponent(sid), p),
 
-      delVoiceChannel: (sid, c) => _apiRequest('DELETE', '/servers/'+encodeURIComponent(sid)+'/voice-channels/'+encodeURIComponent(c)),
+      delVoiceChannel: (sid, c) => _apiRequest('DELETE', '/channels/voice/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)),
 
-      voiceJoin:  (sid, c) => _apiRequest('POST', '/servers/'+encodeURIComponent(sid)+'/voice-channels/'+encodeURIComponent(c)+'/join'),
+      voiceJoin:  (sid, c) => _apiRequest('POST', '/channels/voice/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/join'),
 
-      voiceLeave: (sid, c) => _apiRequest('POST', '/servers/'+encodeURIComponent(sid)+'/voice-channels/'+encodeURIComponent(c)+'/leave')
+      voiceLeave: (sid, c) => _apiRequest('POST', '/channels/voice/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/leave'),
+
+      listChannelMessages: (sid, c)         => _apiRequest('GET',  '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/messages'),
+
+      sendChannelMessage:  (sid, c, payload) => _apiRequest('POST', '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/messages', payload),
+
+      delChannelMessage:   (sid, c, mid)     => _apiRequest('DELETE','/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/messages/'+encodeURIComponent(mid))
+
+    },
+
+    uploads: {
+
+      // multipart/form-data is built on the call site (FormData()).
+
+      image: (formData) => {
+
+        const base = _backendBase(); if (!base) return Promise.resolve({ offline:true });
+
+        const tok = _readToken();
+
+        return fetch(base + '/uploads/image', {
+
+          method: 'POST',
+
+          headers: tok ? { 'Authorization': 'Bearer '+tok } : {},
+
+          body: formData
+
+        }).then(r => r.json().catch(()=>({ error:'bad_response' })));
+
+      }
 
     },
 
@@ -6061,7 +6175,7 @@
 
   }
 
-  function applyProfileEdit(){
+  async function applyProfileEdit(){
 
     const name = document.getElementById('profileEditName').value.trim() || selfProfile.name;
 
@@ -6073,6 +6187,46 @@
 
     const oldName = selfProfile.name;
 
+    // Account tab fields
+
+    const emailEl = document.getElementById('profileEditEmail');
+
+    const phoneEl = document.getElementById('profileEditPhone');
+
+    const pwdEl   = document.getElementById('profileEditPassword');
+
+    const newEmail = emailEl ? emailEl.value.trim() : '';
+
+    const newPhone = phoneEl ? phoneEl.value.trim() : '';
+
+    const newPwd   = pwdEl ? pwdEl.value : '';
+
+    // Backend-side persistence first. If the server rejects (e.g. handle
+
+    // already taken), surface the message and DON'T mutate local state.
+
+    if (backend.isConfigured()){
+
+      const patch = { name, handle: handle.replace(/^@/,''), bio };
+
+      if (newEmail) patch.email = newEmail;
+
+      if (newPhone) patch.phone = newPhone;
+
+      if (newPwd)   patch.password = newPwd;
+
+      const r = await backend.me.patch(patch);
+
+      if (r.error === 'handle_taken'){ showToast('That username is taken','warn'); return; }
+
+      if (r.error === 'email_taken'){  showToast('That email is taken','warn'); return; }
+
+      if (r.error){ showToast('Could not save: '+r.error,'warn'); return; }
+
+      if (r.user) applyProfileFromAuth(r.user);
+
+    }
+
     selfProfile.name = name;
 
     selfProfile.initial = name.charAt(0).toUpperCase();
@@ -6081,19 +6235,11 @@
 
     selfProfile.bio = bio;
 
-    // Account tab fields
+    if (emailEl) selfProfile.email = newEmail;
 
-    const emailEl = document.getElementById('profileEditEmail');
+    if (phoneEl) selfProfile.phone = newPhone;
 
-    const phoneEl = document.getElementById('profileEditPhone');
-
-    if (emailEl) selfProfile.email = emailEl.value.trim();
-
-    if (phoneEl) selfProfile.phone = phoneEl.value.trim();
-
-    const pwdEl = document.getElementById('profileEditPassword');
-
-    if (pwdEl && pwdEl.value){ selfProfile.password = pwdEl.value; pwdEl.value = ''; }
+    if (pwdEl && newPwd){ selfProfile.password = newPwd; pwdEl.value = ''; }
 
     // Persist a few of these into auth so the next reload remembers them.
 
@@ -7183,7 +7329,7 @@
 
   }
 
-  function submitCreateServer(){
+  async function submitCreateServer(){
 
     if (csActiveTab==='create'){
 
@@ -7193,15 +7339,51 @@
 
       const desc = document.getElementById('csDescInput').value.trim() || 'A new ORBLOOD server.';
 
-      const sid = 'srv-'+uid();
-
       const p = serverColorPalette[csSelectedColor];
-
-      // Pull a representative hex out of the linear gradient (e.g. '#22c55e').
 
       const hexMatch = p.grad.match(/#([0-9a-fA-F]{6})/);
 
       const baseColor = hexMatch ? '#'+hexMatch[1] : '#b91c4a';
+
+      // Backend path — we let the server allocate the id + invite key.
+
+      if (backend.isConfigured()){
+
+        const r = await backend.servers.create({
+
+          name, desc, baseColor,
+
+          grad: p.grad, glow: p.glow,
+
+          isPrivate: false
+
+        });
+
+        if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+        if (r.error){ showToast('Could not create server: '+r.error,'warn'); return; }
+
+        servers[r.server.id] = r.server;
+
+        myServers.push(r.server.id);
+
+        showToast('Server "'+name+'" created','success');
+
+        renderServerRails(); renderHomeMyServers();
+
+        document.getElementById('createServerBackdrop').classList.remove('show');
+
+        setPage('pageWorld');
+
+        selectServer(r.server.id);
+
+        return;
+
+      }
+
+      // Local-only fallback
+
+      const sid = 'srv-'+uid();
 
       servers[sid] = {
 
@@ -7213,15 +7395,9 @@
 
         members:[selfProfile.name], admins:[selfProfile.name],
 
-        textChannels:[],
+        textChannels:[], voiceChannels:[], categories:[],
 
-        voiceChannels:[],
-
-        categories:[],
-
-        pinned:null,
-
-        isPrivate:false
+        pinned:null, isPrivate:false
 
       };
 
@@ -7229,39 +7405,55 @@
 
       showToast('Server "'+name+'" created','success');
 
-      renderServerRails();
-
-      renderHomeMyServers();
+      renderServerRails(); renderHomeMyServers();
 
       document.getElementById('createServerBackdrop').classList.remove('show');
-
-      // Auto-open it
 
       setPage('pageWorld');
 
       selectServer(sid);
 
+      return;
+
+    }
+
+    // JOIN tab
+
+    const code = document.getElementById('csJoinInput').value.trim();
+
+    if (!code){ showToast('Enter an invite ID','warn'); return; }
+
+    let preview = null;
+
+    if (backend.isConfigured()){
+
+      // Server-side lookup. Returns 404 if the key/id isn't valid.
+
+      const r = await fetch(_backendBase()+'/servers/lookup/'+encodeURIComponent(code), {
+
+        headers: { 'Authorization': 'Bearer '+(backend.token.read()||'') }
+
+      }).then(x => x.json()).catch(()=>null);
+
+      if (!r || r.error === 'not_found'){
+
+        showToast('No server found for "'+code+'"','warn'); return;
+
+      }
+
+      if (r.error){ showToast('Could not look up server','warn'); return; }
+
+      preview = r.server;
+
     } else {
-
-      const code = document.getElementById('csJoinInput').value.trim();
-
-      if (!code){ showToast('Enter an invite ID','warn'); return; }
-
-      // Look up by invite key, then fall back to id.
 
       const found = Object.values(servers).find(sv =>
 
-        (sv.inviteKey && sv.inviteKey.toLowerCase() === code.toLowerCase()) ||
-
-        sv.id === code
+        (sv.inviteKey && sv.inviteKey.toLowerCase() === code.toLowerCase()) || sv.id === code
 
       );
 
       if (!found){ showToast('No server found for "'+code+'"','warn'); return; }
-
-      // Private servers are not joinable through the invite flow when the user
-
-      // isn't already a member.
 
       if (found.isPrivate && !(found.members||[]).includes(selfProfile.name)){
 
@@ -7269,29 +7461,13 @@
 
       }
 
-      document.getElementById('createServerBackdrop').classList.remove('show');
+      preview = {
 
-      // Defer to the unified preview modal: shows name/about/members and the
+        id: found.id, name: found.name, desc: found.desc,
 
-      // explicit JOIN/CANCEL buttons.
+        emblem: found.emblemImage || null, cover: found.cover || null,
 
-      openServerJoinModal({
-
-        id: found.id,
-
-        name: found.name,
-
-        desc: found.desc,
-
-        emblem: found.emblemImage || null,
-
-        cover: found.cover || null,
-
-        grad: found.grad,
-
-        glow: found.glow,
-
-        initial: found.initial,
+        grad: found.grad, glow: found.glow, initial: found.initial,
 
         invite: found.inviteKey || null,
 
@@ -7299,9 +7475,13 @@
 
         isPrivate: !!found.isPrivate
 
-      });
+      };
 
     }
+
+    document.getElementById('createServerBackdrop').classList.remove('show');
+
+    openServerJoinModal(preview);
 
   }
 
@@ -8781,7 +8961,7 @@
 
   });
 
-  document.getElementById('settingsIncomingList').addEventListener('click', e => {
+  document.getElementById('settingsIncomingList').addEventListener('click', async e => {
 
     const a = e.target.closest('[data-fp-accept]');
 
@@ -8791,7 +8971,15 @@
 
       const r = friendRequests.incoming.find(x => x.id === id); if (!r) return;
 
-      const k = r.name.toLowerCase();
+      if (backend.isConfigured()){
+
+        const resp = await backend.friends.accept(id);
+
+        if (resp.error){ showToast('Could not accept: '+resp.error,'warn'); return; }
+
+      }
+
+      const k = (r.handle || r.name).replace(/^@/,'').toLowerCase();
 
       if (!conversations[k]){
 
@@ -8801,7 +8989,11 @@
 
       }
 
-      addFriend(k);
+      // addFriend already calls the backend's friends.remove on undo, but for
+
+      // ADD we leave the persistence to /friends/:id/accept above.
+
+      if (!friendsList.includes(k)) friendsList.push(k);
 
       friendRequests.incoming = friendRequests.incoming.filter(x => x.id !== id);
 
@@ -8827,6 +9019,14 @@
 
       const r = friendRequests.incoming.find(x => x.id === id); if (!r) return;
 
+      if (backend.isConfigured()){
+
+        const resp = await backend.friends.reject(id);
+
+        if (resp.error){ showToast('Could not reject','warn'); return; }
+
+      }
+
       friendRequests.incoming = friendRequests.incoming.filter(x => x.id !== id);
 
       renderFriendsLists();
@@ -8839,7 +9039,7 @@
 
   });
 
-  document.getElementById('settingsPendingList').addEventListener('click', e => {
+  document.getElementById('settingsPendingList').addEventListener('click', async e => {
 
     const c = e.target.closest('[data-fp-cancel]');
 
@@ -8848,6 +9048,14 @@
       const id = parseInt(c.dataset.fpCancel);
 
       const r = friendRequests.outgoing.find(x => x.id === id); if (!r) return;
+
+      if (backend.isConfigured()){
+
+        const resp = await backend.friends.cancel(id);
+
+        if (resp.error){ showToast('Could not cancel','warn'); return; }
+
+      }
 
       friendRequests.outgoing = friendRequests.outgoing.filter(x => x.id !== id);
 
@@ -8891,7 +9099,7 @@
 
   // Send friend request straight from the locked compose banner.
 
-  document.getElementById('dmComposeFriendBtn').addEventListener('click', () => {
+  document.getElementById('dmComposeFriendBtn').addEventListener('click', async () => {
 
     if (!currentConversation) return;
 
@@ -8901,7 +9109,23 @@
 
     if (friendRequests.outgoing.some(r => r.name.toLowerCase() === currentConversation.toLowerCase())){ showToast('Friend request already pending','warn'); return; }
 
-    friendRequests.outgoing.push({ id:Date.now(), name:conv.name, handle:conv.handle, initial:conv.initial, avColor:conv.avColor, meta:'sent just now' });
+    let req;
+
+    if (backend.isConfigured()){
+
+      const r = await backend.friends.request(conv.handle || ('@'+currentConversation));
+
+      if (r.error){ showToast('Could not send request','warn'); return; }
+
+      req = r.request;
+
+    } else {
+
+      req = { id:Date.now(), name:conv.name, handle:conv.handle, initial:conv.initial, avColor:conv.avColor, meta:'sent just now' };
+
+    }
+
+    friendRequests.outgoing.push(req);
 
     renderFriendsLists();
 
@@ -8985,7 +9209,7 @@
 
   });
 
-  document.getElementById('modalAddFriend').addEventListener('click', () => {
+  document.getElementById('modalAddFriend').addEventListener('click', async () => {
 
     const targetKey = (document.getElementById('modalMessage').dataset.targetKey || '').toLowerCase();
 
@@ -8999,7 +9223,23 @@
 
     if (!conv) return;
 
-    friendRequests.outgoing.push({ id:Date.now(), name:conv.name, handle:conv.handle, initial:conv.initial, avColor:conv.avColor, meta:'sent just now' });
+    let req;
+
+    if (backend.isConfigured()){
+
+      const r = await backend.friends.request(conv.handle || ('@'+targetKey));
+
+      if (r.error){ showToast('Could not send request','warn'); return; }
+
+      req = r.request;
+
+    } else {
+
+      req = { id:Date.now(), name:conv.name, handle:conv.handle, initial:conv.initial, avColor:conv.avColor, meta:'sent just now' };
+
+    }
+
+    friendRequests.outgoing.push(req);
 
     showToast('Friend request sent to '+conv.name,'success');
 
@@ -9135,17 +9375,73 @@
 
   document.getElementById('profileEditAvatarUploadBtn').addEventListener('click', () => document.getElementById('profileAvatarFile').click());
 
-  document.getElementById('profileAvatarFile').addEventListener('change', e => {
+  // Try the backend upload endpoint first; fall back to in-memory data URL so
+
+  // the page still works against an offline / static-only host.
+
+  async function _readImageOrUpload(file){
+
+    if (!file || !file.type.startsWith('image/')) return null;
+
+    if (backend.isConfigured()){
+
+      const fd = new FormData(); fd.append('file', file);
+
+      const r = await backend.uploads.image(fd);
+
+      if (r && r.url){
+
+        // Resolve relative URLs (/uploads/...) against the API origin so the
+
+        // browser can fetch them when the app is hosted on a different host.
+
+        if (r.url.startsWith('/')){
+
+          const base = _backendBase().replace(/\/api$/, '');
+
+          return base ? base + r.url : r.url;
+
+        }
+
+        return r.url;
+
+      }
+
+      // Fall through to data URL on upload failure
+
+    }
+
+    return await new Promise((res, rej) => {
+
+      const rd = new FileReader();
+
+      rd.onload = ev => res(ev.target.result);
+
+      rd.onerror = rej;
+
+      rd.readAsDataURL(file);
+
+    });
+
+  }
+
+  document.getElementById('profileAvatarFile').addEventListener('change', async e => {
 
     const f = e.target.files && e.target.files[0]; if (!f) return;
 
-    if (!f.type.startsWith('image/')){ showToast('Pick an image file','warn'); return; }
+    const url = await _readImageOrUpload(f);
 
-    const rd = new FileReader();
+    if (!url){ showToast('Pick an image file','warn'); return; }
 
-    rd.onload = ev => { selfProfile.avImage = ev.target.result; applyProfileAvatarPreview(); refreshHomeHeroIdentity(); document.getElementById('profileEditAvatarUrl').value = ''; };
+    selfProfile.avImage = url;
 
-    rd.readAsDataURL(f);
+    applyProfileAvatarPreview();
+
+    refreshHomeHeroIdentity();
+
+    document.getElementById('profileEditAvatarUrl').value = '';
+
+    if (backend.isConfigured()) backend.me.patch({ avImage: url }).catch(()=>{});
 
   });
 
@@ -9153,13 +9449,39 @@
 
   document.getElementById('profileEditCoverUploadBtn').addEventListener('click', () => document.getElementById('profileCoverFile').click());
 
-  document.getElementById('profileEditCoverClearBtn').addEventListener('click', () => { selfProfile.bannerImage = null; syncCoverPreview(); refreshHomeHeroIdentity(); });
+  document.getElementById('profileEditCoverClearBtn').addEventListener('click', () => {
 
-  document.getElementById('profileCoverFile').addEventListener('change', e => {
+    selfProfile.bannerImage = null;
+
+    syncCoverPreview();
+
+    refreshHomeHeroIdentity();
+
+    if (backend.isConfigured()) backend.me.patch({ bannerImage: null }).catch(()=>{});
+
+  });
+
+  document.getElementById('profileCoverFile').addEventListener('change', async e => {
 
     const f = e.target.files && e.target.files[0]; if (!f) return;
 
-    if (!f.type.startsWith('image/')){ showToast('Pick an image file','warn'); return; }
+    const url = await _readImageOrUpload(f);
+
+    if (!url){ showToast('Pick an image file','warn'); return; }
+
+    selfProfile.bannerImage = url;
+
+    syncCoverPreview();
+
+    refreshHomeHeroIdentity();
+
+    if (backend.isConfigured()) backend.me.patch({ bannerImage: url }).catch(()=>{});
+
+    return;
+
+    // Legacy: original code kept a file-reader path; left here only as a hint
+
+    // for what *was* the reader callback signature.
 
     const rd = new FileReader();
 
@@ -9287,7 +9609,29 @@
 
     if (friendRequests.outgoing.some(r => r.name.toLowerCase() === target.name.toLowerCase())){ showToast('Friend request already pending','warn'); return; }
 
-    friendRequests.outgoing.push({ id:Date.now(), name:target.name, handle:target.handle, initial:target.initial, avColor:target.avColor, meta:'sent just now' });
+    let req;
+
+    if (backend.isConfigured()){
+
+      const r = await backend.friends.request(raw);
+
+      if (r.error === 'user_not_found'){ showToast('No user found for "'+raw+'"','warn'); return; }
+
+      if (r.error === 'already_friends'){ showToast('Already friends','warn'); return; }
+
+      if (r.error === 'request_already_pending'){ showToast('Request already pending','warn'); return; }
+
+      if (r.error){ showToast('Could not send request','warn'); return; }
+
+      req = r.request;
+
+    } else {
+
+      req = { id:Date.now(), name:target.name, handle:target.handle, initial:target.initial, avColor:target.avColor, meta:'sent just now' };
+
+    }
+
+    friendRequests.outgoing.push(req);
 
     document.getElementById('addFriendInput').value = '';
 
@@ -9453,7 +9797,7 @@
 
     const s = servers[currentServer];
 
-    appConfirm('Permanently delete server "'+s.name+'"? All channels, messages and members are gone.', {title:'DELETE SERVER', confirmLabel:'DELETE', danger:true}).then(ok => {
+    appConfirm('Permanently delete server "'+s.name+'"? All channels, messages and members are gone.', {title:'DELETE SERVER', confirmLabel:'DELETE', danger:true}).then(async ok => {
 
       if (!ok) return;
 
@@ -9472,6 +9816,14 @@
         });
 
         if (isOurs) endVoiceCall();
+
+      }
+
+      if (backend.isConfigured()){
+
+        const r = await backend.servers.remove(sid);
+
+        if (r.error){ showToast('Delete failed: '+r.error,'warn'); return; }
 
       }
 
@@ -9897,11 +10249,9 @@
 
       const sid = currentServer; const s = servers[sid]; if (!s) return;
 
-      appConfirm('Leave server "'+s.name+'"? You will be removed from this server until you rejoin via invite.', {title:'LEAVE SERVER', confirmLabel:'LEAVE', danger:true}).then(ok => {
+      appConfirm('Leave server "'+s.name+'"? You will be removed from this server until you rejoin via invite.', {title:'LEAVE SERVER', confirmLabel:'LEAVE', danger:true}).then(async ok => {
 
         if (!ok) return;
-
-        // Drop voice connection if any voice channel of this server is active.
 
         if (inVoice && connectedChannel){
 
@@ -9914,6 +10264,20 @@
           });
 
           if (isOurs) endVoiceCall();
+
+        }
+
+        if (backend.isConfigured()){
+
+          const r = await backend.servers.leave(sid);
+
+          if (r.error === 'last_admin_must_transfer'){
+
+            showToast('Transfer ownership before leaving.','warn'); return;
+
+          }
+
+          if (r.error){ showToast('Could not leave: '+r.error,'warn'); return; }
 
         }
 
@@ -10799,13 +11163,65 @@
 
   });
 
-  document.getElementById('sjJoinBtn').addEventListener('click', () => {
+  document.getElementById('sjJoinBtn').addEventListener('click', async () => {
 
     if (!pendingJoinCard) return;
 
     const card = pendingJoinCard;
 
     document.getElementById('serverJoinBackdrop').classList.remove('show');
+
+    // Backend path: hit /servers/:keyOrId/join. Honour invite key when present.
+
+    if (backend.isConfigured()){
+
+      const keyOrId = card.invite || card.id;
+
+      const r = await backend.servers.join
+
+        ? await backend.servers.join(keyOrId)
+
+        : await fetch(_backendBase()+'/servers/'+encodeURIComponent(keyOrId)+'/join', {
+
+            method: 'POST',
+
+            headers: {
+
+              'Authorization': 'Bearer '+(backend.token.read()||''),
+
+              'Content-Type': 'application/json'
+
+            },
+
+            body: '{}'
+
+          }).then(x => x.json()).catch(()=>({offline:true}));
+
+      if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+      if (r.error === 'private_server'){ showToast(card.name+' is private — try again later','warn'); pendingJoinCard = null; return; }
+
+      if (r.error === 'not_found'){    showToast('Server not found','warn'); pendingJoinCard = null; return; }
+
+      if (r.error){ showToast('Could not join: '+r.error,'warn'); pendingJoinCard = null; return; }
+
+      servers[r.server.id] = r.server;
+
+      if (!myServers.includes(r.server.id)) myServers.push(r.server.id);
+
+      renderServerRails(); renderHomeMyServers();
+
+      setPage('pageWorld'); selectServer(r.server.id);
+
+      showToast(r.alreadyMember ? 'Opened '+r.server.name : 'Joined '+r.server.name, 'success');
+
+      pendingJoinCard = null;
+
+      return;
+
+    }
+
+    // Local-only fallback
 
     const existing = servers[card.id];
 
@@ -10814,8 +11230,6 @@
       const alreadyIn = (existing.members||[]).includes(selfProfile.name);
 
       if (alreadyIn){
-
-        // Already a member: just open it.
 
         setPage('pageWorld'); selectServer(card.id);
 
@@ -10839,9 +11253,7 @@
 
       if (!myServers.includes(card.id)) myServers.push(card.id);
 
-      renderServerRails();
-
-      renderHomeMyServers();
+      renderServerRails(); renderHomeMyServers();
 
       setPage('pageWorld'); selectServer(card.id);
 

@@ -12,7 +12,8 @@ import { serversRouter } from './routes/servers.js';
 import { channelsRouter } from './routes/channels.js';
 import { dmsRouter } from './routes/dms.js';
 import { friendsRouter } from './routes/friends.js';
-import { usersRouter } from './routes/users.js';
+import { usersRouter } from "./routes/users.js";
+import { uploadsRouter } from "./routes/uploads.js";
 import { voiceConfigRouter } from './routes/voice-config.js';
 
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/channels', channelsRouter);
 app.use('/api/dms',      dmsRouter);
 app.use('/api/friends',  friendsRouter);
 app.use('/api/users',    usersRouter);
+app.use('/api/uploads',  uploadsRouter);
 
 // 404
 app.use((_req, res) => res.status(404).json({ error: 'not_found' }));
