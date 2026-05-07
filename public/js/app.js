@@ -7891,11 +7891,21 @@
 
     const cats = (s.categories || []);
 
+    // If the caller did not pass an explicit target category (and the user has
+
+    // exactly one), preselect it so they don't get the "select a category"
+
+    // error after creating their first category. Otherwise highlight the
+
+    // explicit target.
+
+    const defaultId = ccTargetCategory || (cats.length === 1 ? cats[0].id : null);
+
     let opts = '<option value="">— select a category —</option>';
 
     cats.forEach(cat => {
 
-      const sel2 = (ccTargetCategory===cat.id) ? ' selected' : '';
+      const sel2 = (defaultId===cat.id) ? ' selected' : '';
 
       opts += '<option value="'+cat.id+'"'+sel2+'>'+escapeHtml(cat.name)+'</option>';
 
@@ -8061,7 +8071,7 @@
 
       if (backend.isConfigured()){
 
-        const r = await backend.channels.addTextChannel(currentServer, { name, style: ccSelectedStyle, categoryId: cat.id });
+        const r = await backend.servers.addTextChannel(currentServer, { name, style: ccSelectedStyle, categoryId: cat.id });
 
         if (r.offline){ showToast('Cannot reach the server','warn'); return; }
 
@@ -8083,11 +8093,11 @@
 
       if (backend.isConfigured()){
 
-        const r = await backend.channels.addVoiceChannel(currentServer, { name: name.toUpperCase(), style: ccSelectedStyle, categoryId: cat.id });
+        const r = await backend.servers.addVoiceChannel(currentServer, { name: name.toUpperCase(), style: ccSelectedStyle, categoryId: cat.id });
 
         if (r.offline){ showToast('Cannot reach the server','warn'); return; }
 
-        if (r.error){ showToast('Could not create voice channel: '+r.error,'warn'); return; }
+        if (r.error){ console.warn('[orblood] addVoiceChannel error', r); showToast('Could not create voice channel: '+r.error,'warn'); return; }
 
         newId = r.channel.id;
 
