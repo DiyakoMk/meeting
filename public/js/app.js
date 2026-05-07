@@ -1815,7 +1815,27 @@
 
       }
 
-      const statusIcon = m.sender==='me' ? '<i data-lucide="'+(m.status==='read'?'check-check':m.status==='delivered'?'check-check':'check')+'" class="dm-status-icon" style="'+(m.status==='read'?'color:var(--accent)':'')+'"></i>' : '';
+      let statusIcon = '';
+
+      if (m.sender === 'me'){
+
+        if (m.status === 'failed'){
+
+          statusIcon = '<i data-lucide="alert-circle" class="dm-status-icon" style="color:var(--danger)" title="Failed to send — tap to retry"></i>';
+
+        } else if (m.status === 'pending'){
+
+          statusIcon = '<i data-lucide="clock" class="dm-status-icon dm-status-pending" title="Sending…"></i>';
+
+        } else {
+
+          const ic = m.status === 'read' ? 'check-check' : (m.status === 'delivered' ? 'check-check' : 'check');
+
+          statusIcon = '<i data-lucide="'+ic+'" class="dm-status-icon" style="'+(m.status==='read'?'color:var(--accent)':'')+'"></i>';
+
+        }
+
+      }
 
       const meta = '<div class="dm-bubble-meta"><span>'+m.time+'</span>'+statusIcon+'</div>';
 
@@ -2243,13 +2263,61 @@
 
   }
 
+  function copyToClipboardSafe(text){
+
+    if (!text) return Promise.resolve(false);
+
+    if (navigator.clipboard && window.isSecureContext){
+
+      return navigator.clipboard.writeText(text).then(()=>true).catch(()=>fallbackCopy(text));
+
+    }
+
+    return Promise.resolve(fallbackCopy(text));
+
+  }
+
+  function fallbackCopy(text){
+
+    try {
+
+      const ta = document.createElement('textarea');
+
+      ta.value = text;
+
+      ta.style.position = 'fixed';
+
+      ta.style.opacity = '0';
+
+      ta.style.left = '-9999px';
+
+      document.body.appendChild(ta);
+
+      ta.focus(); ta.select();
+
+      const ok = document.execCommand('copy');
+
+      document.body.removeChild(ta);
+
+      return ok;
+
+    } catch { return false; }
+
+  }
+
   function copyMsg(id){
 
-    const m = findMsg(id); if (!m || !m.text) return;
+    const m = findMsg(id); if (!m) return;
 
-    if (navigator.clipboard){ navigator.clipboard.writeText(m.text).catch(()=>{}); }
+    const text = m.text || (m.type === 'image' ? (m.src||'') : '');
 
-    showToast('Copied to clipboard','success');
+    if (!text){ showToast('Nothing to copy','warn'); return; }
+
+    copyToClipboardSafe(text).then(ok => {
+
+      showToast(ok ? 'Copied to clipboard' : 'Copy failed', ok ? 'success' : 'warn');
+
+    });
 
   }
 
@@ -2309,39 +2377,47 @@
 
     if (!text && !dmAttachData) return;
 
-    // Backend send. For now we only persist text + reply pointer; image data
+    // Backend send. We render the message immediately with status:'pending'
 
-    // URLs go through the local-only path below until uploads are wired in.
+    // (clock icon) and switch to 'delivered' (tick) once the server replies.
+
+    // Failures flip the bubble to status:'failed' (alert icon) so the user
+
+    // never wonders whether their message was actually sent.
 
     if (backend.isConfigured() && !dmEditingId && !dmAttachData){
 
       const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
 
-      const r = await backend.dms.send(peerKey, {
+      const tempId = 'tmp_'+uid();
+
+      const optimistic = {
+
+        id: tempId,
+
+        sender: 'me',
 
         text,
 
-        replyTo: dmReplyTo ? dmReplyTo.id : undefined
+        time: nowTime(),
 
-      });
+        day: 'TODAY',
 
-      if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+        status: 'pending',
 
-      if (r.error === 'blocked'){ showToast('You can\'t message this user','warn'); return; }
+        _pending: true
 
-      if (r.error === 'friends_only'){ showToast('They only accept messages from friends','warn'); return; }
+      };
 
-      if (r.error){ showToast('Send failed: '+r.error,'warn'); return; }
-
-      const msg = { ...r.message };
-
-      if (dmReplyTo) msg.replyTo = dmReplyTo.id;
+      if (dmReplyTo) optimistic.replyTo = dmReplyTo.id;
 
       if (!messages[currentConversation]) messages[currentConversation] = [];
 
-      messages[currentConversation].push(msg);
+      messages[currentConversation].push(optimistic);
 
       bumpDmList(currentConversation);
+
+      const replyId = dmReplyTo ? dmReplyTo.id : undefined;
 
       inp.value = '';
 
@@ -2352,6 +2428,50 @@
       renderConversation(); renderDmList();
 
       inp.focus();
+
+      try {
+
+        const r = await backend.dms.send(peerKey, { text, replyTo: replyId });
+
+        const arr = messages[currentConversation] || [];
+
+        const idx = arr.findIndex(x => x.id === tempId);
+
+        if (r.offline || r.error){
+
+          if (idx >= 0){ arr[idx].status = 'failed'; arr[idx]._pending = false; arr[idx]._error = r.error || 'offline'; }
+
+          renderConversation(); renderDmList();
+
+          if (r.error === 'blocked') showToast('You can\'t message this user','warn');
+
+          else if (r.error === 'friends_only') showToast('They only accept messages from friends','warn');
+
+          else showToast(r.offline ? 'Cannot reach the server' : ('Send failed: '+r.error),'warn');
+
+          return;
+
+        }
+
+        const merged = { ...r.message, status: 'delivered', _pending: false };
+
+        if (replyId) merged.replyTo = replyId;
+
+        if (idx >= 0) arr[idx] = merged; else arr.push(merged);
+
+      } catch (e) {
+
+        const arr = messages[currentConversation] || [];
+
+        const idx = arr.findIndex(x => x.id === tempId);
+
+        if (idx >= 0){ arr[idx].status = 'failed'; arr[idx]._pending = false; }
+
+        showToast('Send failed','warn');
+
+      }
+
+      renderConversation(); renderDmList();
 
       return;
 
@@ -5707,6 +5827,12 @@
 
         break;
 
+      case 'server:deleted':
+
+        _onServerDeleted(msg);
+
+        break;
+
       case 'channel:pin':
 
         _onChannelPin(msg);
@@ -5822,6 +5948,28 @@
     if (typeof renderOrbSlides === 'function') renderOrbSlides();
 
     showToast('You were removed from a server','warn');
+
+  }
+
+  function _onServerDeleted({ serverId }){
+
+    if (!servers[serverId]) return;
+
+    const wasOnIt = currentServer === serverId;
+
+    if (wasOnIt){ currentServer = null; currentTextChannel = null; setPage('pageHome'); }
+
+    delete servers[serverId];
+
+    myServers = myServers.filter(s => s !== serverId);
+
+    if (typeof renderServerRails === 'function') renderServerRails();
+
+    if (typeof renderHomeMyServers === 'function') renderHomeMyServers();
+
+    if (typeof renderOrbSlides === 'function') renderOrbSlides();
+
+    showToast('A server you were in was deleted','warn');
 
   }
 
@@ -6191,11 +6339,23 @@
 
     }
 
+    // Re-render every surface that can show a voice channel's roster so
+
+    // remote join/leave events reflect immediately without needing the
+
+    // viewer to refresh or click into the server.
+
     if (typeof updateOrbStates === 'function') updateOrbStates();
+
+    if (typeof renderOrbSlides === 'function') renderOrbSlides();
 
     if (typeof renderServerOverview === 'function' && currentServer === serverId) renderServerOverview();
 
     if (typeof renderVoiceUsers === 'function' && voiceUsersSidebarOpen) renderVoiceUsers();
+
+    if (typeof renderMembers === 'function' && membersOpen && currentServer === serverId) renderMembers();
+
+
 
     // For voice signaling: when someone joins our channel, voice.onPeerJoined
 
@@ -10767,9 +10927,7 @@
 
     const h = document.getElementById('modalHandle').textContent;
 
-    if (navigator.clipboard) navigator.clipboard.writeText(h).catch(()=>{});
-
-    showToast('Handle copied','success');
+    copyToClipboardSafe(h).then(ok => showToast(ok ? 'Handle copied' : 'Copy failed', ok ? 'success' : 'warn'));
 
   });
 
@@ -11377,9 +11535,7 @@
 
     const key = document.getElementById('serverInviteKey').value;
 
-    if (navigator.clipboard) navigator.clipboard.writeText(key).catch(()=>{});
-
-    showToast('Invite key copied','success');
+    copyToClipboardSafe(key).then(ok => showToast(ok ? 'Invite key copied' : 'Copy failed', ok ? 'success' : 'warn'));
 
   });
 
@@ -12335,7 +12491,15 @@
 
     if (action === 'reply'){ chReplyTo = id; renderChannelReplyPreview(); document.getElementById('wsChannelInput').focus(); }
 
-    else if (action === 'copy'){ navigator.clipboard && navigator.clipboard.writeText(m.text||''); showToast('Copied to clipboard','success'); }
+    else if (action === 'copy'){
+
+      const t = m.text || '';
+
+      if (!t){ showToast('Nothing to copy','warn'); }
+
+      else copyToClipboardSafe(t).then(ok => showToast(ok ? 'Copied to clipboard' : 'Copy failed', ok ? 'success' : 'warn'));
+
+    }
 
     else if (action === 'delete'){
 

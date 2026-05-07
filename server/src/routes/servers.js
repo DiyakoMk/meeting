@@ -5,7 +5,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { uid, inviteKey } from '../lib/ids.js';
 import { requireMember, requireAdmin, isAdmin as isAdminOf } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
-import { emitServerMemberJoined, emitServerMemberLeft, emitServerPinChanged, emitServerCategoryAdded, emitServerCategoryDeleted, emitServerUpdated, emitToUser } from '../realtime/events.js';
+import { emitServerMemberJoined, emitServerMemberLeft, emitServerPinChanged, emitServerCategoryAdded, emitServerCategoryDeleted, emitServerUpdated, emitServerDeleted, emitToUser } from '../realtime/events.js';
 
 export const serversRouter = Router();
 serversRouter.use(requireAuth);
@@ -168,8 +168,13 @@ serversRouter.delete('/:id', async (req, res, next) => {
   try {
     const sid = req.params.id;
     if (!await requireAdmin(req, res, sid)) return;
+    // Snapshot member uids BEFORE the cascading DELETE wipes server_members,
+    // so we can still notify everyone the server is gone.
+    const memberRows = await q('SELECT user_id FROM server_members WHERE server_id = ?', [sid]);
+    const memberUids = memberRows.map(r => String(r.user_id));
     await q('DELETE FROM servers WHERE id = ?', [sid]);
     res.json({ ok: true });
+    emitServerDeleted(memberUids, sid);
   } catch (e) { next(e); }
 });
 
@@ -190,6 +195,7 @@ serversRouter.post('/:id/leave', async (req, res, next) => {
     await q('DELETE FROM server_members WHERE server_id = ? AND user_id = ?', [sid, req.user.id]);
     res.json({ ok: true });
     emitServerMemberLeft(sid, req.user.name);
+    emitServerUpdated(sid, await buildServerPayload(sid));
   } catch (e) { next(e); }
 });
 
@@ -269,7 +275,9 @@ serversRouter.post('/:id/transfer-ownership', async (req, res, next) => {
       await conn.commit();
     } catch (e) { await conn.rollback(); throw e; }
     finally { conn.release(); }
-    res.json({ server: await buildServerPayload(sid) });
+    const payload = await buildServerPayload(sid);
+    res.json({ server: payload });
+    emitServerUpdated(sid, payload);
   } catch (e) { next(e); }
 });
 

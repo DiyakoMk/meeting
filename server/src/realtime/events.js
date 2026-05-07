@@ -92,6 +92,13 @@ export async function emitServerUpdated(serverId, serverPayload) {
   sendToServer(uids, { type: 'server:updated', serverId, server: serverPayload });
 }
 
+// "The server is gone" — emitted to the member uid list captured BEFORE the
+// DELETE statement runs (server_members rows cascade away). Callers must
+// pass the snapshot of uids that still need to learn the server vanished.
+export function emitServerDeleted(memberUids, serverId) {
+  sendToServer(memberUids.map(String), { type: 'server:deleted', serverId });
+}
+
 export async function emitChannelMessagePinned(serverId, channelId, pinnedMsgId, pinnedText, pinnedBy) {
   const uids = await serverMemberUids(serverId);
   sendToServer(uids, { type: 'channel:pin', serverId, channelId, pinnedMsgId, pinnedText, pinnedBy });

@@ -1297,6 +1297,10 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .dm-status-icon{width:11px;height:11px;color:var(--accent)}
 
+.dm-status-pending{color:var(--t2);animation:dmStatusPulse 1.4s ease-in-out infinite}
+
+@keyframes dmStatusPulse{0%,100%{opacity:.45}50%{opacity:1}}
+
 /* === BUBBLE ACTIONS POPUP — fixed positioning via JS === */
 
 .dm-bubble-actions{position:fixed;display:none;background:var(--panel);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:3px;gap:1px;box-shadow:0 8px 24px rgba(0,0,0,0.5);z-index:250;backdrop-filter:blur(20px)}

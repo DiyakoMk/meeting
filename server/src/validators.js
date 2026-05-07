@@ -34,8 +34,8 @@ export const profilePatchSchema = z.object({
   friendsOnly: z.boolean().optional(),
   // Avatar/banner come in as either /uploads/... URLs (after a separate
   // POST /me/avatar upload) or as null to clear.
-  avImage:     z.string().max(500).nullable().optional(),
-  bannerImage: z.string().max(500).nullable().optional()
+  avImage:     z.string().max(6291456).nullable().optional(),
+  bannerImage: z.string().max(6291456).nullable().optional()
 });
 
 // Run a Zod schema against req.body and either return the parsed value, or
