@@ -536,11 +536,11 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ph-purple-orb.active{box-shadow:0 0 28px rgba(190,18,60,0.85),inset 0 0 12px rgba(255,255,255,0.4)}
 
-.ph-server-rail{display:flex;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;max-width:0;opacity:0;visibility:hidden;transition:max-width 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.2s,visibility 0s linear 0.2s;scrollbar-width:none;flex:1;padding:4px 0}
+.ph-server-rail{display:none;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;max-width:0;opacity:0;scrollbar-width:none;flex:1;padding:4px 0;transition:max-width 0.3s cubic-bezier(0.4,0,0.2,1),opacity 0.18s}
 
 .ph-server-rail::-webkit-scrollbar{display:none}
 
-.ph-server-rail.open{max-width:600px;opacity:1;visibility:visible;transition:max-width 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.2s,visibility 0s linear 0s}
+.ph-server-rail.open{display:flex;max-width:600px;opacity:1}
 
 .srv-orb{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono','Vazirmatn',monospace;font-weight:700;font-size:0.75rem;color:white;cursor:pointer;flex-shrink:0;border:2px solid transparent;transition:all 0.2s;position:relative;background:var(--srv-grad,linear-gradient(135deg,#6366f1,#1e1b4b));overflow:hidden}
 
@@ -550,7 +550,11 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .srv-orb:hover{transform:translateY(-2px) scale(1.18);border-color:rgba(255,255,255,0.4);z-index:5;box-shadow:0 6px 20px rgba(0,0,0,0.5)}
 
-.srv-orb.active{border-color:#fff;box-shadow:0 0 16px var(--srv-glow,rgba(185,28,74,0.6))}
+.srv-orb.active{border-color:rgba(255,255,255,0.8)}
+
+.srv-orb.is-pinned{box-shadow:0 0 14px var(--srv-glow,rgba(185,28,74,0.6))}
+
+.srv-orb.is-pinned.active{box-shadow:0 0 18px var(--srv-glow,rgba(185,28,74,0.8))}
 
 .srv-orb.gray{background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.2);color:var(--t2)}
 
@@ -2196,7 +2200,11 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
    above the server-identity / settings modal that opened them. */
 
-#ownerTransferBackdrop,#rolesBackdrop,#confirmBackdrop{z-index:320}
+#rolesBackdrop{z-index:320}
+
+#ownerTransferBackdrop{z-index:340}
+
+#confirmBackdrop{z-index:360}
 
 #authBackdrop{z-index:600}
 
@@ -8052,7 +8060,9 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       const s = servers[sid]; if (!s) return;
 
-      const activeCls = (currentServer === sid) ? ' active' : '';
+      const activeCls   = (currentServer === sid)   ? ' active'    : '';
+
+      const pinnedCls   = myServers.includes(sid)   ? ' is-pinned' : '';
 
       const hasImg = s.emblemImage ? ' has-image' : '';
 
@@ -8062,7 +8072,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         : s.initial;
 
-      html += '<button class="srv-orb'+activeCls+hasImg+'" data-srv-id="'+sid+'" style="--srv-grad:'+s.grad+';--srv-glow:'+s.glow+'">'+inner+'<span class="srv-orb-tip">'+s.name+'</span></button>';
+      html += '<button class="srv-orb'+activeCls+pinnedCls+hasImg+'" data-srv-id="'+sid+'" style="--srv-grad:'+s.grad+';--srv-glow:'+s.glow+'">'+inner+'<span class="srv-orb-tip">'+s.name+'</span></button>';
 
     });
 
@@ -8688,7 +8698,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       if (pm){
 
-        const xBtn = (isAdmin && memberHasPerm(s,selfProfile.name,'managePins')) ? '<button class="ws-pin-x" data-ch-pin-x="'+pm.id+'" title="Unpin"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
+        const xBtn = (memberHasPerm(s,selfProfile.name,'managePins')) ? '<button class="ws-pin-x" data-ch-pin-x="'+pm.id+'" title="Unpin"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
 
         html += '<div class="ws-cat-pin" style="margin-bottom:12px"><div class="ws-cat-pin-i"><i data-lucide="pin" style="width:11px;height:11px"></i></div><div class="ws-cat-pin-info"><div class="ws-cat-pin-l">PINNED · '+escapeHtml(tc.pinnedBy||'')+'</div><div class="ws-cat-pin-text">'+escapeHtml((pm.text||'(image)').slice(0,200))+'</div></div>'+xBtn+'</div>';
 
@@ -8776,7 +8786,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             (m.type !== 'image' && !m.deleted ? '<button class="ws-msg-act" data-ch-action="copy" data-ch-id="'+m.id+'" title="Copy"><i data-lucide="copy" style="width:12px;height:12px"></i></button>' : '') +
 
-            (isAdmin && memberHasPerm(s,selfProfile.name,'managePins') && !m.deleted ? '<button class="ws-msg-act" data-ch-action="pin" data-ch-id="'+m.id+'" title="'+(tc.pinnedMsgId===m.id?'Unpin':'Pin')+'"><i data-lucide="pin" style="width:12px;height:12px;color:'+(tc.pinnedMsgId===m.id?'var(--warn)':'')+'"></i></button>' : '') +
+            (memberHasPerm(s,selfProfile.name,'managePins') && !m.deleted ? '<button class="ws-msg-act" data-ch-action="pin" data-ch-id="'+m.id+'" title="'+(tc.pinnedMsgId===m.id?'Unpin':'Pin')+'"><i data-lucide="pin" style="width:12px;height:12px;color:'+(tc.pinnedMsgId===m.id?'var(--warn)':'')+'"></i></button>' : '') +
 
             (isMine && !m.deleted ? '<button class="ws-msg-act danger" data-ch-action="delete" data-ch-id="'+m.id+'" title="Delete"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>' : '') +
 
@@ -8894,7 +8904,19 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     }
 
-    if (isAdmin && isOwnerHere){
+    // Show the server-settings cog whenever the user has *any* admin-style
+
+    // permission on this server. This makes the gear act as the entry point
+
+    // for create-channel / create-category / roles / pins / identity, and any
+
+    // of those individually-gated submenus will hide actions the user can't
+
+    // do once the menu opens.
+
+    const canSeeSettings = ['manageRoles','manageCategory','manageTextCh','manageVoiceCh','managePins','manageServer'].some(p => memberHasPerm(s, selfProfile.name, p));
+
+    if (isOwnerHere || canSeeSettings){
 
       html += '<button class="ws-banner-menu-btn" data-srv-action="banner-menu-toggle" title="Server settings"><i data-lucide="settings" style="width:14px;height:14px"></i></button>';
 
@@ -8924,11 +8946,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         '</div>'+
 
-        (isAdmin && memberHasPerm(s,selfProfile.name,'managePins') ? '<button class="ws-pin-add" data-srv-action="addpin"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
+        (memberHasPerm(s,selfProfile.name,'managePins') ? '<button class="ws-pin-add" data-srv-action="addpin"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
 
       '</div>';
 
-    } else if (isAdmin && memberHasPerm(s,selfProfile.name,'managePins')){
+    } else if (memberHasPerm(s,selfProfile.name,'managePins')){
 
       html += '<div class="ws-pinned-box" style="opacity:0.7">'+
 
@@ -8966,7 +8988,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         html += '<div class="ws-cat-h"><div class="ws-cat-h-name" data-cat-glow>'+escapeHtml(cat.name)+'</div>'+
 
-          (isAdmin && memberHasPerm(s,selfProfile.name,'manageCategory') ? '<button class="ws-cat-del" data-cat-delete="'+cat.id+'" title="Delete category"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>' : '')+
+          (memberHasPerm(s,selfProfile.name,'manageCategory') ? '<button class="ws-cat-del" data-cat-delete="'+cat.id+'" title="Delete category"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>' : '')+
 
         '</div>';
 
@@ -8980,11 +9002,11 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             '<div class="ws-cat-pin-info"><div class="ws-cat-pin-l">CATEGORY PIN</div><div class="ws-cat-pin-text">'+escapeHtml(cat.pinned.text)+'</div></div>'+
 
-            (isAdmin && memberHasPerm(s,selfProfile.name,'managePins') ? '<button class="ws-cat-pin-edit" data-cat-pin-edit="'+cat.id+'"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
+            (memberHasPerm(s,selfProfile.name,'managePins') ? '<button class="ws-cat-pin-edit" data-cat-pin-edit="'+cat.id+'"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
 
           '</div>';
 
-        } else if (isAdmin && memberHasPerm(s,selfProfile.name,'managePins')){
+        } else if (memberHasPerm(s,selfProfile.name,'managePins')){
 
           html += '<button class="ws-cat-add-pin" data-cat-pin-edit="'+cat.id+'"><i data-lucide="pin" style="width:9px;height:9px"></i>ADD CATEGORY PIN</button>';
 
@@ -9004,7 +9026,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             if (!memberCanSee(s,selfProfile.name,tc)) return;
 
-            const tcDel = (isAdmin && memberHasPerm(s,selfProfile.name,'manageTextCh')) ? '<span class="ws-cat-tc-del" data-tc-delete="'+tc.id+'" title="Delete channel"><i data-lucide="x" style="width:10px;height:10px"></i></span>' : '';
+            const tcDel = (memberHasPerm(s,selfProfile.name,'manageTextCh')) ? '<span class="ws-cat-tc-del" data-tc-delete="'+tc.id+'" title="Delete channel"><i data-lucide="x" style="width:10px;height:10px"></i></span>' : '';
 
             const tcDrag = canManageTc ? ' draggable="true"' : '';
 
@@ -9072,7 +9094,7 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
             }
 
-            const vcDel = (isAdmin && memberHasPerm(s,selfProfile.name,'manageVoiceCh')) ? '<button class="ws-cat-vc-del" data-vc-delete="'+vc.id+'" title="Delete voice channel"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
+            const vcDel = (memberHasPerm(s,selfProfile.name,'manageVoiceCh')) ? '<button class="ws-cat-vc-del" data-vc-delete="'+vc.id+'" title="Delete voice channel"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
 
             html += '<div class="ws-cat-vc'+(isConn?' connected':'')+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
 
@@ -12118,6 +12140,8 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
       renderServerRails();
 
+      renderHomeMyServers();
+
       document.getElementById('createServerBackdrop').classList.remove('show');
 
       // Auto-open it
@@ -12522,21 +12546,41 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
     if (bannerMenuEl){ closeBannerMenu(); return; }
 
-    const items = [
+    // Build the menu using only the actions the user actually has permission
 
-      { action:'create',      icon:'plus-circle',  label:'Create channel or category' },
+    // to perform. The cog button only opens this menu when the user has at
 
-      { sep:true },
+    // least one of these perms, but we still gate every entry so removing
 
-      { action:'cover',       icon:'image',        label:'Server identity' },
+    // a single perm from a role hides only that one row.
 
-      { action:'addpin',      icon:'pin',          label:'Edit server pin' },
+    const s = currentServer ? servers[currentServer] : null;
 
-      { sep:true },
+    const can = key => s ? memberHasPerm(s, selfProfile.name, key) : false;
 
-      { action:'roles',       icon:'shield',       label:'Roles & permissions' }
+    const isOwner = s ? (s.admins||[]).includes(selfProfile.name) : false;
 
-    ];
+    const canCreate = can('manageCategory') || can('manageTextCh') || can('manageVoiceCh');
+
+    const items = [];
+
+    if (canCreate) items.push({ action:'create', icon:'plus-circle', label:'Create channel or category' });
+
+    if (canCreate && (isOwner || can('manageServer') || can('managePins'))) items.push({ sep:true });
+
+    if (isOwner || can('manageServer')) items.push({ action:'cover', icon:'image', label:'Server identity' });
+
+    if (can('managePins'))              items.push({ action:'addpin', icon:'pin',  label:'Edit server pin' });
+
+    if (can('manageRoles')){
+
+      if (items.length) items.push({ sep:true });
+
+      items.push({ action:'roles', icon:'shield', label:'Roles & permissions' });
+
+    }
+
+    if (!items.length){ closeBannerMenu(); return; }
 
     const pop = document.createElement('div');
 
@@ -13029,6 +13073,24 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
       const firstKey = Object.keys(conversations)[0];
 
       if (firstKey) openConversation(firstKey);
+
+    }
+
+    if (pageId === 'pageHome'){
+
+      // Refresh the home content the user is most likely about to look at —
+
+      // server cards, marked orbits, requests counts can drift from those
+
+      // arrays while they were on another tab.
+
+      if (typeof renderHomeMyServers === 'function') renderHomeMyServers();
+
+      if (typeof renderHomeMarkedOrbits === 'function') renderHomeMarkedOrbits();
+
+      if (typeof renderFriendRequestsHome === 'function') renderFriendRequestsHome();
+
+      if (typeof renderHomeFriends === 'function') renderHomeFriends();
 
     }
 
@@ -14890,7 +14952,17 @@ select.sm-input option{background:#0e0a12;color:#f4eef2;padding:6px 10px}
 
         if (connectedChannel === chKey) endVoiceCall();
 
+        // Drop every reference to this channel: marks, last-joined sticker,
+
+        // and the underlying channelData entry. Without this the orb column
+
+        // would keep rendering a ghost slide for the deleted channel.
+
         marked = marked.filter(x => x !== chKey);
+
+        if (lastJoinedChannel === chKey) lastJoinedChannel = null;
+
+        if (channelData[chKey]) delete channelData[chKey];
 
         showToast('Voice channel deleted','warn');
 
