@@ -5,7 +5,10 @@ import { requireAuth } from '../auth/middleware.js';
 import { uid } from '../lib/ids.js';
 import { requireMember, requireAdmin } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
-import { emitChannelMessage, emitVoiceJoin, emitVoiceLeave } from '../realtime/events.js';
+import {
+  emitChannelMessage, emitVoiceJoin, emitVoiceLeave,
+  emitChannelMessageDeleted, emitServerChannelAdded, emitServerChannelDeleted
+} from '../realtime/events.js';
 
 export const channelsRouter = Router();
 channelsRouter.use(requireAuth);
@@ -32,7 +35,9 @@ channelsRouter.post('/text/:sid', async (req, res, next) => {
        VALUES (?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position),0)+1 FROM (SELECT * FROM text_channels) AS x WHERE x.server_id = ?))`,
       [cid, sid, body.categoryId || null, body.name, body.style || 'glow', sid]
     );
-    res.status(201).json({ channel: { id: cid, name: body.name, style: body.style || 'glow', unread: 0, categoryId: body.categoryId || null } });
+    const channel = { id: cid, name: body.name, style: body.style || 'glow', unread: 0, categoryId: body.categoryId || null };
+    res.status(201).json({ channel });
+    emitServerChannelAdded(sid, 'text', channel, body.categoryId || null);
   } catch (e) { next(e); }
 });
 
@@ -42,6 +47,7 @@ channelsRouter.delete('/text/:sid/:cid', async (req, res, next) => {
     if (!await requireAdmin(req, res, sid)) return;
     await q('DELETE FROM text_channels WHERE id = ? AND server_id = ?', [req.params.cid, sid]);
     res.json({ ok: true });
+    emitServerChannelDeleted(sid, 'text', req.params.cid);
   } catch (e) { next(e); }
 });
 
@@ -57,7 +63,9 @@ channelsRouter.post('/voice/:sid', async (req, res, next) => {
        VALUES (?, ?, ?, ?, ?, (SELECT COALESCE(MAX(position),0)+1 FROM (SELECT * FROM voice_channels) AS x WHERE x.server_id = ?))`,
       [cid, sid, body.categoryId || null, body.name, body.style || 'indigo', sid]
     );
-    res.status(201).json({ channel: { id: cid, name: body.name, style: body.style || 'indigo', categoryId: body.categoryId || null } });
+    const channel = { id: cid, name: body.name, style: body.style || 'indigo', categoryId: body.categoryId || null };
+    res.status(201).json({ channel });
+    emitServerChannelAdded(sid, 'voice', channel, body.categoryId || null);
   } catch (e) { next(e); }
 });
 
@@ -67,6 +75,7 @@ channelsRouter.delete('/voice/:sid/:cid', async (req, res, next) => {
     if (!await requireAdmin(req, res, sid)) return;
     await q('DELETE FROM voice_channels WHERE id = ? AND server_id = ?', [req.params.cid, sid]);
     res.json({ ok: true });
+    emitServerChannelDeleted(sid, 'voice', req.params.cid);
   } catch (e) { next(e); }
 });
 
@@ -173,5 +182,6 @@ channelsRouter.delete('/text/:sid/:cid/messages/:mid', async (req, res, next) =>
     }
     await q('UPDATE text_channel_messages SET deleted = 1, body = NULL WHERE id = ?', [mid]);
     res.json({ ok: true });
+    emitChannelMessageDeleted(sid, cid, Number(mid));
   } catch (e) { next(e); }
 });

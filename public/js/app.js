@@ -5289,6 +5289,56 @@
 
     }
 
+    // Materialise channelData entries for every voice channel in every server
+
+    // we just hydrated. The backend ships voice channels under each server's
+
+    // `voiceChannels` array but channelData is the in-memory map the orb UI
+
+    // reads from — without this, joining a voice channel as a guest fails
+
+    // because channelData[chKey] is undefined.
+
+    Object.values(servers).forEach(srv => {
+
+      (srv.voiceChannels || []).forEach(vc => {
+
+        const chKey = vcChannelKey(vc);
+
+        if (!chKey || channelData[chKey]) return;
+
+        const st = voiceStyles[vc.style] || voiceStyles.indigo;
+
+        const m = (st.glow||'rgba(99,102,241,0.4)').match(/rgba\((\d+),(\d+),(\d+),/);
+
+        channelData[chKey] = {
+
+          name: vc.name,
+
+          users: [],
+
+          color: 'rgba('+(m?m[1]:99)+','+(m?m[2]:102)+','+(m?m[3]:241)+',',
+
+          planetGrad: st.grad,
+
+          atmoColor: st.glow,
+
+          orbiterColor: st.c,
+
+          avBorder: '#fff',
+
+          emoji: '🪐',
+
+          tier: st.skin ? 'legendary' : 'common',
+
+          skin: st.skin || undefined
+
+        };
+
+      });
+
+    });
+
     if (snap.conversations && typeof snap.conversations === 'object'){
 
       Object.keys(conversations).forEach(k => { if (k !== 'saved') delete conversations[k]; });
@@ -5531,7 +5581,203 @@
 
         break;
 
+      case 'channel:message:deleted':
+
+        _onChannelMessageDeleted(msg);
+
+        break;
+
+      case 'server:pin':
+
+        _onServerPin(msg);
+
+        break;
+
+      case 'server:category-added':
+
+        _onServerCategoryAdded(msg);
+
+        break;
+
+      case 'server:category-deleted':
+
+        _onServerCategoryDeleted(msg);
+
+        break;
+
+      case 'server:channel-added':
+
+        _onServerChannelAdded(msg);
+
+        break;
+
+      case 'server:channel-deleted':
+
+        _onServerChannelDeleted(msg);
+
+        break;
+
     }
+
+  }
+
+  function _onChannelMessageDeleted({ serverId, channelId, messageId }){
+
+    const key = serverId + '__' + channelId;
+
+    const arr = serverChannelMessages[key];
+
+    if (!arr) return;
+
+    const m = arr.find(x => x.id === messageId);
+
+    if (m){ m.deleted = true; m.text = ''; }
+
+    if (currentServer === serverId && currentTextChannel === channelId) renderChannelView();
+
+  }
+
+  function _onServerPin({ serverId, pinned }){
+
+    const s = servers[serverId]; if (!s) return;
+
+    s.pinned = pinned ? { text: pinned.text, by: pinned.by, time: pinned.time || 'just now' } : null;
+
+    if (currentServer === serverId) renderServerOverview();
+
+  }
+
+  function _onServerCategoryAdded({ serverId, category }){
+
+    const s = servers[serverId]; if (!s) return;
+
+    s.categories = s.categories || [];
+
+    if (!s.categories.find(c => c.id === category.id)){
+
+      s.categories.push({ id: category.id, name: category.name, textChannels:[], voiceChannels:[] });
+
+    }
+
+    if (currentServer === serverId) renderServerOverview();
+
+  }
+
+  function _onServerCategoryDeleted({ serverId, categoryId }){
+
+    const s = servers[serverId]; if (!s) return;
+
+    s.categories = (s.categories||[]).filter(c => c.id !== categoryId);
+
+    if (currentServer === serverId) renderServerOverview();
+
+  }
+
+  function _onServerChannelAdded({ serverId, channelKind, channel, categoryId }){
+
+    const s = servers[serverId]; if (!s) return;
+
+    if (channelKind === 'text'){
+
+      s.textChannels = s.textChannels || [];
+
+      if (!s.textChannels.find(t => t.id === channel.id)){
+
+        s.textChannels.push({ id: channel.id, name: channel.name, style: channel.style || 'glow', unread:0 });
+
+      }
+
+      if (categoryId){
+
+        const cat = (s.categories||[]).find(c => c.id === categoryId);
+
+        if (cat){ cat.textChannels = cat.textChannels || []; if (!cat.textChannels.includes(channel.id)) cat.textChannels.push(channel.id); }
+
+      }
+
+    } else if (channelKind === 'voice'){
+
+      s.voiceChannels = s.voiceChannels || [];
+
+      if (!s.voiceChannels.find(v => v.id === channel.id)){
+
+        s.voiceChannels.push({ id: channel.id, name: channel.name, style: channel.style || 'indigo' });
+
+      }
+
+      if (categoryId){
+
+        const cat = (s.categories||[]).find(c => c.id === categoryId);
+
+        if (cat){ cat.voiceChannels = cat.voiceChannels || []; if (!cat.voiceChannels.includes(channel.id)) cat.voiceChannels.push(channel.id); }
+
+      }
+
+      // Materialise channelData entry so the orb UI can find this voice channel.
+
+      if (!channelData[channel.id]){
+
+        const st = voiceStyles[channel.style] || voiceStyles.indigo;
+
+        const m = (st.glow||'rgba(99,102,241,0.4)').match(/rgba\((\d+),(\d+),(\d+),/);
+
+        channelData[channel.id] = {
+
+          name: channel.name, users: [],
+
+          color: 'rgba('+(m?m[1]:99)+','+(m?m[2]:102)+','+(m?m[3]:241)+',',
+
+          planetGrad: st.grad, atmoColor: st.glow, orbiterColor: st.c,
+
+          avBorder:'#fff', emoji:'🪐',
+
+          tier: st.skin ? 'legendary' : 'common', skin: st.skin || undefined
+
+        };
+
+      }
+
+    }
+
+    if (currentServer === serverId) renderServerOverview();
+
+    if (typeof renderOrbSlides === 'function') renderOrbSlides();
+
+  }
+
+  function _onServerChannelDeleted({ serverId, channelKind, channelId }){
+
+    const s = servers[serverId]; if (!s) return;
+
+    if (channelKind === 'text'){
+
+      s.textChannels = (s.textChannels||[]).filter(t => t.id !== channelId);
+
+      (s.categories||[]).forEach(c => { c.textChannels = (c.textChannels||[]).filter(x => x !== channelId); });
+
+      delete serverChannelMessages[serverId+'__'+channelId];
+
+      if (currentServer === serverId && currentTextChannel === channelId){
+
+        currentTextChannel = null; goToServerMain();
+
+      }
+
+    } else if (channelKind === 'voice'){
+
+      s.voiceChannels = (s.voiceChannels||[]).filter(v => v.id !== channelId);
+
+      (s.categories||[]).forEach(c => { c.voiceChannels = (c.voiceChannels||[]).filter(x => x !== channelId); });
+
+      if (channelData[channelId]) delete channelData[channelId];
+
+      if (connectedChannel === channelId && typeof endVoiceCall === 'function') endVoiceCall();
+
+    }
+
+    if (currentServer === serverId) renderServerOverview();
+
+    if (typeof renderOrbSlides === 'function') renderOrbSlides();
 
   }
 
@@ -11727,7 +11973,21 @@
 
     else if (action === 'copy'){ navigator.clipboard && navigator.clipboard.writeText(m.text||''); showToast('Copied to clipboard','success'); }
 
-    else if (action === 'delete'){ m.deleted = true; m.text = ''; renderChannelView(); showToast('Message deleted','info'); }
+    else if (action === 'delete'){
+
+      // Persist deletion to backend so other members see it disappear too.
+
+      const sid = currentServer, cid = currentTextChannel;
+
+      if (backend.isConfigured() && typeof m.id === 'number'){
+
+        backend.servers.delChannelMessage(sid, cid, m.id).catch(()=>{});
+
+      }
+
+      m.deleted = true; m.text = ''; renderChannelView(); showToast('Message deleted','info');
+
+    }
 
     else if (action === 'forward'){ openForwardModal({ text:m.text, type:m.type, src:m.src }); }
 

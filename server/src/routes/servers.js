@@ -5,7 +5,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { uid, inviteKey } from '../lib/ids.js';
 import { requireMember, requireAdmin, isAdmin as isAdminOf } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
-import { emitServerMemberJoined, emitServerMemberLeft } from '../realtime/events.js';
+import { emitServerMemberJoined, emitServerMemberLeft, emitServerPinChanged, emitServerCategoryAdded, emitServerCategoryDeleted } from '../realtime/events.js';
 
 export const serversRouter = Router();
 serversRouter.use(requireAuth);
@@ -156,6 +156,7 @@ serversRouter.patch('/:id', async (req, res, next) => {
       await q('UPDATE servers SET ' + sets.join(', ') + ' WHERE id = ?', args);
     }
     res.json({ server: await buildServerPayload(sid) });
+    if (body.pinnedText !== undefined) emitServerPinChanged(sid, body.pinnedText || null);
   } catch (e) { next(e); }
 });
 
@@ -223,7 +224,9 @@ serversRouter.post('/:id/categories', async (req, res, next) => {
       'INSERT INTO server_categories (id, server_id, name, position) VALUES (?, ?, ?, (SELECT COALESCE(MAX(position),0)+1 FROM (SELECT * FROM server_categories) AS x WHERE x.server_id = ?))',
       [cid, sid, body.name, sid]
     );
-    res.status(201).json({ category: { id: cid, name: body.name, textChannels: [], voiceChannels: [] } });
+    const category = { id: cid, name: body.name, textChannels: [], voiceChannels: [] };
+    res.status(201).json({ category });
+    emitServerCategoryAdded(sid, category);
   } catch (e) { next(e); }
 });
 
@@ -233,6 +236,7 @@ serversRouter.delete('/:id/categories/:cid', async (req, res, next) => {
     if (!await requireAdmin(req, res, sid)) return;
     await q('DELETE FROM server_categories WHERE id = ? AND server_id = ?', [req.params.cid, sid]);
     res.json({ ok: true });
+    emitServerCategoryDeleted(sid, req.params.cid);
   } catch (e) { next(e); }
 });
 
