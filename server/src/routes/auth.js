@@ -13,7 +13,8 @@ const authLimiter = rateLimit({
   windowMs: 60_000,
   max: 8,
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  validate: false
 });
 authRouter.use(authLimiter);
 

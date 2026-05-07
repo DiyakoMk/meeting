@@ -20,6 +20,11 @@ import http from 'node:http';
 
 const app = express();
 
+// We sit behind nginx (and sometimes a Cloudflare tunnel in dev), so trust the
+// first proxy hop. Without this Express sees every request as coming from
+// 127.0.0.1 and the auth rate limiter treats all users as one.
+app.set('trust proxy', true);
+
 // CORS — allow the frontend origin only. Adjust PUBLIC_ORIGIN in .env.
 app.use(cors({
   origin: config.publicOrigin,
