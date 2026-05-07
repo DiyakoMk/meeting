@@ -5333,15 +5333,11 @@
 
     if (Array.isArray(snap.myServers)) myServers = snap.myServers.slice();
 
-    if (snap.channelData && typeof snap.channelData === 'object'){
+    // Drop stale entries first; we'll re-materialise from servers below
 
-      // Keep the built-in EMPTY placeholder; replace everything else.
+    // and only `users` arrays come straight from the snapshot.
 
-      Object.keys(channelData).forEach(k => { if (k !== '__empty__') delete channelData[k]; });
-
-      Object.assign(channelData, snap.channelData);
-
-    }
+    Object.keys(channelData).forEach(k => { if (k !== '__empty__') delete channelData[k]; });
 
     // Materialise channelData entries for every voice channel in every server
 
@@ -5365,11 +5361,17 @@
 
         const m = (st.glow||'rgba(99,102,241,0.4)').match(/rgba\((\d+),(\d+),(\d+),/);
 
+        const presetUsers = (snap.channelData && snap.channelData[chKey] && Array.isArray(snap.channelData[chKey].users))
+
+          ? snap.channelData[chKey].users.slice()
+
+          : [];
+
         channelData[chKey] = {
 
           name: vc.name,
 
-          users: [],
+          users: presetUsers,
 
           color: 'rgba('+(m?m[1]:99)+','+(m?m[2]:102)+','+(m?m[3]:241)+',',
 
@@ -6249,11 +6251,11 @@
 
     if (k && !friendsList.includes(k)) friendsList.push(k);
 
-    // Drop the matching outgoing request.
-
     friendRequests.outgoing = friendRequests.outgoing.filter(r =>
 
       (r.handle||'').replace(/^@/,'').toLowerCase() !== k);
+
+    const isOnlinePeer = !!peer.online;
 
     if (k && !conversations[k]){
 
@@ -6261,7 +6263,7 @@
 
         name: peer.name,
 
-        online: true, unread: 0,
+        online: isOnlinePeer, unread: 0,
 
         avColor: peer.avColor,
 
@@ -6273,6 +6275,10 @@
 
       };
 
+    } else if (k){
+
+      conversations[k].online = isOnlinePeer;
+
     }
 
     if (typeof renderHomeFriends === 'function') renderHomeFriends();
@@ -6280,6 +6286,10 @@
     if (typeof renderFriendRequestsHome === 'function') renderFriendRequestsHome();
 
     if (typeof renderFriendsLists === 'function') renderFriendsLists();
+
+    if (typeof renderDmList === 'function') renderDmList();
+
+    if (typeof updateBadges === 'function') updateBadges();
 
     showToast(peer.name+' accepted your friend request','success');
 
@@ -10505,27 +10515,35 @@
 
       const r = friendRequests.incoming.find(x => x.id === id); if (!r) return;
 
+      let peer = null;
+
       if (backend.isConfigured()){
 
         const resp = await backend.friends.accept(id);
 
         if (resp.error){ showToast('Could not accept: '+resp.error,'warn'); return; }
 
+        peer = resp.peer || null;
+
       }
 
-      const k = (r.handle || r.name).replace(/^@/,'').toLowerCase();
+      const k = (peer && peer.handle ? peer.handle : (r.handle || r.name)).replace(/^@/,'').toLowerCase();
 
       if (!conversations[k]){
 
-        conversations[k] = { name:r.name, online:false, unread:0, avColor:r.avColor, initial:r.initial, handle:r.handle, bio:'New friend.', stats:{posts:0,friends:1,orbits:0}, location:'UNKNOWN', joined:'NOW', lastSeen:'just now', rank:'EXPLORER', orbColor:'#818cf8', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#818cf8 55%,#1e1b4b)' };
+        conversations[k] = { name: peer ? peer.name : r.name, online:true, unread:0, avColor: peer ? peer.avColor : r.avColor, avImage: peer ? peer.avImage : null, initial: peer ? peer.initial : r.initial, handle: peer ? peer.handle : r.handle, bio: peer ? peer.bio : 'New friend.', stats:{posts:0,friends:1,orbits:0}, location:'UNKNOWN', joined:'NOW', lastSeen:'just now', rank:'EXPLORER', orbColor:'#818cf8', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#818cf8 55%,#1e1b4b)' };
 
         messages[k] = [];
 
+      } else {
+
+        // Existing conversation slot: mark as online so the friend bubble
+
+        // appears in the "online" half of the list right away.
+
+        conversations[k].online = true;
+
       }
-
-      // addFriend already calls the backend's friends.remove on undo, but for
-
-      // ADD we leave the persistence to /friends/:id/accept above.
 
       if (!friendsList.includes(k)) friendsList.push(k);
 
@@ -10539,7 +10557,7 @@
 
       updateBadges();
 
-      showToast(r.name+' is now your friend','success');
+      showToast((peer ? peer.name : r.name)+' is now your friend','success');
 
       return;
 
@@ -12453,9 +12471,13 @@
 
             if (!conversations[k]){
 
-              conversations[k] = { name: peer.name || r.name, online:false, unread:0, avColor: peer.avColor || r.avColor, avImage: peer.avImage || null, initial: peer.initial || r.initial, handle: peer.handle || r.handle, bio: peer.bio || 'New friend.', stats:{posts:0,friends:1,orbits:0}, location:'UNKNOWN', joined:'NOW', lastSeen:'just now', rank:'EXPLORER', orbColor:'#818cf8', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#818cf8 55%,#1e1b4b)' };
+              conversations[k] = { name: peer.name || r.name, online: !!peer.online, unread:0, avColor: peer.avColor || r.avColor, avImage: peer.avImage || null, initial: peer.initial || r.initial, handle: peer.handle || r.handle, bio: peer.bio || 'New friend.', stats:{posts:0,friends:1,orbits:0}, location:'UNKNOWN', joined:'NOW', lastSeen:'just now', rank:'EXPLORER', orbColor:'#818cf8', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#818cf8 55%,#1e1b4b)' };
 
               messages[k] = [];
+
+            } else {
+
+              conversations[k].online = !!peer.online;
 
             }
 
