@@ -1769,7 +1769,9 @@
 
     if (pinId){
 
-      const pm = list.find(x => x.id === pinId);
+      const pinIdStr = String(pinId);
+
+      const pm = list.find(x => String(x.id) === pinIdStr);
 
       if (pm){
 
@@ -1837,7 +1839,7 @@
 
         if (m.replyTo){
 
-          const orig = list.find(x=>x.id===m.replyTo);
+          const orig = list.find(x => String(x.id) === String(m.replyTo));
 
           if (orig){
 
@@ -1863,7 +1865,7 @@
 
         if (m.replyTo){
 
-          const orig = list.find(x=>x.id===m.replyTo);
+          const orig = list.find(x => String(x.id) === String(m.replyTo));
 
           if (orig){
 
@@ -1911,7 +1913,7 @@
 
       if (!m.deleted){
 
-        const pinned = dmPinnedByConv[currentConversation] === m.id;
+        const pinned = String(dmPinnedByConv[currentConversation] ?? '') === String(m.id);
 
         hoverActions = '<div class="dm-bubble-hover-actions">'+
 
@@ -1931,7 +1933,7 @@
 
       }
 
-      const selCls = (dmSelectMode && dmSelectedIds.has(m.id)) ? ' is-selected' : '';
+      const selCls = (dmSelectMode && dmSelectedIds.has(String(m.id))) ? ' is-selected' : '';
 
       html += '<div class="'+cls+selCls+'" data-msg-row="'+m.id+'">'+av+'<div class="dm-bubble-wrap">'+bubbleContent+meta+'</div>'+hoverActions+'</div>';
 
@@ -1945,7 +1947,21 @@
 
   }
 
-  function findMsg(id){ if (!currentConversation) return null; return (messages[currentConversation]||[]).find(m=>m.id===id); }
+  function findMsg(id){
+
+    if (!currentConversation) return null;
+
+    if (id === undefined || id === null) return null;
+
+    // DOM dataset values come back as strings, but server-issued ids are
+
+    // numbers. Compare by string form so both shapes match.
+
+    const target = String(id);
+
+    return (messages[currentConversation]||[]).find(m => String(m.id) === target);
+
+  }
 
   // ============== BUBBLE ACTIONS POPUP — fixed positioning ==============
 
@@ -2243,17 +2259,19 @@
 
   function toggleDmSelect(id){
 
-    if (dmSelectedIds.has(id)) dmSelectedIds.delete(id);
+    const key = String(id);
 
-    else dmSelectedIds.add(id);
+    if (dmSelectedIds.has(key)) dmSelectedIds.delete(key);
+
+    else dmSelectedIds.add(key);
 
     if (dmSelectMode && dmSelectedIds.size === 0){ exitDmSelectMode(); return; }
 
     // In-place class toggle - avoid a full re-render so the user keeps their scroll position.
 
-    const row = document.querySelector('.dm-msg[data-msg-row="'+id+'"]');
+    const row = document.querySelector('.dm-msg[data-msg-row="'+key+'"]');
 
-    if (row) row.classList.toggle('is-selected', dmSelectedIds.has(id));
+    if (row) row.classList.toggle('is-selected', dmSelectedIds.has(key));
 
     renderDmSelectionBar();
 
@@ -2263,13 +2281,33 @@
 
     if (!currentConversation || !dmSelectedIds.size) return;
 
-    messages[currentConversation] = (messages[currentConversation]||[]).filter(m => !dmSelectedIds.has(m.id));
+    const ids = Array.from(dmSelectedIds);
 
-    showToast(dmSelectedIds.size+' message(s) deleted','warn');
+    messages[currentConversation] = (messages[currentConversation]||[]).filter(m => !dmSelectedIds.has(String(m.id)));
+
+    showToast(ids.length+' message(s) deleted','warn');
 
     exitDmSelectMode();
 
     renderDmList();
+
+    // Persist each deletion to the backend so the peer (and our other tabs)
+
+    // actually see them disappear too. Skip optimistic temp ids.
+
+    if (backend.isConfigured()){
+
+      const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
+
+      ids.forEach(id => {
+
+        if (typeof id === 'string' && id.startsWith('tmp_')) return;
+
+        backend.dms.del(peerKey, id).catch(()=>{});
+
+      });
+
+    }
 
   }
 
@@ -2317,6 +2355,8 @@
 
     const m = findMsg(id); if (!m) return;
 
+    // Optimistic local delete first so the UI is instant.
+
     m.deleted = true;
 
     m.text = '';
@@ -2326,6 +2366,20 @@
     renderDmList();
 
     showToast('Message deleted','warn');
+
+    // Persist to the backend if we're online + signed-in. We only delete
+
+    // server-side for messages whose id was issued by the server (numeric
+
+    // or string-of-digits). Optimistic temp ids ('tmp_…') are not stored.
+
+    if (!backend.isConfigured() || !currentConversation) return;
+
+    if (typeof id === 'string' && id.startsWith('tmp_')) return;
+
+    const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
+
+    backend.dms.del(peerKey, id).catch(()=>{ /* the bubble already shows as deleted; surface a toast on hard failure only */ });
 
   }
 
@@ -2547,6 +2601,8 @@
 
       const m = findMsg(dmEditingId);
 
+      const editedId = dmEditingId;
+
       if (m){ m.text = text; m.edited = true; }
 
       cancelEdit();
@@ -2562,6 +2618,18 @@
       autoResizeInput(inp);
 
       updateSendBtn();
+
+      // Persist the edit so the peer (and our other tabs) actually see it.
+
+      // Skip pure-local optimistic ids — those don't exist server-side.
+
+      if (backend.isConfigured() && currentConversation && !(typeof editedId === 'string' && editedId.startsWith('tmp_'))){
+
+        const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
+
+        backend.dms.edit(peerKey, editedId, text).catch(()=>{});
+
+      }
 
       return;
 
@@ -3911,15 +3979,17 @@
 
   function toggleChSelect(id){
 
-    if (chSelectedIds.has(id)) chSelectedIds.delete(id);
+    const key = String(id);
 
-    else chSelectedIds.add(id);
+    if (chSelectedIds.has(key)) chSelectedIds.delete(key);
+
+    else chSelectedIds.add(key);
 
     if (chSelectMode && chSelectedIds.size === 0){ exitChSelectMode(); return; }
 
-    const row = document.querySelector('.ws-msg[data-ch-msg="'+id+'"]');
+    const row = document.querySelector('.ws-msg[data-ch-msg="'+key+'"]');
 
-    if (row) row.classList.toggle('is-selected', chSelectedIds.has(id));
+    if (row) row.classList.toggle('is-selected', chSelectedIds.has(key));
 
     renderChSelectionBar();
 
@@ -3949,7 +4019,7 @@
 
     }
 
-    serverChannelMessages[k] = (serverChannelMessages[k]||[]).filter(m => !chSelectedIds.has(m.id));
+    serverChannelMessages[k] = (serverChannelMessages[k]||[]).filter(m => !chSelectedIds.has(String(m.id)));
 
     showToast(ids.length+' message(s) deleted','warn');
 
@@ -4031,7 +4101,9 @@
 
     if (tc.pinnedMsgId){
 
-      const pm = msgs.find(x => x.id === tc.pinnedMsgId);
+      const pinIdStr = String(tc.pinnedMsgId);
+
+      const pm = msgs.find(x => String(x.id) === pinIdStr);
 
       if (pm){
 
@@ -4061,7 +4133,7 @@
 
         if (m.replyTo){
 
-          const orig = msgs.find(x => x.id === m.replyTo);
+          const orig = msgs.find(x => String(x.id) === String(m.replyTo));
 
           if (orig){
 
@@ -4103,7 +4175,7 @@
 
         }
 
-        const selCls = (chSelectMode && chSelectedIds.has(m.id)) ? ' is-selected' : '';
+        const selCls = (chSelectMode && chSelectedIds.has(String(m.id))) ? ' is-selected' : '';
 
         html += '<div class="ws-msg'+selCls+'" data-ch-msg="'+m.id+'" data-mine="'+(isMine?'1':'0')+'"><div class="ws-msg-av" style="background:'+avRes.bg+'">'+(avRes.isImage?'':escapeHtml(avRes.text))+'</div>'+
 
@@ -4123,7 +4195,7 @@
 
             (m.type !== 'image' && !m.deleted ? '<button class="ws-msg-act" data-ch-action="copy" data-ch-id="'+m.id+'" title="Copy"><i data-lucide="copy" style="width:12px;height:12px"></i></button>' : '') +
 
-            (memberHasPerm(s,selfProfile.name,'managePins') && !m.deleted ? '<button class="ws-msg-act" data-ch-action="pin" data-ch-id="'+m.id+'" title="'+(tc.pinnedMsgId===m.id?'Unpin':'Pin')+'"><i data-lucide="pin" style="width:12px;height:12px;color:'+(tc.pinnedMsgId===m.id?'var(--warn)':'')+'"></i></button>' : '') +
+            (memberHasPerm(s,selfProfile.name,'managePins') && !m.deleted ? (function(){ const isPin = String(tc.pinnedMsgId||'')===String(m.id); return '<button class="ws-msg-act" data-ch-action="pin" data-ch-id="'+m.id+'" title="'+(isPin?'Unpin':'Pin')+'"><i data-lucide="pin" style="width:12px;height:12px;color:'+(isPin?'var(--warn)':'')+'"></i></button>'; })() : '') +
 
             (isMine && !m.deleted ? '<button class="ws-msg-act danger" data-ch-action="delete" data-ch-id="'+m.id+'" title="Delete"><i data-lucide="trash-2" style="width:12px;height:12px"></i></button>' : '') +
 
@@ -4163,7 +4235,7 @@
 
     const msgs = serverChannelMessages[key] || [];
 
-    const orig = msgs.find(x => x.id === chReplyTo);
+    const orig = msgs.find(x => String(x.id) === String(chReplyTo));
 
     if (!orig){ chReplyTo = null; prev.style.display = 'none'; return; }
 
@@ -5497,7 +5569,9 @@
 
       clear:  peer        => _apiRequest('POST', '/dms/'+encodeURIComponent(peer)+'/clear'),
 
-      del:    (peer, mid) => _apiRequest('DELETE', '/dms/'+encodeURIComponent(peer)+'/'+encodeURIComponent(mid))
+      del:    (peer, mid) => _apiRequest('DELETE', '/dms/'+encodeURIComponent(peer)+'/'+encodeURIComponent(mid)),
+
+      edit:   (peer, mid, text) => _apiRequest('PATCH', '/dms/'+encodeURIComponent(peer)+'/'+encodeURIComponent(mid), { text })
 
     },
 
@@ -5811,6 +5885,24 @@
 
         break;
 
+      case 'dm:deleted':
+
+        _onDmDeleted(msg);
+
+        break;
+
+      case 'dm:cleared':
+
+        _onDmCleared(msg);
+
+        break;
+
+      case 'dm:edited':
+
+        _onDmEdited(msg);
+
+        break;
+
       case 'channel:message':
 
         _onChannelMessage(msg);
@@ -6081,7 +6173,7 @@
 
     if (!arr) return;
 
-    const m = arr.find(x => x.id === messageId);
+    const m = arr.find(x => String(x.id) === String(messageId));
 
     if (m){ m.deleted = true; m.text = ''; }
 
@@ -6320,6 +6412,104 @@
     if (typeof updateBadges === 'function') updateBadges();
 
     _playNotifSound();
+
+  }
+
+  // Peer edited one of their own messages — find by id and update text.
+
+  function _onDmEdited({ from, messageId, text }){
+
+    if (messageId === undefined || messageId === null) return;
+
+    const target = String(messageId);
+
+    let touched = false;
+
+    Object.keys(messages).forEach(k => {
+
+      const arr = messages[k] || [];
+
+      const m = arr.find(x => String(x.id) === target);
+
+      if (m){ m.text = text || ''; m.edited = true; touched = true; }
+
+    });
+
+    if (touched){
+
+      if (typeof renderConversation === 'function') renderConversation();
+
+      if (typeof renderDmList === 'function') renderDmList();
+
+    }
+
+  }
+
+  // Peer pushed a "this single message was deleted" — find by id and soft-
+
+  // delete it locally so the bubble flips to the placeholder without a reload.
+
+  function _onDmDeleted({ from, messageId }){
+
+    if (messageId === undefined || messageId === null) return;
+
+    // We don't get the peer's handle in the event, so search across every
+
+    // open thread. Message ids are unique across the dm_messages table.
+
+    const target = String(messageId);
+
+    Object.keys(messages).forEach(k => {
+
+      const arr = messages[k] || [];
+
+      const m = arr.find(x => String(x.id) === target);
+
+      if (m){ m.deleted = true; m.text = ''; }
+
+    });
+
+    if (typeof renderConversation === 'function') renderConversation();
+
+    if (typeof renderDmList === 'function') renderDmList();
+
+  }
+
+  // Peer cleared the entire conversation. Find the thread by the sender's
+
+  // uid (we map uid → handle via the snapshot's `peers` table when we have
+
+  // it; otherwise just blast every conversation that matches by name).
+
+  function _onDmCleared({ from }){
+
+    // Find the conversation key whose peer uid matches the sender. We don't
+
+    // store uid → conversation key, so fall back to scanning conversations
+
+    // that have a backend uid attached (set by /me/snapshot hydration).
+
+    const key = Object.keys(conversations).find(k => {
+
+      const c = conversations[k];
+
+      return c && (String(c.uid||'') === String(from) || c.peerId === from);
+
+    });
+
+    const target = key || null;
+
+    if (target && messages[target]){
+
+      messages[target] = [];
+
+      if (currentConversation === target && typeof renderConversation === 'function') renderConversation();
+
+      if (typeof renderDmList === 'function') renderDmList();
+
+      showToast('The other person cleared this chat', 'warn');
+
+    }
 
   }
 
@@ -12551,13 +12741,15 @@
 
       const row = e.target.closest('[data-ch-msg]');
 
-      if (row){ e.stopPropagation(); toggleChSelect(parseInt(row.dataset.chMsg)); return; }
+      if (row){ e.stopPropagation(); toggleChSelect(row.dataset.chMsg); return; }
 
     }
 
     const btn = e.target.closest('[data-ch-action]'); if (!btn) return;
 
-    const id = parseInt(btn.dataset.chId);
+    const idRaw = btn.dataset.chId;
+
+    const id = idRaw;
 
     const action = btn.dataset.chAction;
 
@@ -12565,7 +12757,7 @@
 
     const msgs = serverChannelMessages[key] || [];
 
-    const m = msgs.find(x => x.id === id); if (!m) return;
+    const m = msgs.find(x => String(x.id) === String(id)); if (!m) return;
 
     if (action === 'reply'){ chReplyTo = id; renderChannelReplyPreview(); document.getElementById('wsChannelInput').focus(); }
 
@@ -12603,7 +12795,7 @@
 
       const tc = s.textChannels.find(c => c.id === currentTextChannel);
 
-      const willPin = !tc.pinnedMsgId || tc.pinnedMsgId !== id;
+      const willPin = !tc.pinnedMsgId || String(tc.pinnedMsgId) !== String(id);
 
       if (backend.isConfigured()){
 
@@ -13871,7 +14063,9 @@
 
         if (!currentConversation) return;
 
-        if (dmPinnedByConv[currentConversation] === id){
+        const cur = dmPinnedByConv[currentConversation];
+
+        if (cur !== undefined && cur !== null && String(cur) === String(id)){
 
           dmPinnedByConv[currentConversation] = null;
 

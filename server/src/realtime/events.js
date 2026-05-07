@@ -108,3 +108,15 @@ export async function emitChannelMessagePinned(serverId, channelId, pinnedMsgId,
 export function emitToUser(uid, payload) {
   sendToUser(uid, payload);
 }
+
+// "the sender deleted one of their messages" — peer should soft-delete the
+// bubble (replace with a "Message deleted" placeholder) without reloading.
+export function emitDmDeleted(senderUid, peerUid, messageId) {
+  sendToUser(peerUid, { type: 'dm:deleted', from: String(senderUid), messageId });
+}
+
+// "the user emptied this conversation" — peer drops the entire history for
+// that thread on their side too. Mirrors the local clear.
+export function emitDmCleared(senderUid, peerUid) {
+  sendToUser(peerUid, { type: 'dm:cleared', from: String(senderUid) });
+}

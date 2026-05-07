@@ -4,7 +4,8 @@ import { pool, q, one } from '../db.js';
 import { requireAuth } from '../auth/middleware.js';
 import { areFriends, isBlocked } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
-import { emitNewDm } from '../realtime/events.js';
+import { emitNewDm, emitDmDeleted, emitDmCleared } from '../realtime/events.js';
+import { sendToUser } from '../realtime/ws.js';
 
 export const dmsRouter = Router();
 dmsRouter.use(requireAuth);
@@ -22,6 +23,17 @@ async function resolveThread(peerKey, me) {
   }
   const peer = await one('SELECT * FROM users WHERE handle = ? LIMIT 1', [peerKey]);
   if (!peer) return { thread: null, peer: null };
+  // If the peer key resolves to ourselves (e.g. someone DMing their own
+  // handle), route into the Saved Messages thread instead of trying to
+  // create a duplicate (user_a, user_b) row.
+  if (peer.id === me.id) {
+    let row = await one('SELECT * FROM dm_threads WHERE user_a = ? AND is_saved = 1', [me.id]);
+    if (!row) {
+      const r = await q('INSERT INTO dm_threads (user_a, user_b, is_saved) VALUES (?, ?, 1)', [me.id, me.id]);
+      row = await one('SELECT * FROM dm_threads WHERE id = ?', [r.insertId]);
+    }
+    return { thread: row, peer: null };
+  }
   // Threads are stored with min(uid) as user_a so we don't need two rows.
   const a = Math.min(me.id, peer.id), b = Math.max(me.id, peer.id);
   let row = await one('SELECT * FROM dm_threads WHERE user_a = ? AND user_b = ? AND is_saved = 0', [a, b]);
@@ -111,23 +123,49 @@ dmsRouter.post('/:peerKey', async (req, res, next) => {
 
 dmsRouter.post('/:peerKey/clear', async (req, res, next) => {
   try {
-    const { thread } = await resolveThread(req.params.peerKey, req.user);
+    const { thread, peer } = await resolveThread(req.params.peerKey, req.user);
     if (!thread) return res.status(404).json({ error: 'peer_not_found' });
     // Soft-delete only the caller's view. Real bilateral delete would need
     // per-side state; for now, drop messages from the thread entirely.
     await q('DELETE FROM dm_messages WHERE thread_id = ?', [thread.id]);
     res.json({ ok: true });
+    // Tell the peer to wipe their copy too — otherwise their view stays
+    // populated until they reload, which is confusing if the conversation
+    // was just emptied on the other side.
+    if (peer && peer.id !== req.user.id) emitDmCleared(req.user.id, peer.id);
   } catch (e) { next(e); }
 });
 
 dmsRouter.delete('/:peerKey/:mid', async (req, res, next) => {
   try {
-    const { thread } = await resolveThread(req.params.peerKey, req.user);
+    const { thread, peer } = await resolveThread(req.params.peerKey, req.user);
     if (!thread) return res.status(404).json({ error: 'peer_not_found' });
     const msg = await one('SELECT * FROM dm_messages WHERE id = ? AND thread_id = ?', [req.params.mid, thread.id]);
     if (!msg) return res.status(404).json({ error: 'not_found' });
     if (msg.sender_id !== req.user.id) return res.status(403).json({ error: 'forbidden' });
     await q('UPDATE dm_messages SET deleted = 1, body = NULL WHERE id = ?', [req.params.mid]);
     res.json({ ok: true });
+    // Push the soft-delete to the peer so their bubble flips to
+    // "Message deleted" without reloading the thread.
+    if (peer && peer.id !== req.user.id) emitDmDeleted(req.user.id, peer.id, Number(req.params.mid));
+  } catch (e) { next(e); }
+});
+
+const editSchema = z.object({ text: z.string().max(4000) });
+
+dmsRouter.patch('/:peerKey/:mid', async (req, res, next) => {
+  try {
+    const body = parseOr400(editSchema, req.body, res); if (!body) return;
+    const { thread, peer } = await resolveThread(req.params.peerKey, req.user);
+    if (!thread) return res.status(404).json({ error: 'peer_not_found' });
+    const msg = await one('SELECT * FROM dm_messages WHERE id = ? AND thread_id = ?', [req.params.mid, thread.id]);
+    if (!msg) return res.status(404).json({ error: 'not_found' });
+    if (msg.sender_id !== req.user.id) return res.status(403).json({ error: 'forbidden' });
+    await q('UPDATE dm_messages SET body = ?, edited = 1 WHERE id = ?', [body.text, req.params.mid]);
+    res.json({ ok: true });
+    // Push the new body to the peer so their bubble updates without reload.
+    if (peer && peer.id !== req.user.id) {
+      sendToUser(peer.id, { type: 'dm:edited', from: String(req.user.id), messageId: Number(req.params.mid), text: body.text });
+    }
   } catch (e) { next(e); }
 });
