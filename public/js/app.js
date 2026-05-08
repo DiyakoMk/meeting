@@ -1363,6 +1363,36 @@
 
       const sid = currentServer;
 
+      // If we were already in another voice channel, tell the backend we
+
+      // left it before joining the new one — otherwise the server keeps
+
+      // us listed in both channels and our avatar lingers on the old orb.
+
+      if (wasConnectedTo && wasConnectedTo !== ch){
+
+        // Resolve the old channel's server. It might be on a different
+
+        // server than the one we're joining now.
+
+        let oldSid = sid;
+
+        for (const _sid in servers){
+
+          if ((servers[_sid].voiceChannels||[]).some(v => v.id === wasConnectedTo)){
+
+            oldSid = _sid; break;
+
+          }
+
+        }
+
+        try { voice.stop(); } catch(_){}
+
+        backend.servers.voiceLeave(oldSid, wasConnectedTo).catch(()=>{});
+
+      }
+
       backend.servers.voiceJoin(sid, ch).then(r => {
 
         if (r && !r.error && !r.offline){
@@ -12353,19 +12383,55 @@
 
     if (backend.isConfigured()){
 
-      const r = await backend.friends.request(conv.handle || conv.name);
+      // Pick the most reliable identifier we have. A handle with whitespace
 
-      if (r.error === 'user_not_found'){ showToast('No user found','warn'); return; }
+      // is a synthesized fallback ('@user two') and won't match any real
 
-      if (r.error === 'already_friends'){ showToast('Already friends','warn'); return; }
+      // user — fall back to the display name so the server's name lookup
 
-      if (r.error === 'request_already_pending'){ showToast('Request already pending','warn'); return; }
+      // path can find them.
 
-      if (r.error){ showToast('Could not send request: '+r.error,'warn'); return; }
+      let target;
 
-      if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+      const handle = (conv.handle || '').trim();
 
-      req = r.request;
+      const handleClean = handle.replace(/^@/, '');
+
+      if (handle && !/\s/.test(handleClean)){
+
+        target = handle;
+
+      } else {
+
+        target = conv.name;
+
+      }
+
+      const r = await backend.friends.request(target);
+
+      if (r.error === 'user_not_found'){
+
+        // Last-ditch retry by display name in case the handle was bogus.
+
+        if (target !== conv.name){
+
+          const r2 = await backend.friends.request(conv.name);
+
+          if (!r2.error && !r2.offline){ req = r2.request; }
+
+          else { showToast('No user found','warn'); return; }
+
+        } else { showToast('No user found','warn'); return; }
+
+      } else if (r.error === 'already_friends'){ showToast('Already friends','warn'); return; }
+
+      else if (r.error === 'request_already_pending'){ showToast('Request already pending','warn'); return; }
+
+      else if (r.error){ showToast('Could not send request: '+r.error,'warn'); return; }
+
+      else if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+      else { req = r.request; }
 
     } else {
 
@@ -12747,7 +12813,13 @@
 
     if (backend.isConfigured()){
 
-      const r = await backend.friends.request(raw);
+      // Pass the most specific identifier first: prefer the resolved
+
+      // handle from the user lookup, then fall back to the raw input.
+
+      const target1 = (target.handle || '').trim() || raw;
+
+      const r = await backend.friends.request(target1);
 
       if (r.error === 'user_not_found'){ showToast('No user found for "'+raw+'"','warn'); return; }
 
@@ -12755,7 +12827,9 @@
 
       if (r.error === 'request_already_pending'){ showToast('Request already pending','warn'); return; }
 
-      if (r.error){ showToast('Could not send request','warn'); return; }
+      if (r.error){ showToast('Could not send request: '+r.error,'warn'); return; }
+
+      if (r.offline){ showToast('Cannot reach the server','warn'); return; }
 
       req = r.request;
 

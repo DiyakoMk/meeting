@@ -88,6 +88,20 @@ channelsRouter.post('/voice/:sid/:cid/join', async (req, res, next) => {
     if (!await requireMember(req, res, sid)) return;
     const ch = await one('SELECT * FROM voice_channels WHERE id = ? AND server_id = ?', [cid, sid]);
     if (!ch) return res.status(404).json({ error: 'not_found' });
+    // A user can only be in one voice channel at a time. Drop them out of
+    // any *other* voice channel they were in (across every server) before
+    // recording the new join, so their avatar doesn't linger on an old
+    // orb. We snapshot the affected channels so we can fan out leave
+    // events to their members.
+    const stale = await q(
+      `SELECT vm.channel_id, vc.server_id
+         FROM voice_channel_members vm
+         JOIN voice_channels vc ON vc.id = vm.channel_id
+        WHERE vm.user_id = ? AND vm.channel_id != ?`,
+      [req.user.id, cid]);
+    if (stale.length){
+      await q('DELETE FROM voice_channel_members WHERE user_id = ? AND channel_id != ?', [req.user.id, cid]);
+    }
     await q(
       `INSERT INTO voice_channel_members (channel_id, user_id) VALUES (?, ?)
        ON DUPLICATE KEY UPDATE joined_at = CURRENT_TIMESTAMP`,
@@ -98,6 +112,14 @@ channelsRouter.post('/voice/:sid/:cid/join', async (req, res, next) => {
       [cid]);
     const names = members.map(m => m.name);
     res.json({ ok: true, members: names });
+    // Fan out a voice:leave for every channel they got pulled out of
+    // first, so peers see the move atomically.
+    for (const s of stale){
+      const remaining = await q(
+        `SELECT u.name FROM voice_channel_members vm JOIN users u ON u.id = vm.user_id WHERE vm.channel_id = ?`,
+        [s.channel_id]);
+      emitVoiceLeave(s.server_id, s.channel_id, req.user.name, remaining.map(r => r.name));
+    }
     emitVoiceJoin(sid, cid, req.user.name, names);
   } catch (e) { next(e); }
 });
