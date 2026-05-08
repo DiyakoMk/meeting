@@ -843,6 +843,14 @@
 
     updateMarkedSidebar();
 
+    // Make sure the empty/connected/disconnected state on the orb column
+
+    // tracks the slide list. Without this the column can stay in is-empty
+
+    // even after hydrate populated marked orbits.
+
+    if (typeof updateConnBanner === 'function') updateConnBanner();
+
     if (typeof updateBadges === 'function') updateBadges();
 
   }
@@ -4055,13 +4063,23 @@
 
       marked = marked.filter(k => !orbKeys.includes(k));
 
-      if (lastJoinedChannel && orbKeys.includes(lastJoinedChannel)) lastJoinedChannel = null;
+      persistMarkedOrbits();
+
+      if (lastJoinedChannel && orbKeys.includes(lastJoinedChannel)){
+
+        lastJoinedChannel = null;
+
+        try { localStorage.removeItem('orblood:lastJoined'); } catch(_){}
+
+      }
 
     }
 
     // 2) Marked text channels keyed by serverId__channelId.
 
     markedTextChannels = markedTextChannels.filter(k => !k.startsWith(sid+'__'));
+
+    persistMarkedTextChannels();
 
     // 3) Cached channel chat history.
 
@@ -8109,6 +8127,8 @@
 
     if (typeof renderServerRails === 'function') renderServerRails();
 
+    if (typeof updateConnBanner === 'function') updateConnBanner();
+
     if (typeof updateBadges === 'function') updateBadges();
 
     // Open the realtime channel now that we have a token + state is in sync.
@@ -10020,6 +10040,8 @@
         servers[r.server.id] = r.server;
 
         myServers.push(r.server.id);
+
+        persistPinnedServers();
 
         showToast('Server "'+name+'" created','success');
 
@@ -12699,6 +12721,8 @@
 
       myServers = myServers.filter(x => x !== sid);
 
+      persistPinnedServers();
+
       currentServer = null; currentTextChannel = null;
 
       document.getElementById('coverBackdrop').classList.remove('show');
@@ -13167,6 +13191,8 @@
 
         myServers = myServers.filter(x => x !== sid);
 
+        persistPinnedServers();
+
         currentServer = null; currentTextChannel = null;
 
         setServerView('feed');
@@ -13273,6 +13299,8 @@
 
         markedTextChannels = markedTextChannels.filter(k => k !== currentServer+'__'+id);
 
+        persistMarkedTextChannels();
+
         delete serverChannelMessages[currentServer+'__'+id];
 
         if (currentTextChannel === id){ currentTextChannel = null; goToServerMain(); }
@@ -13329,7 +13357,15 @@
 
         marked = marked.filter(x => x !== chKey);
 
-        if (lastJoinedChannel === chKey) lastJoinedChannel = null;
+        persistMarkedOrbits();
+
+        if (lastJoinedChannel === chKey){
+
+          lastJoinedChannel = null;
+
+          try { localStorage.removeItem('orblood:lastJoined'); } catch(_){}
+
+        }
 
         if (channelData[chKey]) delete channelData[chKey];
 
@@ -13782,6 +13818,8 @@
     renderServerRails();
 
     syncWorldPinBtn();
+
+    persistPinnedServers();
 
   });
 
@@ -14660,6 +14698,16 @@
             dmPinnedByConv[k] = null;
 
             if (conversations[k]) conversations[k].unread = 0;
+
+            // Persist the one-sided clear server-side so reloading doesn't
+
+            // resurrect the messages from the backend's preview / history.
+
+            if (backend.isConfigured() && k !== 'saved'){
+
+              backend.dms.clear(k).catch(()=>{});
+
+            }
 
             if (currentConversation === k){
 

@@ -272,6 +272,23 @@ CREATE TABLE IF NOT EXISTS notifications (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---------- HIDDEN DM THREADS ----------
+-- Per-user "I deleted this conversation from my DM list / cleared my view".
+-- The peer still sees the full history; we filter our own copy by
+-- last_hidden_id so we only show messages newer than that. Sending /
+-- receiving a new message naturally surfaces the thread again because the
+-- new message id is bigger than last_hidden_id.
+
+CREATE TABLE IF NOT EXISTS dm_thread_hidden (
+  user_id        BIGINT UNSIGNED NOT NULL,
+  thread_id      BIGINT UNSIGNED NOT NULL,
+  last_hidden_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, thread_id),
+  FOREIGN KEY (user_id)   REFERENCES users(id)      ON DELETE CASCADE,
+  FOREIGN KEY (thread_id) REFERENCES dm_threads(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------- READ STATE ----------
 -- Tracks the user's last-read message id per DM thread and per text channel,
 -- so unread counts survive a reload. We compute the unread count as

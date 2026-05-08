@@ -207,15 +207,21 @@ meRouter.get('/snapshot', async (req, res, next) => {
 
     // Last message preview for every DM thread the user is part of.
     // Lets the home / quick-access lists show "X said Y" right after a
-    // refresh without each row hitting GET /api/dms separately.
+    // refresh without each row hitting GET /api/dms separately. Honours
+    // dm_thread_hidden so cleared threads stay quiet until a *newer*
+    // message arrives.
     const previewRows = await q(
       `SELECT t.id AS tid, t.user_a, t.user_b, t.is_saved,
-              m.id AS mid, m.body, m.deleted, m.payload_json, m.created_at, m.sender_id
+              m.id AS mid, m.body, m.deleted, m.payload_json, m.created_at, m.sender_id,
+              COALESCE(h.last_hidden_id, 0) AS hidden_cutoff
          FROM dm_threads t
+         LEFT JOIN dm_thread_hidden h ON h.thread_id = t.id AND h.user_id = ?
          LEFT JOIN dm_messages m ON m.id = (
-           SELECT id FROM dm_messages WHERE thread_id = t.id ORDER BY created_at DESC, id DESC LIMIT 1
+           SELECT id FROM dm_messages
+            WHERE thread_id = t.id AND id > COALESCE(h.last_hidden_id, 0)
+            ORDER BY created_at DESC, id DESC LIMIT 1
          )
-        WHERE t.user_a = ? OR t.user_b = ?`, [me.id, me.id]);
+        WHERE t.user_a = ? OR t.user_b = ?`, [me.id, me.id, me.id]);
     const peerIds = new Set();
     previewRows.forEach(r => {
       if (r.is_saved) return;
@@ -260,18 +266,15 @@ meRouter.get('/snapshot', async (req, res, next) => {
         `SELECT thread_id, last_read_id FROM dm_read_state WHERE user_id = ? AND thread_id IN (${tids.map(()=>'?').join(',')})`,
         [me.id, ...tids]);
       const lastReadByThread = new Map(readDm.map(r => [r.thread_id, Number(r.last_read_id)]));
-      const unreadRows = await q(
-        `SELECT thread_id, COUNT(*) AS n FROM dm_messages
-          WHERE thread_id IN (${tids.map(()=>'?').join(',')})
-            AND sender_id != ?
-          GROUP BY thread_id, id HAVING 1=0`, [...tids, me.id]); // dummy for type check
-      // Re-query with last_read filter per thread (cheap: small set).
+      const hiddenByThread = new Map(previewRows.map(r => [r.tid, Number(r.hidden_cutoff) || 0]));
       for (const tid of tids){
         const lastRead = lastReadByThread.get(tid) || 0;
+        const hidden  = hiddenByThread.get(tid) || 0;
+        const cutoff = Math.max(lastRead, hidden);
         const row = await one(
           `SELECT COUNT(*) AS n FROM dm_messages
             WHERE thread_id = ? AND sender_id != ? AND id > ?`,
-          [tid, me.id, lastRead]);
+          [tid, me.id, cutoff]);
         if (row && row.n > 0){
           const t = previewRows.find(p => p.tid === tid);
           if (!t) continue;
@@ -279,7 +282,6 @@ meRouter.get('/snapshot', async (req, res, next) => {
           if (k) unreadDm[k] = row.n;
         }
       }
-      void unreadRows; // silence unused
     }
     const unreadChannels = {};
     if (memberRows.length){

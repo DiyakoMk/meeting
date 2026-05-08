@@ -51,10 +51,18 @@ dmsRouter.get('/:peerKey', async (req, res, next) => {
     // History is always visible to both parties, regardless of who blocked
     // whom. Composing is the only thing that's gated. We still return a
     // blocked flag so the client can surface the right banner state.
+    // We also honour dm_thread_hidden: if the caller previously cleared
+    // this thread, only show messages with id > last_hidden_id (i.e. only
+    // what arrived after they nuked their copy).
+    const hiddenRow = await one(
+      'SELECT last_hidden_id FROM dm_thread_hidden WHERE user_id = ? AND thread_id = ?',
+      [req.user.id, thread.id]);
+    const hiddenCutoff = hiddenRow ? Number(hiddenRow.last_hidden_id) || 0 : 0;
     const rows = await q(
       `SELECT m.*, u.handle AS sender_handle FROM dm_messages m
          JOIN users u ON u.id = m.sender_id
-        WHERE m.thread_id = ? ORDER BY m.created_at ASC LIMIT 500`, [thread.id]);
+        WHERE m.thread_id = ? AND m.id > ? ORDER BY m.created_at ASC LIMIT 500`,
+      [thread.id, hiddenCutoff]);
     const myId = req.user.id;
     res.json({
       messages: rows.map(r => ({
@@ -142,16 +150,23 @@ dmsRouter.post('/:peerKey/read', async (req, res, next) => {
 
 dmsRouter.post('/:peerKey/clear', async (req, res, next) => {
   try {
-    const { thread, peer } = await resolveThread(req.params.peerKey, req.user);
+    const { thread } = await resolveThread(req.params.peerKey, req.user);
     if (!thread) return res.status(404).json({ error: 'peer_not_found' });
-    // Soft-delete only the caller's view. Real bilateral delete would need
-    // per-side state; for now, drop messages from the thread entirely.
-    await q('DELETE FROM dm_messages WHERE thread_id = ?', [thread.id]);
-    res.json({ ok: true });
-    // Tell the peer to wipe their copy too — otherwise their view stays
-    // populated until they reload, which is confusing if the conversation
-    // was just emptied on the other side.
-    if (peer && peer.id !== req.user.id) emitDmCleared(req.user.id, peer.id);
+    // One-sided delete: hide every message currently in the thread for the
+    // caller only. The peer keeps their full history. New messages (id >
+    // last_hidden_id) will surface the thread again on both sides.
+    const top = await one('SELECT MAX(id) AS m FROM dm_messages WHERE thread_id = ?', [thread.id]);
+    const maxId = (top && top.m) ? Number(top.m) : 0;
+    await q(
+      `INSERT INTO dm_thread_hidden (user_id, thread_id, last_hidden_id) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE last_hidden_id = GREATEST(last_hidden_id, VALUES(last_hidden_id)), updated_at = CURRENT_TIMESTAMP`,
+      [req.user.id, thread.id, maxId]);
+    // Bring the read marker up to maxId too — there's nothing left to read.
+    await q(
+      `INSERT INTO dm_read_state (user_id, thread_id, last_read_id) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE last_read_id = GREATEST(last_read_id, VALUES(last_read_id)), updated_at = CURRENT_TIMESTAMP`,
+      [req.user.id, thread.id, maxId]);
+    res.json({ ok: true, hiddenUpTo: maxId });
   } catch (e) { next(e); }
 });
 
