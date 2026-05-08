@@ -45,3 +45,39 @@ export async function isBlocked(uidA, uidB) {
   );
   return !!r;
 }
+
+// True if the user has the given permission on a server, either by being
+// admin (admins bypass every gate) or by holding a server_role whose
+// permissions JSON has the key set to true.
+export async function hasPermission(sid, uid, permKey) {
+  const m = await membership(sid, uid);
+  if (!m) return false;
+  if (m.is_admin) return true;
+  const rows = await q(
+    `SELECT sr.permissions
+       FROM server_roles sr
+       JOIN server_role_members srm ON srm.role_id = sr.id
+      WHERE sr.server_id = ? AND srm.user_id = ?`,
+    [sid, uid]
+  );
+  for (const row of rows) {
+    let perms = row.permissions;
+    if (typeof perms === 'string') {
+      try { perms = JSON.parse(perms); } catch { perms = {}; }
+    }
+    if (perms && perms[permKey]) return true;
+  }
+  return false;
+}
+
+// Drop-in replacement for requireAdmin when the gate is a fine-grained role
+// permission (e.g. manageVoiceCh, managePins). Falls back to admin if the
+// permission key is missing entirely.
+export async function requirePermission(req, res, sid, permKey) {
+  const m = await requireMember(req, res, sid);
+  if (!m) return null;
+  if (m.is_admin) return m;
+  const ok = await hasPermission(sid, req.user.id, permKey);
+  if (!ok) { res.status(403).json({ error: 'permission_required', perm: permKey }); return null; }
+  return m;
+}
