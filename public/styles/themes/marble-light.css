@@ -59,6 +59,37 @@
   --shadow-soft:   0 12px 36px rgba(40,15,15,0.12);
   --shadow-strong: 0 20px 40px rgba(40,15,15,0.18);
 
+  /* Greeting headline gradient — ink + brand on warm cream so the title
+   * has weight without bleaching into the marble. */
+  --greet-grad: linear-gradient(135deg, #1a0a0a 0%, var(--accent) 70%, var(--accent-2) 100%);
+
+  /* Cover scrim is barely-there cream wash so a real cover photo tints
+   * but doesn't get crushed to black. */
+  --cover-scrim: linear-gradient(180deg, rgba(244,238,233,0.05), rgba(244,238,233,0.55));
+
+  /* Hero background swaps the cosmic vignette for a warm tint that
+   * matches the marble veining underneath. */
+  --hero-bg:
+    radial-gradient(ellipse at 80% 20%, rgba(180,2,36,0.08), transparent 55%),
+    radial-gradient(ellipse at 10% 100%, rgba(0,0,0,0.05), transparent 55%);
+
+  /* Default avatar fallback gradients — warm slate + soft rose instead
+   * of cosmic indigo, so a faceless avatar reads as part of the panel. */
+  --av-default-grad:      linear-gradient(135deg, #d6b8be, #6b4548);
+  --av-default-grad-warm: linear-gradient(135deg, #e6c9ce, #7a4a4f);
+
+  /* Sphere highlights/shadows — invert the inner wash so an orb on a
+   * light panel still looks 3D. */
+  --orb-inner-highlight: rgba(255,255,255,0.7);
+  --orb-inner-shadow:    rgba(0,0,0,0.18);
+
+  /* Brand glow alpha tones — dropped significantly so the red halo on
+   * orbs / banners doesn't bleed pink into the cream marble. */
+  --brand-glow-strong: rgba(180,2,36,0.32);
+  --brand-glow:        rgba(180,2,36,0.22);
+  --brand-glow-soft:   rgba(180,2,36,0.10);
+  --brand-glow-faint:  rgba(180,2,36,0.04);
+
   /* Marble veining: layered radial + linear gradients evoke red and
    * black veins running through warm white stone. The bottom layer is
    * the solid base color. */
