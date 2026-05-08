@@ -45,8 +45,21 @@ app.use(config.uploads.publicBase, express.static(uploadsAbs));
 // Serve the static frontend from the same origin so the SPA can call /api
 // without CORS. In production nginx does this; this fallback is for
 // dev/preview deployments where the backend is the only public process.
+//
+// `Cache-Control: no-cache` (NOT no-store) lets the browser keep a copy
+// but forces it to revalidate with the server every time. Without this,
+// users running the dev tunnel keep getting the cached app.js for 5+
+// minutes after we redeploy, which looked like "fixes don't apply" in
+// reports — Ctrl+Shift+R would always work, plain F5 wouldn't. The
+// trade-off is one tiny 304 round trip per asset on each pageload, which
+// is fine for dev / staging. In production the nginx config can override
+// this with a longer max-age for hashed bundles.
 const publicDir = path.resolve(here, '..', '..', 'public');
-app.use(express.static(publicDir));
+app.use(express.static(publicDir, {
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+  }
+}));
 
 // Bearer-token decoder runs on every request.
 app.use(attachUser);

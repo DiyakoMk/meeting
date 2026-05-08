@@ -3,6 +3,18 @@
 
   'use strict';
 
+  // Build stamp — useful when debugging "fix didn't apply" reports. Bump
+
+  // any time you ship a hot-reloadable change you want to confirm landed.
+
+  // The stamp logs once on boot and shows up in the user's devtools so
+
+  // you can sanity-check via screenshot whether they're on the cached
+
+  // bundle or the fresh one.
+
+  console.log('[orblood] client build 2026-05-08-c (day-key normaliser, in-place patch, lock chips)');
+
   // ============== STARS ==============
 
   const starsHost = document.getElementById('stars');
