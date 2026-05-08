@@ -46,18 +46,10 @@ Settings → System → **Change server** lets you switch backends later (or rig
 
 ## Build distributables
 
-The icons are sourced from `build/icon.svg`. Convert once before building:
+Icons are rasterised from `build/icon.svg` automatically by every `build:*`
+script (via `npm run icons`). No manual `inkscape`/`magick` step needed.
 
-```bash
-# .png  (Linux / fallback)
-inkscape build/icon.svg -o build/icon.png -w 1024 -h 1024
-# .ico  (Windows)
-magick convert build/icon.png -define icon:auto-resize=256,128,64,48,32,16 build/icon.ico
-# .icns (macOS) — easiest with iconutil
-iconutil -c icns -o build/icon.icns <icon.iconset>/
-```
-
-Then build for the current platform:
+Build for the current platform:
 
 ```bash
 npm run build:win     # → desktop/dist/Orblood Setup x.y.z.exe
@@ -65,7 +57,41 @@ npm run build:mac     # → desktop/dist/Orblood-x.y.z-arm64.dmg + x64.dmg
 npm run build:linux   # → desktop/dist/Orblood-x.y.z.AppImage + .deb
 ```
 
-CI tip: build each target on its native OS. Cross-compiling macOS from Linux requires `osxcross` and isn't worth the headache for a 5-MB Electron shell.
+### Build in GitHub Actions (recommended)
+
+A workflow at `.github/workflows/desktop-build.yml` builds Win/Mac/Linux on
+their native runners and uploads the installers as workflow artifacts. The
+repo can stay private — only people with read access to the repo can
+download the artifacts.
+
+Trigger options:
+
+1. **Push a version tag** — fastest, also drafts a GitHub Release with all
+   installers attached:
+   ```bash
+   git tag v0.1.0 && git push --tags
+   ```
+2. **Manual run** — open the **Actions** tab → "Desktop build" → **Run
+   workflow**. Set `release` to `true` if you also want a draft release;
+   leave it as `false` to just download the artifacts.
+3. **Push to `build/desktop`** — handy for iterating on the workflow itself
+   without minting a tag.
+
+Each run produces three artifacts:
+- `orblood-windows` — `.exe` installer
+- `orblood-macos`   — `.dmg` (arm64 + x64)
+- `orblood-linux`   — `.AppImage` + `.deb`
+
+Click into the run, scroll to **Artifacts**, download the one you need,
+unzip, and share the installer with your team.
+
+### Why three runners?
+
+`electron-builder` cross-compiles poorly. macOS DMGs need `hdiutil` (macOS
+only); Windows installers need `signtool` + the NSIS toolchain in its
+expected paths; Linux native deps for `sharp` only resolve cleanly on
+glibc. Running each platform on its own GitHub-hosted runner is much
+simpler than wrestling with `osxcross` or Wine.
 
 ---
 
