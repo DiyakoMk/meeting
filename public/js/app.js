@@ -5937,6 +5937,12 @@
 
         break;
 
+      case 'friend:removed':
+
+        _onFriendRemoved(msg);
+
+        break;
+
       case 'typing':
 
         _onTyping(msg);
@@ -6353,7 +6359,7 @@
 
   }
 
-  function _onIncomingDm({ message }){
+  function _onIncomingDm({ message, from }){
 
     if (!message) return;
 
@@ -6367,6 +6373,10 @@
 
       conversations[k] = {
 
+        uid: from ? String(from) : null,
+
+        peerId: from ? String(from) : null,
+
         name: message.peerName || k,
 
         online: true, unread: 0,
@@ -6378,6 +6388,12 @@
         handle: '@'+k, bio:''
 
       };
+
+    } else if (from && !conversations[k].uid){
+
+      conversations[k].uid = String(from);
+
+      conversations[k].peerId = String(from);
 
     }
 
@@ -6744,6 +6760,34 @@
     showToast(peer.name+' accepted your friend request','success');
 
     _playNotifSound();
+
+  }
+
+  // The other person unfriended us — drop them from the friend list locally
+
+  // so the bubble disappears without a refresh. We deliberately keep the
+
+  // conversation thread + history in case the user wants to keep messaging.
+
+  function _onFriendRemoved({ peerId, peerHandle }){
+
+    const k = peerHandle ? peerHandle.replace(/^@/, '').toLowerCase() : null;
+
+    if (k){
+
+      friendsList = friendsList.filter(x => x !== k);
+
+      if (conversations[k]) conversations[k].isFriend = false;
+
+    }
+
+    if (typeof renderHomeFriends === 'function') renderHomeFriends();
+
+    if (typeof renderFriendsLists === 'function') renderFriendsLists();
+
+    if (typeof renderDmList === 'function') renderDmList();
+
+    if (typeof updateBadges === 'function') updateBadges();
 
   }
 

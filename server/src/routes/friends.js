@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { q, one } from '../db.js';
 import { requireAuth } from '../auth/middleware.js';
 import { parseOr400 } from '../validators.js';
-import { emitFriendRequest, emitFriendAccepted } from '../realtime/events.js';
+import { emitFriendRequest, emitFriendAccepted, emitFriendRemoved } from '../realtime/events.js';
 import { isOnline } from '../realtime/ws.js';
 
 export const friendsRouter = Router();
@@ -128,5 +128,8 @@ friendsRouter.post('/remove/:userId', async (req, res, next) => {
       [req.user.id, req.params.userId, req.params.userId, req.user.id]
     );
     res.json({ ok: true });
+    // Tell the other side their bubble should disappear from the friend
+    // sidebar without needing a reload.
+    emitFriendRemoved(req.params.userId, req.user.id, req.user.handle ? '@' + req.user.handle : null);
   } catch (e) { next(e); }
 });

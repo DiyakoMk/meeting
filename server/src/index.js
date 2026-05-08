@@ -31,7 +31,11 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json({ limit: '2mb' }));
+// 8MB headroom — avImage / bannerImage can come in as base64 data URLs when
+// the multipart upload endpoint is unreachable (offline / static-only host).
+// The matching schema column is MEDIUMTEXT (~16MB) and the validator allows
+// up to 6MB so the body parser must not be the tighter gate.
+app.use(express.json({ limit: '8mb' }));
 
 // Static uploads. Anything written to UPLOAD_DIR is served from /uploads/*.
 const here = path.dirname(fileURLToPath(import.meta.url));

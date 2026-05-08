@@ -120,3 +120,9 @@ export function emitDmDeleted(senderUid, peerUid, messageId) {
 export function emitDmCleared(senderUid, peerUid) {
   sendToUser(peerUid, { type: 'dm:cleared', from: String(senderUid) });
 }
+
+// "the other person unfriended you" — peer's friend bubble disappears
+// without waiting for a refresh.
+export function emitFriendRemoved(toUid, peerUid, peerHandle) {
+  sendToUser(toUid, { type: 'friend:removed', peerId: String(peerUid), peerHandle: peerHandle || null });
+}

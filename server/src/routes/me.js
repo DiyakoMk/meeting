@@ -102,6 +102,10 @@ meRouter.get('/snapshot', async (req, res, next) => {
     friendRows.forEach(row => {
       const k = row.handle.toLowerCase();
       conversations[k] = {
+        // Stable peer id so the frontend can correlate WS events
+        // (dm:cleared / friend:removed) without re-resolving by handle.
+        uid: String(row.id),
+        peerId: String(row.id),
         name: row.name,
         online: onlineUids.has(String(row.id)),
         unread: 0,
