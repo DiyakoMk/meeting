@@ -115,6 +115,13 @@ export function emitDmDeleted(senderUid, peerUid, messageId) {
   sendToUser(peerUid, { type: 'dm:deleted', from: String(senderUid), messageId });
 }
 
+// "I just read your messages up to maxId" — the original sender flips
+// every outgoing bubble in this thread from delivered (single tick) to
+// read (double tick). The peer's own copy is unaffected.
+export function emitDmRead(readerUid, peerUid, maxId) {
+  sendToUser(peerUid, { type: 'dm:read', from: String(readerUid), upToId: Number(maxId) });
+}
+
 // "the user emptied this conversation" — peer drops the entire history for
 // that thread on their side too. Mirrors the local clear.
 export function emitDmCleared(senderUid, peerUid) {

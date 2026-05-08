@@ -4,7 +4,7 @@ import { pool, q, one } from '../db.js';
 import { requireAuth } from '../auth/middleware.js';
 import { areFriends, isBlocked } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
-import { emitNewDm, emitDmDeleted, emitDmCleared } from '../realtime/events.js';
+import { emitNewDm, emitDmDeleted, emitDmCleared, emitDmRead } from '../realtime/events.js';
 import { sendToUser } from '../realtime/ws.js';
 
 export const dmsRouter = Router();
@@ -164,7 +164,7 @@ dmsRouter.post('/:peerKey/pin', async (req, res, next) => {
 // "X new messages since you last looked".
 dmsRouter.post('/:peerKey/read', async (req, res, next) => {
   try {
-    const { thread } = await resolveThread(req.params.peerKey, req.user);
+    const { thread, peer } = await resolveThread(req.params.peerKey, req.user);
     if (!thread) return res.status(404).json({ error: 'peer_not_found' });
     const top = await one('SELECT MAX(id) AS m FROM dm_messages WHERE thread_id = ?', [thread.id]);
     const maxId = (top && top.m) ? Number(top.m) : 0;
@@ -173,6 +173,11 @@ dmsRouter.post('/:peerKey/read', async (req, res, next) => {
        ON DUPLICATE KEY UPDATE last_read_id = GREATEST(last_read_id, VALUES(last_read_id)), updated_at = CURRENT_TIMESTAMP`,
       [req.user.id, thread.id, maxId]);
     res.json({ ok: true, lastReadId: maxId });
+    // Tell the peer their delivered ticks just flipped to read ticks. Skip
+    // for Saved Messages (peer is the same user) — there's nothing to flip.
+    if (peer && peer.id && String(peer.id) !== String(req.user.id) && maxId > 0){
+      emitDmRead(req.user.id, peer.id, maxId);
+    }
   } catch (e) { next(e); }
 });
 

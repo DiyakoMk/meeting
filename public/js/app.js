@@ -49,6 +49,18 @@
 
   function nowTime(){ const n = new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); }
 
+  // Day label used by the day-divider in DMs. We must match the format the
+
+  // server hands us in /api/dms history responses (`X/Y/Z`-style), otherwise
+
+  // a fresh optimistic bubble shows under "TODAY" and then jumps under the
+
+  // server-formatted date when the response merges in — visible to users as
+
+  // "the chat reloads when I send".
+
+  function todayDayLabel(){ return new Date().toLocaleDateString().toUpperCase(); }
+
   // Promise-based in-app replacement for window.confirm.
 
   let _confirmResolver = null;
@@ -2025,6 +2037,138 @@
 
   }
 
+  // In-place bubble update: when the server hands us back the canonical id
+
+  // for an optimistic message, or when an edit/delete event arrives, we'd
+
+  // rather not rebuild the whole transcript. Find the existing row by
+
+  // data-msg-row="<oldId>", swap the id attribute, and refresh just the
+
+  // status icon + caption / text inside it. Keeps scroll, hover and the
+
+  // icon set frozen — none of which renderConversation() preserves.
+
+  function _patchDmBubbleInPlace(convKey, oldId, m){
+
+    if (!convKey || !m) return false;
+
+    const msgsEl = document.getElementById('dmMsgs');
+
+    if (!msgsEl) return false;
+
+    const row = msgsEl.querySelector('[data-msg-row="'+CSS.escape(String(oldId))+'"]');
+
+    if (!row) return false;
+
+    // Update the cached id list so the next prefix-check still passes.
+
+    const cache = _dmRenderedIds[convKey];
+
+    if (cache){
+
+      const idx = cache.indexOf(String(oldId));
+
+      if (idx >= 0) cache[idx] = String(m.id);
+
+    }
+
+    // Update id attributes everywhere the bubble references it.
+
+    row.setAttribute('data-msg-row', String(m.id));
+
+    row.querySelectorAll('[data-msg-id="'+CSS.escape(String(oldId))+'"]').forEach(el => {
+
+      el.setAttribute('data-msg-id', String(m.id));
+
+    });
+
+    // Status icon (the clock / check / check-check on outgoing bubbles).
+
+    const statusContainer = row.querySelector('.dm-bubble-meta');
+
+    if (statusContainer && m.sender === 'me'){
+
+      const oldIcon = statusContainer.querySelector('.dm-status-icon');
+
+      if (oldIcon) oldIcon.remove();
+
+      let iconHtml = '';
+
+      if (m.status === 'failed'){
+
+        iconHtml = '<i data-lucide="alert-circle" class="dm-status-icon" style="color:var(--danger)" title="Failed to send — tap to retry"></i>';
+
+      } else if (m.status === 'pending'){
+
+        iconHtml = '<i data-lucide="clock" class="dm-status-icon dm-status-pending" title="Sending…"></i>';
+
+      } else if (m.status === 'read'){
+
+        iconHtml = '<i data-lucide="check-check" class="dm-status-icon" style="color:var(--accent)"></i>';
+
+      } else if (m.status === 'delivered'){
+
+        iconHtml = '<i data-lucide="check-check" class="dm-status-icon"></i>';
+
+      } else {
+
+        iconHtml = '<i data-lucide="check" class="dm-status-icon"></i>';
+
+      }
+
+      statusContainer.insertAdjacentHTML('beforeend', iconHtml);
+
+      // Lucide replaces the <i> with an <svg>, but only when it walks the
+
+      // tree — call createIcons so the new <i> we just inserted hydrates.
+
+      if (window.lucide && window.lucide.createIcons){
+
+        try { window.lucide.createIcons(); } catch(_){}
+
+      }
+
+    }
+
+    return true;
+
+  }
+
+  // Bulk-flip every "delivered" bubble we sent to "read" the moment the
+
+  // peer's read receipt arrives. We touch the underlying message objects
+
+  // in messages[] AND patch the icon in-DOM so the second tick lights up
+
+  // without a re-render.
+
+  function markDmThreadRead(convKey){
+
+    const arr = messages[convKey];
+
+    if (!arr || !arr.length) return;
+
+    let touched = false;
+
+    for (const m of arr){
+
+      if (m.sender === 'me' && (m.status === 'delivered' || m.status === 'sent')){
+
+        m.status = 'read';
+
+        if (convKey === currentConversation) _patchDmBubbleInPlace(convKey, m.id, m);
+
+        touched = true;
+
+      }
+
+    }
+
+    return touched;
+
+  }
+
   function _dmRenderSingleBubble(m, list, prevSender, prevDay){
 
     const conv = conversations[currentConversation];
@@ -3107,7 +3251,7 @@
 
         time: nowTime(),
 
-        day: 'TODAY',
+        day: todayDayLabel(),
 
         status: 'pending',
 
@@ -3233,13 +3377,15 @@
 
         if (idx >= 0) arr[idx] = merged; else arr.push(merged);
 
-        // The bubble's id changed from "tmp_..." to the server-issued id and
+        // Patch the existing bubble in place instead of nuking the transcript.
 
-        // its status flipped from pending to delivered. Both are in-place
+        // The id flips from tmp_... to a real number and the status icon goes
 
-        // mutations the append-only path can't see, so rebuild fresh.
+        // from clock to check, but the bubble itself stays in the DOM — no
 
-        invalidateDmCache(currentConversation);
+        // re-flow, no scroll jump, no icon flash.
+
+        _patchDmBubbleInPlace(currentConversation, tempId, merged);
 
       } catch (e) {
 
@@ -3249,13 +3395,17 @@
 
         if (idx >= 0){ arr[idx].status = 'failed'; arr[idx]._pending = false; }
 
-        invalidateDmCache(currentConversation);
+        // Same in-place patch path: flip the clock icon to the alert one
+
+        // without rebuilding everything.
+
+        const failed = arr[idx]; if (failed) _patchDmBubbleInPlace(currentConversation, tempId, failed);
 
         showToast('Send failed','warn');
 
       }
 
-      renderConversation(); renderDmList();
+      renderDmList();
 
       return;
 
@@ -3303,7 +3453,7 @@
 
     const time = nowTime();
 
-    const msg = { id:uid(), sender:'me', time, day:'TODAY', status:'delivered' };
+    const msg = { id:uid(), sender:'me', time, day:todayDayLabel(), status:'delivered' };
 
     if (dmAttachData){
 
@@ -3359,7 +3509,7 @@
 
         const replies = ["Acknowledged.","Copy that.","On it.","Got your transmission.","Stay safe.","Roger."];
 
-        const reply = { id:uid(), sender:'them', text: replies[Math.floor(Math.random()*replies.length)], time:nowTime(), day:'TODAY', status:'read' };
+        const reply = { id:uid(), sender:'them', text: replies[Math.floor(Math.random()*replies.length)], time:nowTime(), day:todayDayLabel(), status:'read' };
 
         messages[currentConversation].push(reply);
 
@@ -7043,6 +7193,12 @@
 
         break;
 
+      case 'dm:read':
+
+        _onDmRead(msg);
+
+        break;
+
       case 'channel:message':
 
         _onChannelMessage(msg);
@@ -7623,7 +7779,61 @@
 
   }
 
+  // Peer just opened the thread and read up through `upToId`. Walk our copy
+
+  // of the conversation, flip every "delivered" outgoing bubble to "read",
+
+  // and patch the status icon in-place so the second tick lights up without
+
+  // rebuilding the transcript.
+
+  function _onDmRead({ from, upToId }){
+
+    if (!from) return;
+
+    const fromKey = String(from);
+
+    // The peer key in `conversations` is keyed by handle most of the time,
+
+    // not user id, so search across every open thread for any message with
+
+    // sender 'me' that the peer has now read.
+
+    Object.keys(messages).forEach(k => {
+
+      const arr = messages[k];
+
+      if (!arr || !arr.length) return;
+
+      let touched = false;
+
+      for (const m of arr){
+
+        if (m.sender !== 'me') continue;
+
+        // upToId is the server max id at read time; tmp_ ids never made it
+
+        // there, so we leave them alone.
+
+        if (typeof m.id === 'string' && m.id.startsWith('tmp_')) continue;
+
+        if (Number(m.id) > Number(upToId || 0)) continue;
+
+        if (m.status !== 'read'){ m.status = 'read'; touched = true; if (k === currentConversation) _patchDmBubbleInPlace(k, m.id, m); }
+
+      }
+
+      if (touched && k !== currentConversation) invalidateDmCache(k);
+
+    });
+
+  }
+
   // Peer edited one of their own messages — find by id and update text.
+
+  // Patches the bubble's body in-place; full re-render is overkill and
+
+  // causes the same flash the original send/receive bug had.
 
   function _onDmEdited({ from, messageId, text }){
 
@@ -7639,17 +7849,61 @@
 
       const m = arr.find(x => String(x.id) === target);
 
-      if (m){ m.text = text || ''; m.edited = true; touched = true; invalidateDmCache(k); }
+      if (m){
+
+        m.text = text || ''; m.edited = true; touched = true;
+
+        if (k === currentConversation){
+
+          // Update the body text inside the bubble without recreating it.
+
+          const msgsEl = document.getElementById('dmMsgs');
+
+          const bubble = msgsEl && msgsEl.querySelector('[data-msg-row="'+CSS.escape(target)+'"] .dm-bubble');
+
+          if (bubble){
+
+            // Preserve forward tag + reply preview if present, only swap
+
+            // the trailing text node.
+
+            const fwd = bubble.querySelector('.dm-fwd-tag');
+
+            const reply = bubble.querySelector('.dm-reply-preview');
+
+            bubble.classList.add('edited');
+
+            // Drop everything except the preserved chips, then append text.
+
+            Array.from(bubble.childNodes).forEach(n => bubble.removeChild(n));
+
+            if (fwd) bubble.appendChild(fwd);
+
+            if (reply) bubble.appendChild(reply);
+
+            bubble.appendChild(document.createTextNode(text || ''));
+
+          } else {
+
+            // Bubble not in DOM (different scroll, virtualised, etc.): drop
+
+            // the cache so the next renderConversation rebuilds.
+
+            invalidateDmCache(k);
+
+          }
+
+        } else {
+
+          invalidateDmCache(k);
+
+        }
+
+      }
 
     });
 
-    if (touched){
-
-      if (typeof renderConversation === 'function') renderConversation();
-
-      if (typeof renderDmList === 'function') renderDmList();
-
-    }
+    if (touched && typeof renderDmList === 'function') renderDmList();
 
   }
 
@@ -7661,11 +7915,15 @@
 
     if (messageId === undefined || messageId === null) return;
 
-    // We don't get the peer's handle in the event, so search across every
+    // Patch the soft-delete in-place (replace bubble body with the standard
 
-    // open thread. Message ids are unique across the dm_messages table.
+    // "Message deleted" placeholder + remove hover actions). Falls through
+
+    // to a cache-invalidate when the bubble isn't in the DOM.
 
     const target = String(messageId);
+
+    let touched = false;
 
     Object.keys(messages).forEach(k => {
 
@@ -7673,13 +7931,49 @@
 
       const m = arr.find(x => String(x.id) === target);
 
-      if (m){ m.deleted = true; m.text = ''; invalidateDmCache(k); }
+      if (m){
+
+        m.deleted = true; m.text = ''; touched = true;
+
+        if (k === currentConversation){
+
+          const msgsEl = document.getElementById('dmMsgs');
+
+          const row = msgsEl && msgsEl.querySelector('[data-msg-row="'+CSS.escape(target)+'"]');
+
+          if (row){
+
+            const wrap = row.querySelector('.dm-bubble-wrap');
+
+            if (wrap){
+
+              wrap.innerHTML = '<div class="dm-bubble deleted" data-msg-id="'+target+'">Message deleted</div>'
+
+                + '<div class="dm-bubble-meta"><span></span></div>';
+
+            }
+
+            const acts = row.querySelector('.dm-bubble-hover-actions');
+
+            if (acts) acts.remove();
+
+          } else {
+
+            invalidateDmCache(k);
+
+          }
+
+        } else {
+
+          invalidateDmCache(k);
+
+        }
+
+      }
 
     });
 
-    if (typeof renderConversation === 'function') renderConversation();
-
-    if (typeof renderDmList === 'function') renderDmList();
+    if (touched && typeof renderDmList === 'function') renderDmList();
 
   }
 
@@ -10333,7 +10627,7 @@
 
         const tempId = 'tmp_'+uid();
 
-        const newMsg = { id:tempId, sender:'me', time, day:'TODAY', status:'pending', _pending:true, forwarded:true };
+        const newMsg = { id:tempId, sender:'me', time, day:todayDayLabel(), status:'pending', _pending:true, forwarded:true };
 
         // Build the payload we send to /api/dms; the message we drop into
 
@@ -12369,7 +12663,7 @@
 
         const tempId = 'tmp_qs_'+uid();
 
-        const optimistic = { id: tempId, sender:'me', text:cleanText, time:nowTime(), day:'TODAY', status:'pending', _pending:true };
+        const optimistic = { id: tempId, sender:'me', text:cleanText, time:nowTime(), day:todayDayLabel(), status:'pending', _pending:true };
 
         messages[k].push(optimistic);
 
