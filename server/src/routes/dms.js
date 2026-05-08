@@ -85,7 +85,7 @@ dmsRouter.get('/:peerKey', async (req, res, next) => {
         sender: r.sender_id === myId ? 'me' : 'them',
         text: r.body || '',
         time: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        day: dayKey(r.created_at),
+        day: new Date(r.created_at).toLocaleDateString().toUpperCase(),
         status: r.status,
         edited: !!r.edited,
         deleted: !!r.deleted,
@@ -119,7 +119,7 @@ dmsRouter.post('/:peerKey', async (req, res, next) => {
     );
     await q('UPDATE dm_threads SET last_msg_at = CURRENT_TIMESTAMP WHERE id = ?', [thread.id]);
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const day  = dayKey(new Date());
+    const day  = new Date().toLocaleDateString().toUpperCase();
     const responsePayload = {
       message: {
         id: result.insertId,
