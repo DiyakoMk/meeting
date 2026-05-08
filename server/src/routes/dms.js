@@ -10,6 +10,21 @@ import { sendToUser } from '../realtime/ws.js';
 export const dmsRouter = Router();
 dmsRouter.use(requireAuth);
 
+// Locale-independent day key (YYYY-MM-DD) shared with the renderer. Bubbles
+// from the same calendar day must hash to the same key so the divider only
+// renders once. The client maps "today" / "yesterday" to friendly labels
+// at render time; raw dates older than yesterday come through as the key
+// itself, which the client also pretty-prints. Keeping the math here
+// instead of `toLocaleDateString` avoids the "node prints 5/8/2026 but
+// the renderer prints 8/5/2026" drift we hit in the previous fix.
+function dayKey(d) {
+  const dt = (d instanceof Date) ? d : new Date(d);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth()+1).padStart(2,'0');
+  const dd = String(dt.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + dd;
+}
+
 // Resolve "peerKey" (a handle without the @, OR the literal "saved") into the
 // thread row used as the storage key. Creates the thread on first message.
 async function resolveThread(peerKey, me) {
@@ -70,7 +85,7 @@ dmsRouter.get('/:peerKey', async (req, res, next) => {
         sender: r.sender_id === myId ? 'me' : 'them',
         text: r.body || '',
         time: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        day: new Date(r.created_at).toLocaleDateString().toUpperCase(),
+        day: dayKey(r.created_at),
         status: r.status,
         edited: !!r.edited,
         deleted: !!r.deleted,
@@ -104,7 +119,7 @@ dmsRouter.post('/:peerKey', async (req, res, next) => {
     );
     await q('UPDATE dm_threads SET last_msg_at = CURRENT_TIMESTAMP WHERE id = ?', [thread.id]);
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const day  = new Date().toLocaleDateString().toUpperCase();
+    const day  = dayKey(new Date());
     const responsePayload = {
       message: {
         id: result.insertId,

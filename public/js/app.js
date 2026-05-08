@@ -49,17 +49,65 @@
 
   function nowTime(){ const n = new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); }
 
-  // Day label used by the day-divider in DMs. We must match the format the
+  // Day key used to bucket bubbles under a divider. We deliberately use a
 
-  // server hands us in /api/dms history responses (`X/Y/Z`-style), otherwise
+  // locale-independent ISO-ish key (YYYY-MM-DD) so a server-side render in
 
-  // a fresh optimistic bubble shows under "TODAY" and then jumps under the
+  // node never disagrees with a client-side render about whether two
 
-  // server-formatted date when the response merges in — visible to users as
+  // messages were "on the same day". The actual visible label is built
 
-  // "the chat reloads when I send".
+  // from this key by `_dayLabel()` so users still see "TODAY" /
 
-  function todayDayLabel(){ return new Date().toLocaleDateString().toUpperCase(); }
+  // "YESTERDAY" / "May 8, 2026" without breaking grouping.
+
+  function _isoDay(d){
+
+    const y = d.getFullYear();
+
+    const m = String(d.getMonth()+1).padStart(2,'0');
+
+    const dd = String(d.getDate()).padStart(2,'0');
+
+    return y + '-' + m + '-' + dd;
+
+  }
+
+  function todayDayLabel(){ return _isoDay(new Date()); }
+
+  // Translate the YYYY-MM-DD bucket key into the friendly text the divider
+
+  // shows. Today / yesterday get the relative label so the chat doesn't
+
+  // shout the literal date for messages from a few minutes ago.
+
+  function _dayLabel(key){
+
+    if (!key) return '';
+
+    if (key === _isoDay(new Date())) return 'TODAY';
+
+    const y = new Date();
+
+    y.setDate(y.getDate() - 1);
+
+    if (key === _isoDay(y)) return 'YESTERDAY';
+
+    // Older days: human-readable date in the user's locale.
+
+    const parts = key.split('-');
+
+    if (parts.length === 3){
+
+      const dt = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
+
+      return dt.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' }).toUpperCase();
+
+    }
+
+    return String(key).toUpperCase();
+
+  }
 
   // Promise-based in-app replacement for window.confirm.
 
@@ -2177,7 +2225,7 @@
 
     if (m.day && m.day !== prevDay){
 
-      html += '<div class="dm-day-divider"><span>'+m.day+'</span></div>';
+      html += '<div class="dm-day-divider"><span>'+escapeHtml(_dayLabel(m.day))+'</span></div>';
 
     }
 
@@ -2459,7 +2507,7 @@
 
       if (m.day && m.day !== lastDay){
 
-        html += '<div class="dm-day-divider"><span>'+m.day+'</span></div>';
+        html += '<div class="dm-day-divider"><span>'+escapeHtml(_dayLabel(m.day))+'</span></div>';
 
         lastDay = m.day;
 
@@ -3369,7 +3417,21 @@
 
         }
 
-        const merged = { ...arr[idx], ...r.message, status: 'delivered', _pending: false };
+        // Server returns the message with status='sent' — that's the canonical
+
+        // "the message is in the database" state. We deliberately do NOT bump
+
+        // it to 'delivered' here: a single tick means stored, two ticks mean
+
+        // the peer's WS delivered the row, two ticks coloured means they read
+
+        // it. Forging delivered/read locally is exactly what made the bubble
+
+        // show two ticks before the peer had even opened the thread.
+
+        const merged = { ...arr[idx], ...r.message, _pending: false };
+
+        if (!merged.status) merged.status = 'sent';
 
         if (hasImage){ merged.type = 'image'; merged.src = serverImageSrc; if (text) merged.caption = text; }
 
