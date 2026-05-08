@@ -12751,6 +12751,32 @@
 
   // Add Friend
 
+  // Pressing Enter inside the dialog input should fire SEND REQUEST too.
+
+  document.getElementById('addFriendInput').addEventListener('keydown', e => {
+
+    if (e.key === 'Enter' && !e.shiftKey){
+
+      e.preventDefault();
+
+      document.getElementById('addFriendSend').click();
+
+    }
+
+  });
+
+  // Click outside the dialog to close it (consistent with the other modals).
+
+  document.getElementById('addFriendBackdrop').addEventListener('mousedown', e => {
+
+    if (e.target.id === 'addFriendBackdrop'){
+
+      e.target.classList.remove('show');
+
+    }
+
+  });
+
   document.getElementById('addFriendSend').addEventListener('click', async () => {
 
     const raw = document.getElementById('addFriendInput').value.trim();
