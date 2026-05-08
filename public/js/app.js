@@ -12145,13 +12145,39 @@
 
   }
 
-  document.querySelectorAll('.settings-side-item').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.settings-side-item').forEach(t => t.addEventListener('click', async () => {
 
     if (t.dataset.stAction === 'voice'){ openVoiceSettings(); return; }
+
+    if (t.dataset.stAction === 'change-server'){
+
+      // Only available inside the desktop shell — preload exposes the API.
+
+      if (window.orblood && typeof window.orblood.resetBackend === 'function'){
+
+        const ok = await appConfirm('Disconnect from this server and pick a different one? You\'ll need to sign in again.', { title: 'CHANGE SERVER', confirmLabel: 'CHANGE', danger: true });
+
+        if (ok) await window.orblood.resetBackend();
+
+      }
+
+      return;
+
+    }
 
     setSettingsTab(t.dataset.stTab);
 
   }));
+
+  // Reveal desktop-only entries when running inside Electron.
+
+  if (window.orblood && window.orblood.isDesktop){
+
+    const cs = document.getElementById('settingsChangeServer');
+
+    if (cs) cs.style.display = '';
+
+  }
 
   // Theme switcher: paint the active card and persist the chosen theme to
 
