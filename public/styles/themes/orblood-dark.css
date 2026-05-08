@@ -41,4 +41,28 @@
       rgba(185, 28, 74, 0.05),
       transparent 50%),
     var(--bg);
+
+  /* Surface "tint" tokens — replace the hardcoded rgba(255,255,255,X)
+   * the original CSS used everywhere for hovers, borders, dividers, and
+   * inset highlights. The marble theme remaps these to ink-on-cream so
+   * the same structural CSS produces the right look on a light canvas
+   * without per-element overrides. */
+  --tint-1:      rgba(255,255,255,0.02);
+  --tint-2:      rgba(255,255,255,0.04);
+  --tint-3:      rgba(255,255,255,0.06);
+  --tint-4:      rgba(255,255,255,0.08);
+  --tint-5:      rgba(255,255,255,0.10);
+  --tint-6:      rgba(255,255,255,0.15);
+  --tint-7:      rgba(255,255,255,0.20);
+  --tint-9:      rgba(255,255,255,0.30);
+  --tint-strong: rgba(255,255,255,0.55);
+
+  --border-1:  rgba(255,255,255,0.04);
+  --border-2:  rgba(255,255,255,0.06);
+  --border-3:  rgba(255,255,255,0.08);
+  --border-4:  rgba(255,255,255,0.10);
+  --border-5:  rgba(255,255,255,0.12);
+
+  --shadow-soft:   0 12px 36px rgba(0,0,0,0.55);
+  --shadow-strong: 0 20px 40px rgba(0,0,0,0.4);
 }

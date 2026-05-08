@@ -5773,7 +5773,7 @@
 
   // Helpers to render the user's own avatar consistently everywhere.
 
-  function selfAvStyle(){ return selfProfile.avImage ? '#0a070f url('+selfProfile.avImage+') center/cover no-repeat' : (selfProfile.avColor||'linear-gradient(135deg,#22c55e,#15803d)'); }
+  function selfAvStyle(){ return selfProfile.avImage ? 'transparent url('+selfProfile.avImage+') center/cover no-repeat' : (selfProfile.avColor||'linear-gradient(135deg,#22c55e,#15803d)'); }
 
   function selfAvInner(){ return selfProfile.avImage ? '' : (selfProfile.initial||'C'); }
 
@@ -5817,7 +5817,7 @@
 
     if (c){
 
-      if (c.avImage) return { bg:'#0a070f url('+c.avImage+') center/cover no-repeat', text:'', isImage:true };
+      if (c.avImage) return { bg:'transparent url('+c.avImage+') center/cover no-repeat', text:'', isImage:true };
 
       return { bg:c.avColor||c.orbGrad||'linear-gradient(135deg,#a78bfa,#1e1b4b)', text:(c.initial||c.name||'?').charAt(0).toUpperCase(), isImage:false };
 
@@ -5835,7 +5835,7 @@
 
       if (md){
 
-        if (md.avImage) return { bg:'#0a070f url('+md.avImage+') center/cover no-repeat', text:'', isImage:true };
+        if (md.avImage) return { bg:'transparent url('+md.avImage+') center/cover no-repeat', text:'', isImage:true };
 
         if (md.baseColor){
 
@@ -8491,7 +8491,7 @@
 
       if (selfProfile.avImage){
 
-        orb.style.background = '#0a070f url('+selfProfile.avImage+') center/cover no-repeat';
+        orb.style.background = 'transparent url('+selfProfile.avImage+') center/cover no-repeat';
 
         lett.textContent = '';
 
@@ -8507,7 +8507,7 @@
 
       cover.style.background = selfProfile.bannerImage
 
-        ? '#0a070f url('+selfProfile.bannerImage+') center/cover no-repeat'
+        ? 'transparent url('+selfProfile.bannerImage+') center/cover no-repeat'
 
         : '';
 
@@ -8627,7 +8627,7 @@
 
       core.textContent = '';
 
-      core.style.background = '#0a070f url('+data.avImage+') center/cover no-repeat';
+      core.style.background = 'transparent url('+data.avImage+') center/cover no-repeat';
 
     } else {
 
@@ -8695,7 +8695,7 @@
 
     if (data.bannerImage){
 
-      banner.style.background = 'linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(2,1,3,0.85)) , #0a070f url('+data.bannerImage+') center/cover no-repeat';
+      banner.style.background = 'linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(2,1,3,0.85)) , transparent url('+data.bannerImage+') center/cover no-repeat';
 
     } else {
 
@@ -8785,7 +8785,7 @@
 
       avPrev.textContent = '';
 
-      avPrev.style.background = '#0a070f url('+data.avImage+') center/cover no-repeat';
+      avPrev.style.background = 'transparent url('+data.avImage+') center/cover no-repeat';
 
     } else {
 
@@ -8847,7 +8847,7 @@
 
     const av = c.avImage
 
-      ? '<div class="fp-av'+(c.online?'':' offline')+'" style="background:#0a070f url('+c.avImage+') center/cover no-repeat"><span class="fp-status"></span></div>'
+      ? '<div class="fp-av'+(c.online?'':' offline')+'" style="background:transparent url('+c.avImage+') center/cover no-repeat"><span class="fp-status"></span></div>'
 
       : '<div class="fp-av'+(c.online?'':' offline')+'" style="background:'+(c.avColor||'linear-gradient(135deg,#818cf8,#1e1b4b)')+'"><span>'+(c.initial||'?')+'</span><span class="fp-status"></span></div>';
 
@@ -9309,7 +9309,7 @@
 
       emblem.textContent = '';
 
-      emblem.style.background = '#0a070f url('+card.emblem+') center/cover no-repeat';
+      emblem.style.background = 'transparent url('+card.emblem+') center/cover no-repeat';
 
       emblem.style.boxShadow = '0 4px 18px rgba(0,0,0,0.45)';
 
@@ -9379,7 +9379,7 @@
 
     const emblem = card.serverEmblem
 
-      ? '<div class="sc-emblem" style="width:34px;height:34px;font-size:0.85rem;background:#0a070f url('+card.serverEmblem+') center/cover no-repeat"></div>'
+      ? '<div class="sc-emblem" style="width:34px;height:34px;font-size:0.85rem;background:transparent url('+card.serverEmblem+') center/cover no-repeat"></div>'
 
       : '<div class="sc-emblem" style="width:34px;height:34px;font-size:0.85rem;background:'+card.serverGrad+';box-shadow:0 0 10px '+card.serverGlow+'">'+escapeHtml(card.serverInitial||'?')+'</div>';
 
@@ -9413,7 +9413,7 @@
 
     const emblem = card.emblem
 
-      ? '<div class="sc-emblem" style="background:#0a070f url('+card.emblem+') center/cover no-repeat"></div>'
+      ? '<div class="sc-emblem" style="background:transparent url('+card.emblem+') center/cover no-repeat"></div>'
 
       : '<div class="sc-emblem" style="background:'+card.grad+';box-shadow:0 0 14px '+card.glow+'">'+escapeHtml(card.initial||'?')+'</div>';
 
@@ -9547,7 +9547,7 @@
 
     const av = card.avImage
 
-      ? '<div class="sc-emblem" style="background:#0a070f url('+card.avImage+') center/cover no-repeat"></div>'
+      ? '<div class="sc-emblem" style="background:transparent url('+card.avImage+') center/cover no-repeat"></div>'
 
       : '<div class="sc-emblem" style="background:'+card.avColor+'">'+escapeHtml(card.initial||'?')+'</div>';
 
@@ -9701,7 +9701,7 @@
 
         const emblem = srv.emblemImage
 
-          ? '<div class="fwd-item-srv" style="background:#0a070f url('+srv.emblemImage+') center/cover no-repeat"></div>'
+          ? '<div class="fwd-item-srv" style="background:transparent url('+srv.emblemImage+') center/cover no-repeat"></div>'
 
           : '<div class="fwd-item-srv" style="background:'+srv.grad+'">'+escapeHtml(srv.initial||'?')+'</div>';
 
@@ -11221,7 +11221,7 @@
 
     const prev = document.getElementById('coverPreview');
 
-    const embStyle = emb ? 'background:#0a070f url('+emb+') center/cover no-repeat' : ('background:'+grad);
+    const embStyle = emb ? 'background:transparent url('+emb+') center/cover no-repeat' : ('background:'+grad);
 
     prev.innerHTML = '<div class="cv-prev-banner" style="--srv-banner-c1:'+bC1+';--srv-banner-c2:'+bC2+'">'+
 
@@ -12771,7 +12771,7 @@
 
     if (selfProfile.bannerImage){
 
-      prev.style.background = '#0a070f url('+selfProfile.bannerImage+') center/cover no-repeat';
+      prev.style.background = 'transparent url('+selfProfile.bannerImage+') center/cover no-repeat';
 
     } else {
 
@@ -12793,7 +12793,7 @@
 
       avPrev.textContent = '';
 
-      avPrev.style.background = '#0a070f url('+selfProfile.avImage+') center/cover no-repeat';
+      avPrev.style.background = 'transparent url('+selfProfile.avImage+') center/cover no-repeat';
 
     } else {
 
