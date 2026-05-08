@@ -103,7 +103,8 @@ dmsRouter.post('/:peerKey', async (req, res, next) => {
         sender: 'me',
         text: body.text || '',
         time, day,
-        status: 'sent'
+        status: 'sent',
+        payload: body.payload || null
       }
     };
     res.status(201).json(responsePayload);
@@ -114,6 +115,7 @@ dmsRouter.post('/:peerKey', async (req, res, next) => {
         sender: 'them',
         text: body.text || '',
         time, day,
+        payload: body.payload || null,
         peerHandle: req.user.handle ? '@' + req.user.handle : null,
         peerName: req.user.name
       });

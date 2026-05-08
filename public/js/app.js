@@ -511,7 +511,11 @@
 
   // Marked orbs and the currently-connected orb still take precedence.
 
-  let lastJoinedChannel = null;
+  let lastJoinedChannel = (function(){
+
+    try { return localStorage.getItem('orblood:lastJoined') || null; } catch(_){ return null; }
+
+  })();
 
   // ============== ORB CAROUSEL ==============
 
@@ -1233,6 +1237,8 @@
 
     lastJoinedChannel = ch;
 
+    try { localStorage.setItem('orblood:lastJoined', ch); } catch(_){}
+
     // The joined channel must show up in the ORBITS carousel.
 
     // getAllChannels() always includes the connected channel, so we just rebuild
@@ -1677,7 +1683,15 @@
 
         // stay in place until the matching real id replaces them via sendDM.
 
-        r.messages.forEach(srv => byId.set(String(srv.id), { ...srv }));
+        r.messages.forEach(srv => {
+
+          const copy = { ...srv };
+
+          _expandChannelMessage(copy);
+
+          byId.set(String(srv.id), copy);
+
+        });
 
         local.forEach(loc => {
 
@@ -1993,11 +2007,29 @@
 
     });
 
+    // Preserve scroll position across re-renders so receiving / sending a
+
+    // message doesn't snap the viewport (the visible "glitch") unless the
+
+    // user was already at the bottom. nearBottom uses a 60px tolerance.
+
+    const wasNearBottom = (msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight) < 60;
+
+    const prevScroll = msgsEl.scrollTop;
+
     msgsEl.innerHTML = html;
 
     refreshIcons();
 
-    requestAnimationFrame(()=>{ msgsEl.scrollTop = msgsEl.scrollHeight; });
+    if (wasNearBottom){
+
+      requestAnimationFrame(()=>{ msgsEl.scrollTop = msgsEl.scrollHeight; });
+
+    } else {
+
+      msgsEl.scrollTop = prevScroll;
+
+    }
 
   }
 
@@ -4727,7 +4759,27 @@
 
   // ============== MEMBERS SIDEBAR (toggleable) ==============
 
-  function toggleMembers(){ membersOpen = !membersOpen; document.getElementById('membersSidebar').classList.toggle('open', membersOpen); document.getElementById('worldMembersToggle').classList.toggle('active', membersOpen); if (membersOpen) renderMembers(); }
+  function toggleMembers(){
+
+    const side = document.getElementById('membersSidebar');
+
+    // Read DOM truth so a stuck JS flag doesn't leave the toggle inverted
+
+    // after any code path moved the panel without going through us.
+
+    const isOpenNow = !!(side && side.classList.contains('open'));
+
+    membersOpen = !isOpenNow;
+
+    if (side) side.classList.toggle('open', membersOpen);
+
+    const btn = document.getElementById('worldMembersToggle');
+
+    if (btn) btn.classList.toggle('active', membersOpen);
+
+    if (membersOpen) renderMembers();
+
+  }
 
   function renderMembers(){
 
@@ -4995,35 +5047,75 @@
 
       items.push({ sep:true });
 
-      items.push({ icon:'user-x', label:'Remove from server', danger:true, action: async ()=>{
+      // Disconnect this user from the voice channel only (they stay in the server).
 
-        const md = (ownerSrv.memberDetails || []).find(m => m.name === userName);
+      if (memberHasPerm(ownerSrv, selfProfile.name, 'kickFromVoice')){
 
-        if (!md){ showToast('Cannot resolve member id','warn'); return; }
+        items.push({ icon:'phone-off', label:'Kick from voice', action: async ()=>{
 
-        if (backend.isConfigured()){
+          const md = (ownerSrv.memberDetails || []).find(m => m.name === userName);
 
-          const r = await backend.servers.kickMember(ownerSrv.id, md.id);
+          if (!md){ showToast('Cannot resolve member id','warn'); return; }
 
-          if (r.error){ showToast('Could not remove: '+r.error,'warn'); return; }
+          if (backend.isConfigured()){
 
-          if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+            const r = await backend.servers.voiceKick(ownerSrv.id, channelKey, md.id);
 
-        }
+            if (r && r.error){ showToast('Could not kick: '+r.error,'warn'); return; }
 
-        if (channelData[channelKey]){
+            if (r && r.offline){ showToast('Cannot reach the server','warn'); return; }
 
-          channelData[channelKey].users = channelData[channelKey].users.filter(u => u !== userName);
+          }
 
-        }
+          if (channelData[channelKey]){
 
-        showToast(userName+' removed from '+ownerSrv.name,'warn');
+            channelData[channelKey].users = channelData[channelKey].users.filter(u => u !== userName);
 
-        updateOrbStates();
+          }
 
-        renderVoiceUsers();
+          showToast(userName+' kicked from voice','warn');
 
-      }});
+          updateOrbStates();
+
+          renderVoiceUsers();
+
+        }});
+
+      }
+
+      if (memberHasPerm(ownerSrv, selfProfile.name, 'kickFromServer')){
+
+        items.push({ icon:'user-x', label:'Remove from server', danger:true, action: async ()=>{
+
+          const md = (ownerSrv.memberDetails || []).find(m => m.name === userName);
+
+          if (!md){ showToast('Cannot resolve member id','warn'); return; }
+
+          if (backend.isConfigured()){
+
+            const r = await backend.servers.kickMember(ownerSrv.id, md.id);
+
+            if (r.error){ showToast('Could not remove: '+r.error,'warn'); return; }
+
+            if (r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+          }
+
+          if (channelData[channelKey]){
+
+            channelData[channelKey].users = channelData[channelKey].users.filter(u => u !== userName);
+
+          }
+
+          showToast(userName+' removed from '+ownerSrv.name,'warn');
+
+          updateOrbStates();
+
+          renderVoiceUsers();
+
+        }});
+
+      }
 
     }
 
@@ -5645,6 +5737,8 @@
 
       voiceLeave: (sid, c) => _apiRequest('POST', '/channels/voice/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/leave'),
 
+      voiceKick:  (sid, c, userId) => _apiRequest('POST', '/channels/voice/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/kick', { userId }),
+
       listChannelMessages: (sid, c)         => _apiRequest('GET',  '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/messages'),
 
       sendChannelMessage:  (sid, c, payload) => _apiRequest('POST', '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/messages', payload),
@@ -6032,6 +6126,12 @@
       case 'voice:leave':
 
         _onVoiceMembership(msg);
+
+        break;
+
+      case 'voice:kicked':
+
+        _onVoiceKicked(msg);
 
         break;
 
@@ -6523,7 +6623,7 @@
 
     if (!messages[k]) messages[k] = [];
 
-    messages[k].push({
+    const incoming = {
 
       id: message.id,
 
@@ -6533,9 +6633,15 @@
 
       time: message.time, day: message.day,
 
-      status: 'delivered'
+      status: 'delivered',
 
-    });
+      payload: message.payload || null
+
+    };
+
+    _expandChannelMessage(incoming); // share the expander used for text channels
+
+    messages[k].push(incoming);
 
     if (currentConversation !== k){
 
@@ -6549,7 +6655,23 @@
 
     if (currentConversation === k && typeof renderConversation === 'function') renderConversation();
 
+    if (typeof renderMarkedPanel === 'function') renderMarkedPanel();
+
     if (typeof updateBadges === 'function') updateBadges();
+
+    // Toast notification when the user isn't viewing this conversation —
+
+    // mirrors WhatsApp's "X sent a message" pulse so they don't miss it.
+
+    if (currentConversation !== k){
+
+      const senderName = (conversations[k] && conversations[k].name) || k;
+
+      const preview = (message.text || '').slice(0, 60);
+
+      showToast(senderName + (preview ? ': ' + preview : ' sent a message'), 'success');
+
+    }
 
     _playNotifSound();
 
@@ -6730,6 +6852,44 @@
       }
 
     }
+
+  }
+
+  // The admin / mod kicked us out of a voice channel — tear down our local
+
+  // call so the WebRTC peer connections close, the orb shows us as gone, and
+
+  // the user gets a heads-up. The peers see this as a regular voice:leave.
+
+  function _onVoiceKicked({ serverId, channelId }){
+
+    const wasInThisCall = inVoice && connectedChannel === channelId;
+
+    showToast('You were kicked from the voice channel', 'warn');
+
+    if (wasInThisCall && typeof endVoiceCall === 'function'){
+
+      try { endVoiceCall(); } catch(_){}
+
+    }
+
+    // Drop our name from the local channelData snapshot too so the orb
+
+    // updates immediately even before the voice:leave fan-out arrives.
+
+    if (channelData[channelId] && Array.isArray(channelData[channelId].users)){
+
+      channelData[channelId].users = channelData[channelId].users.filter(u => u !== selfProfile.name);
+
+    }
+
+    if (typeof updateOrbStates === 'function') updateOrbStates();
+
+    if (typeof renderOrbSlides === 'function') renderOrbSlides();
+
+    if (typeof renderServerOverview === 'function' && currentServer === serverId) renderServerOverview();
+
+    if (typeof renderVoiceUsers === 'function' && voiceUsersSidebarOpen) renderVoiceUsers();
 
   }
 
@@ -8897,7 +9057,17 @@
 
         const time = nowTime();
 
-        const newMsg = { id:uid(), sender:'me', time, day:'TODAY', status:'delivered', forwarded:true };
+        const tempId = 'tmp_'+uid();
+
+        const newMsg = { id:tempId, sender:'me', time, day:'TODAY', status:'pending', _pending:true, forwarded:true };
+
+        // Build the payload we send to /api/dms; the message we drop into
+
+        // local state mirrors that payload so the bubble looks identical
+
+        // before and after the server confirms.
+
+        let payload = null;
 
         if (src.type==='serverCard'){
 
@@ -8905,11 +9075,15 @@
 
           newMsg.serverCard = { id:src.serverId, name:src.serverName, desc:src.serverDesc, emblem:src.serverEmblem, cover:src.serverCover, grad:src.serverGrad, glow:src.serverGlow, initial:src.serverInitial, invite:src.serverInvite, members:src.serverMembers, isPrivate:!!src.serverPrivate };
 
+          payload = { type:'serverCard', forwarded:true, serverCard:newMsg.serverCard };
+
         } else if (src.type==='channelCard'){
 
           newMsg.type = 'channelCard';
 
           newMsg.channelCard = { kind:src.kind, serverId:src.serverId, serverName:src.serverName, serverEmblem:src.serverEmblem, serverGrad:src.serverGrad, serverGlow:src.serverGlow, serverInitial:src.serverInitial, channelId:src.channelId, channelName:src.channelName, channelStyle:src.channelStyle, channelMembers:src.channelMembers };
+
+          payload = { type:'channelCard', forwarded:true, channelCard:newMsg.channelCard };
 
         } else if (src.type==='userCard'){
 
@@ -8917,13 +9091,73 @@
 
           newMsg.userCard = { userKey:src.userKey, name:src.name, handle:src.handle, initial:src.initial, avColor:src.avColor, avImage:src.avImage, bio:src.bio };
 
-        } else if (src.type==='image'){ newMsg.type='image'; newMsg.src=src.src; if (src.text||src.caption) newMsg.caption = src.text||src.caption; }
+          payload = { type:'userCard', forwarded:true, userCard:newMsg.userCard };
 
-        else newMsg.text = src.text || '';
+        } else if (src.type==='image'){
+
+          newMsg.type='image'; newMsg.src=src.src; if (src.text||src.caption) newMsg.caption = src.text||src.caption;
+
+          payload = { type:'image', forwarded:true, src:src.src, caption: src.text||src.caption||'' };
+
+        } else {
+
+          newMsg.text = src.text || '';
+
+        }
 
         messages[k].push(newMsg);
 
         bumpDmList(k);
+
+        // Persist to the backend so the peer sees it (via dm:new) and the
+
+        // bubble survives a refresh on both sides.
+
+        if (backend.isConfigured() && k !== 'saved'){
+
+          const peerKey = k;
+
+          backend.dms.send(peerKey, { text: newMsg.text || src.text || '', payload }).then(r => {
+
+            const arr = messages[k] || [];
+
+            const idx = arr.findIndex(x => x.id === tempId);
+
+            if (r && r.message && idx >= 0){
+
+              const merged = { ...arr[idx], ...r.message, status:'delivered', _pending:false };
+
+              merged.id = r.message.id;
+
+              arr[idx] = merged;
+
+              if (currentConversation === k && typeof renderConversation === 'function') renderConversation();
+
+            } else if (r && r.error && idx >= 0){
+
+              arr[idx].status = 'failed'; arr[idx]._pending = false;
+
+              if (currentConversation === k && typeof renderConversation === 'function') renderConversation();
+
+            }
+
+          }).catch(()=>{
+
+            const arr = messages[k] || [];
+
+            const idx = arr.findIndex(x => x.id === tempId);
+
+            if (idx >= 0){ arr[idx].status = 'failed'; arr[idx]._pending = false; }
+
+            if (currentConversation === k && typeof renderConversation === 'function') renderConversation();
+
+          });
+
+        } else if (k === 'saved' && backend.isConfigured()){
+
+          backend.dms.send('saved', { text: newMsg.text || src.text || '', payload }).catch(()=>{});
+
+        }
 
       } else if (target.startsWith('tc:')){
 

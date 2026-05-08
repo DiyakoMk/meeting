@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { pool, q, one } from '../db.js';
 import { requireAuth } from '../auth/middleware.js';
 import { uid, inviteKey } from '../lib/ids.js';
-import { requireMember, requireAdmin, isAdmin as isAdminOf } from '../lib/access.js';
+import { requireMember, requireAdmin, requirePermission, isAdmin as isAdminOf } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
 import { emitServerMemberJoined, emitServerMemberLeft, emitServerPinChanged, emitServerCategoryAdded, emitServerCategoryDeleted, emitServerUpdated, emitServerDeleted, emitToUser } from '../realtime/events.js';
 
@@ -157,7 +157,7 @@ serversRouter.get('/lookup/:key', async (req, res, next) => {
 serversRouter.patch('/:id', async (req, res, next) => {
   try {
     const sid = req.params.id;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageServer")) return;
     const body = parseOr400(patchServerSchema, req.body, res); if (!body) return;
     const map = {
       name: 'name', desc: 'description', baseColor: 'base_color',
@@ -249,7 +249,7 @@ serversRouter.post('/:keyOrId/join', async (req, res, next) => {
 serversRouter.post('/:id/categories', async (req, res, next) => {
   try {
     const sid = req.params.id;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageCategory")) return;
     const body = parseOr400(categorySchema, req.body, res); if (!body) return;
     const cid = uid();
     await q(
@@ -265,7 +265,7 @@ serversRouter.post('/:id/categories', async (req, res, next) => {
 serversRouter.delete('/:id/categories/:cid', async (req, res, next) => {
   try {
     const sid = req.params.id;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageCategory")) return;
     await q('DELETE FROM server_categories WHERE id = ? AND server_id = ?', [req.params.cid, sid]);
     res.json({ ok: true });
     emitServerCategoryDeleted(sid, req.params.cid);
@@ -313,7 +313,7 @@ const categoryPatchSchema = z.object({
 serversRouter.patch('/:id/categories/:cid', async (req, res, next) => {
   try {
     const sid = req.params.id;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageCategory")) return;
     const body = parseOr400(categoryPatchSchema, req.body, res); if (!body) return;
     const sets = [], args = [];
     if (body.name !== undefined) { sets.push('name = ?'); args.push(body.name); }
@@ -336,7 +336,7 @@ const reorderSchema = z.object({ order: z.array(z.string().min(1).max(40)).max(2
 serversRouter.patch('/:id/categories/order', async (req, res, next) => {
   try {
     const sid = req.params.id;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageCategory")) return;
     const body = parseOr400(reorderSchema, req.body, res); if (!body) return;
     for (let i = 0; i < body.order.length; i++) {
       await q('UPDATE server_categories SET position = ? WHERE id = ? AND server_id = ?', [i+1, body.order[i], sid]);
@@ -370,7 +370,7 @@ const rolePayloadSchema = z.object({
 serversRouter.put('/:id/roles', async (req, res, next) => {
   try {
     const sid = req.params.id;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageRoles")) return;
     const body = parseOr400(rolePayloadSchema, req.body, res); if (!body) return;
     // Map member display names to user ids in one round trip.
     const allNames = Array.from(new Set(body.roles.flatMap(r => r.members || [])));
@@ -419,7 +419,7 @@ const kickSchema = z.object({ userId: z.union([z.string(), z.number()]) });
 serversRouter.post('/:id/kick', async (req, res, next) => {
   try {
     const sid = req.params.id;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "kickFromServer")) return;
     const body = parseOr400(kickSchema, req.body, res); if (!body) return;
     const targetId = String(body.userId);
     if (String(req.user.id) === targetId) return res.status(400).json({ error: 'cannot_kick_self' });

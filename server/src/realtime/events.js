@@ -126,3 +126,10 @@ export function emitDmCleared(senderUid, peerUid) {
 export function emitFriendRemoved(toUid, peerUid, peerHandle) {
   sendToUser(toUid, { type: 'friend:removed', peerId: String(peerUid), peerHandle: peerHandle || null });
 }
+
+// "you were kicked from this voice channel" — the kicked user's client
+// drops their voice connection and the rest of the server sees it as a
+// regular voice:leave (also emitted alongside).
+export function emitVoiceKicked(toUid, serverId, channelId) {
+  sendToUser(toUid, { type: 'voice:kicked', serverId, channelId });
+}

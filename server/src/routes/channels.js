@@ -3,12 +3,12 @@ import { z } from 'zod';
 import { q, one } from '../db.js';
 import { requireAuth } from '../auth/middleware.js';
 import { uid } from '../lib/ids.js';
-import { requireMember, requireAdmin } from '../lib/access.js';
+import { requireMember, requireAdmin, requirePermission } from '../lib/access.js';
 import { parseOr400 } from '../validators.js';
 import {
   emitChannelMessage, emitVoiceJoin, emitVoiceLeave,
   emitChannelMessageDeleted, emitServerChannelAdded, emitServerChannelDeleted,
-  emitServerUpdated, emitChannelMessagePinned
+  emitServerUpdated, emitChannelMessagePinned, emitVoiceKicked
 } from '../realtime/events.js';
 
 export const channelsRouter = Router();
@@ -28,7 +28,7 @@ const channelSchema = z.object({
 channelsRouter.post('/text/:sid', async (req, res, next) => {
   try {
     const sid = req.params.sid;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageTextCh")) return;
     const body = parseOr400(channelSchema, req.body, res); if (!body) return;
     const cid = uid();
     await q(
@@ -45,7 +45,7 @@ channelsRouter.post('/text/:sid', async (req, res, next) => {
 channelsRouter.delete('/text/:sid/:cid', async (req, res, next) => {
   try {
     const sid = req.params.sid;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageTextCh")) return;
     await q('DELETE FROM text_channels WHERE id = ? AND server_id = ?', [req.params.cid, sid]);
     res.json({ ok: true });
     emitServerChannelDeleted(sid, 'text', req.params.cid);
@@ -56,7 +56,7 @@ channelsRouter.delete('/text/:sid/:cid', async (req, res, next) => {
 channelsRouter.post('/voice/:sid', async (req, res, next) => {
   try {
     const sid = req.params.sid;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageVoiceCh")) return;
     const body = parseOr400(channelSchema, req.body, res); if (!body) return;
     const cid = uid();
     await q(
@@ -73,7 +73,7 @@ channelsRouter.post('/voice/:sid', async (req, res, next) => {
 channelsRouter.delete('/voice/:sid/:cid', async (req, res, next) => {
   try {
     const sid = req.params.sid;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageVoiceCh")) return;
     await q('DELETE FROM voice_channels WHERE id = ? AND server_id = ?', [req.params.cid, sid]);
     res.json({ ok: true });
     emitServerChannelDeleted(sid, 'voice', req.params.cid);
@@ -117,6 +117,28 @@ channelsRouter.post('/voice/:sid/:cid/leave', async (req, res, next) => {
 });
 
 // Text-channel messages -----------------------------------------------------
+// Kick another user out of a voice channel. Requires kickFromVoice.
+const voiceKickSchema = z.object({ userId: z.union([z.string(), z.number()]) });
+channelsRouter.post('/voice/:sid/:cid/kick', async (req, res, next) => {
+  try {
+    const { sid, cid } = req.params;
+    if (!await requirePermission(req, res, sid, 'kickFromVoice')) return;
+    const body = parseOr400(voiceKickSchema, req.body, res); if (!body) return;
+    const targetId = String(body.userId);
+    if (String(req.user.id) === targetId) return res.status(400).json({ error: 'cannot_kick_self' });
+    const targetUser = await one('SELECT * FROM users WHERE id = ?', [targetId]);
+    if (!targetUser) return res.status(404).json({ error: 'target_not_found' });
+    await q('DELETE FROM voice_channel_members WHERE channel_id = ? AND user_id = ?', [cid, targetId]);
+    const members = await q(
+      `SELECT u.name FROM voice_channel_members vm JOIN users u ON u.id = vm.user_id WHERE vm.channel_id = ?`,
+      [cid]);
+    const names = members.map(m => m.name);
+    res.json({ ok: true });
+    emitVoiceKicked(targetId, sid, cid);
+    emitVoiceLeave(sid, cid, targetUser.name, names);
+  } catch (e) { next(e); }
+});
+
 
 const textMessageSchema = z.object({
   text:    z.string().max(4000).optional(),
@@ -196,7 +218,7 @@ const channelPatchSchema = z.object({
 channelsRouter.patch('/text/:sid/:cid', async (req, res, next) => {
   try {
     const sid = req.params.sid;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageTextCh")) return;
     const body = parseOr400(channelPatchSchema, req.body, res); if (!body) return;
     const sets = [], args = [];
     if (body.name  !== undefined) { sets.push('name = ?');  args.push(body.name); }
@@ -213,7 +235,7 @@ channelsRouter.patch('/text/:sid/:cid', async (req, res, next) => {
 channelsRouter.patch('/voice/:sid/:cid', async (req, res, next) => {
   try {
     const sid = req.params.sid;
-    if (!await requireAdmin(req, res, sid)) return;
+    if (!await requirePermission(req, res, sid, "manageVoiceCh")) return;
     const body = parseOr400(channelPatchSchema, req.body, res); if (!body) return;
     const sets = [], args = [];
     if (body.name  !== undefined) { sets.push('name = ?');  args.push(body.name); }
@@ -233,10 +255,7 @@ const channelPinSchema = z.object({ messageId: z.union([z.number(), z.string()])
 channelsRouter.post('/text/:sid/:cid/pin', async (req, res, next) => {
   try {
     const sid = req.params.sid, cid = req.params.cid;
-    const m = await requireMember(req, res, sid); if (!m) return;
-    // managePins comes from roles in the frontend, but at the API layer we
-    // gate on admin to stay safe until role storage is hooked up.
-    if (!m.is_admin) return res.status(403).json({ error: 'forbidden' });
+    const m = await requirePermission(req, res, sid, "managePins"); if (!m) return;
     const body = parseOr400(channelPinSchema, req.body, res); if (!body) return;
     let pinnedMsg = null, pinnedBy = null, pinnedMsgId = null;
     if (body.messageId) {
