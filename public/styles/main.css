@@ -3047,3 +3047,13 @@ button.is-loading::before{
 /* When both ::before spinner and ::after dots are defined, the spinner wins.
    Drop the dots so we don't double-render. */
 button.is-loading::after{display:none}
+
+/* Theme picker (Settings → Appearance) */
+.theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.theme-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--gb);background:var(--glass);cursor:pointer;transition:border-color 0.15s,background 0.15s;text-align:left}
+.theme-card:hover{border-color:var(--accent)}
+.theme-card.active{border-color:var(--accent);background:rgba(185,28,74,0.06)}
+.theme-card-swatch{display:inline-block;width:46px;height:46px;border-radius:10px;border:1px solid var(--gb);flex-shrink:0}
+.theme-card-meta{display:flex;flex-direction:column;gap:3px}
+.theme-card-name{font-family:'Inter','Vazirmatn',sans-serif;font-size:0.78rem;font-weight:500;color:var(--t1)}
+.theme-card-sub{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;letter-spacing:1px;color:var(--t2)}
