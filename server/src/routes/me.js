@@ -145,6 +145,11 @@ meRouter.get('/snapshot', async (req, res, next) => {
       const cats         = await q(`SELECT * FROM server_categories WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
       const tcs          = await q(`SELECT * FROM text_channels    WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
       const vcs          = await q(`SELECT * FROM voice_channels   WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
+      const roleRows     = await q(`SELECT * FROM server_roles WHERE server_id IN (${placeholders}) ORDER BY position, id`, sids);
+      const roleIdList   = roleRows.map(r => r.id);
+      const roleMembers  = roleIdList.length
+        ? await q(`SELECT rm.role_id, u.name FROM server_role_members rm JOIN users u ON u.id = rm.user_id WHERE rm.role_id IN (${roleIdList.map(()=>'?').join(',')})`, roleIdList)
+        : [];
       memberRows.forEach(row => {
         const sid = row.id;
         const sm  = allMembers.filter(x => x.server_id === sid);
@@ -176,7 +181,20 @@ meRouter.get('/snapshot', async (req, res, next) => {
           })),
           voiceChannels: vcs.filter(v => v.server_id === sid).map(v => ({
             id: v.id, name: v.name, style: v.style || 'indigo'
-          }))
+          })),
+          roles: (function(){
+            const here = roleRows.filter(r => r.server_id === sid);
+            if (!here.length) return null;
+            return here.map(r => ({
+              id: r.id,
+              name: r.name,
+              color: r.color || null,
+              system: !!r.is_system,
+              position: r.position || 0,
+              perms: typeof r.permissions === 'string' ? JSON.parse(r.permissions) : (r.permissions || {}),
+              members: roleMembers.filter(m => m.role_id === r.id).map(m => m.name)
+            }));
+          })()
         };
       });
     }

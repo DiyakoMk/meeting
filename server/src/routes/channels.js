@@ -274,6 +274,7 @@ async function __buildServerPayload(sid) {
     pinned: s.pinned_text ? { text: s.pinned_text, by: null, time: null } : null,
     categories: cats.map(c => ({
       id: c.id, name: c.name,
+      pinned: c.pinned_text ? { text: c.pinned_text, by: null, time: null } : null,
       textChannels:  tcs.filter(t => t.category_id === c.id).map(t => t.id),
       voiceChannels: vcs.filter(v => v.category_id === c.id).map(v => v.id)
     })),

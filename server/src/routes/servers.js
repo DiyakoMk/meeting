@@ -39,6 +39,25 @@ async function buildServerPayload(sid) {
   const cats = await q('SELECT * FROM server_categories WHERE server_id = ? ORDER BY position', [sid]);
   const tcs  = await q('SELECT * FROM text_channels    WHERE server_id = ? ORDER BY position', [sid]);
   const vcs  = await q('SELECT * FROM voice_channels   WHERE server_id = ? ORDER BY position', [sid]);
+  const roleRows = await q(
+    `SELECT * FROM server_roles WHERE server_id = ? ORDER BY position, id`, [sid]);
+  let roles = null;
+  if (roleRows.length){
+    const roleMembers = await q(
+      `SELECT rm.role_id, u.name FROM server_role_members rm
+         JOIN users u ON u.id = rm.user_id
+        WHERE rm.role_id IN (${roleRows.map(()=>'?').join(',')})`,
+      roleRows.map(r => r.id));
+    roles = roleRows.map(r => ({
+      id: r.id,
+      name: r.name,
+      color: r.color || null,
+      system: !!r.is_system,
+      position: r.position || 0,
+      perms: typeof r.permissions === 'string' ? JSON.parse(r.permissions) : (r.permissions || {}),
+      members: roleMembers.filter(m => m.role_id === r.id).map(m => m.name)
+    }));
+  }
   return {
     id: s.id,
     name: s.name,
@@ -57,11 +76,15 @@ async function buildServerPayload(sid) {
     pinned: s.pinned_text ? { text: s.pinned_text, by: null, time: null } : null,
     categories: cats.map(c => ({
       id: c.id, name: c.name,
+      pinned: c.pinned_text ? { text: c.pinned_text, by: null, time: null } : null,
       textChannels:  tcs.filter(t => t.category_id === c.id).map(t => t.id),
       voiceChannels: vcs.filter(v => v.category_id === c.id).map(v => v.id)
     })),
-    textChannels: tcs.map(t => ({ id: t.id, name: t.name, style: t.style || 'glow', unread: 0 })),
-    voiceChannels: vcs.map(v => ({ id: v.id, name: v.name, style: v.style || 'indigo' }))
+    textChannels: tcs.map(t => ({ id: t.id, name: t.name, style: t.style || 'glow', unread: 0, pinnedMsgId: t.pinned_msg_id || null })),
+    voiceChannels: vcs.map(v => ({ id: v.id, name: v.name, style: v.style || 'indigo' })),
+    // Roles are returned only when the server has any custom roles persisted.
+    // If null, the frontend's ensureRoles() builds owner/admin from membership.
+    roles
   };
 }
 
@@ -320,6 +343,73 @@ serversRouter.patch('/:id/categories/order', async (req, res, next) => {
     }
     res.json({ ok: true });
     emitServerUpdated(sid, await buildServerPayload(sid));
+  } catch (e) { next(e); }
+});
+
+// --- Replace the entire role set for a server (admin only) ---
+//
+// The frontend keeps roles in-memory at servers[sid].roles and edits the
+// list freely. To avoid inventing per-row CRUD endpoints for every tweak,
+// we accept the whole list here and atomically replace the persisted set.
+//
+// Owner / admin role members are derived from server_members.is_admin so the
+// caller can include them too — we just won't trust them as the source of
+// truth for admin status.
+const rolePayloadSchema = z.object({
+  roles: z.array(z.object({
+    id:       z.string().min(1).max(40),
+    name:     z.string().trim().min(1).max(80),
+    color:    z.string().max(16).optional().nullable(),
+    system:   z.boolean().optional(),
+    position: z.number().int().optional(),
+    perms:    z.record(z.boolean()).default({}),
+    members:  z.array(z.string()).default([])
+  })).max(50)
+});
+
+serversRouter.put('/:id/roles', async (req, res, next) => {
+  try {
+    const sid = req.params.id;
+    if (!await requireAdmin(req, res, sid)) return;
+    const body = parseOr400(rolePayloadSchema, req.body, res); if (!body) return;
+    // Map member display names to user ids in one round trip.
+    const allNames = Array.from(new Set(body.roles.flatMap(r => r.members || [])));
+    const nameToId = new Map();
+    if (allNames.length){
+      const rows = await q(
+        `SELECT id, name FROM users WHERE name IN (${allNames.map(()=>'?').join(',')})`,
+        allNames);
+      rows.forEach(r => nameToId.set(r.name, r.id));
+    }
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      // Wipe + replace. Cascade deletes server_role_members.
+      await conn.execute('DELETE FROM server_roles WHERE server_id = ?', [sid]);
+      for (let i = 0; i < body.roles.length; i++){
+        const r = body.roles[i];
+        await conn.execute(
+          `INSERT INTO server_roles (id, server_id, name, color, is_system, position, permissions)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [r.id, sid, r.name, r.color || null, r.system ? 1 : 0, r.position ?? i, JSON.stringify(r.perms || {})]
+        );
+        const memberIds = (r.members || [])
+          .map(name => nameToId.get(name))
+          .filter(id => id !== undefined);
+        for (const uid of memberIds){
+          await conn.execute(
+            'INSERT IGNORE INTO server_role_members (role_id, user_id) VALUES (?, ?)',
+            [r.id, uid]
+          );
+        }
+      }
+      await conn.commit();
+    } catch (e) {
+      await conn.rollback(); throw e;
+    } finally { conn.release(); }
+    const payload = await buildServerPayload(sid);
+    res.json({ server: payload });
+    emitServerUpdated(sid, payload);
   } catch (e) { next(e); }
 });
 

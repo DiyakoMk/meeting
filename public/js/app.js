@@ -1649,19 +1649,73 @@
 
     // Saved Messages also persists, but the snapshot ships its array empty.
 
+    //
+
+    // IMPORTANT: we *merge* the server response into the existing array
+
+    // instead of overwriting it. Overwriting was discarding optimistic /
+
+    // pending messages and any WS pushes that arrived between request and
+
+    // response, which made bubbles "randomly disappear".
+
     if (backend.isConfigured() && key && conversations[key]){
 
       const peerKey = conversations[key].isSaved ? 'saved' : key;
 
       backend.dms.list(peerKey).then(r => {
 
-        if (r && Array.isArray(r.messages)){
+        if (!r || !Array.isArray(r.messages)) return;
 
-          messages[key] = r.messages;
+        const local = messages[key] || [];
 
-          if (currentConversation === key) renderConversation();
+        const byId = new Map();
 
-        }
+        // Server-issued messages are authoritative for fields they own (text,
+
+        // edited, deleted, status). Locally-issued optimistic ids (tmp_*)
+
+        // stay in place until the matching real id replaces them via sendDM.
+
+        r.messages.forEach(srv => byId.set(String(srv.id), { ...srv }));
+
+        local.forEach(loc => {
+
+          const idStr = String(loc.id);
+
+          if (typeof loc.id === 'string' && loc.id.startsWith('tmp_')){
+
+            byId.set(idStr, loc); // keep optimistic until reconciled
+
+          } else if (!byId.has(idStr)){
+
+            // Server hasn't returned this row yet (e.g. a freshly received
+
+            // WS message); preserve it.
+
+            byId.set(idStr, loc);
+
+          }
+
+        });
+
+        // Preserve relative ordering: server order first, then any locals
+
+        // that weren't on the server (tmp_* + late arrivals).
+
+        const merged = r.messages.map(srv => byId.get(String(srv.id)));
+
+        local.forEach(loc => {
+
+          const idStr = String(loc.id);
+
+          if (!merged.some(m => String(m.id) === idStr)) merged.push(loc);
+
+        });
+
+        messages[key] = merged;
+
+        if (currentConversation === key) renderConversation();
 
       }).catch(()=>{});
 
@@ -3533,6 +3587,58 @@
 
   ];
 
+  // Debounced + coalesced "save the whole role list" call. Most role editor
+
+  // interactions (toggle a permission, drag in a member, rename, recolor)
+
+  // mutate s.roles synchronously and re-render. We schedule a single PUT
+
+  // /servers/:sid/roles a moment later so a burst of edits collapses into
+
+  // one round trip. Failures surface a toast but never block the UI.
+
+  const _rolesSaveTimers = new Map();
+
+  function persistRoles(s){
+
+    if (!s || !s.id) return;
+
+    if (!backend.isConfigured()) return;
+
+    const sid = s.id;
+
+    clearTimeout(_rolesSaveTimers.get(sid));
+
+    _rolesSaveTimers.set(sid, setTimeout(()=>{
+
+      const payload = (s.roles || []).map(r => ({
+
+        id: r.id,
+
+        name: r.name,
+
+        color: r.color || null,
+
+        system: !!r.system,
+
+        position: r.position || 0,
+
+        perms: r.perms || {},
+
+        members: Array.from(new Set(r.members || []))
+
+      }));
+
+      backend.servers.saveRoles(sid, payload).catch(()=>{
+
+        showToast('Could not save roles — try again','warn');
+
+      });
+
+    }, 350));
+
+  }
+
   function ensureRoles(s){
 
     if (!s.roles){
@@ -4254,6 +4360,16 @@
     if (!currentServer) return;
 
     const s = servers[currentServer];
+
+    if (!s) return;
+
+    // ensureRoles is idempotent — safe to call before every render so the
+
+    // owner / admin lookups (and the buttons gated by memberHasPerm) survive
+
+    // any state replacement that just dropped s.roles, e.g. _onServerUpdated.
+
+    ensureRoles(s);
 
     const ov = document.getElementById('serverOverview');
 
@@ -5533,7 +5649,9 @@
 
       sendChannelMessage:  (sid, c, payload) => _apiRequest('POST', '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/messages', payload),
 
-      delChannelMessage:   (sid, c, mid)     => _apiRequest('DELETE','/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/messages/'+encodeURIComponent(mid))
+      delChannelMessage:   (sid, c, mid)     => _apiRequest('DELETE','/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/messages/'+encodeURIComponent(mid)),
+
+      saveRoles: (sid, roles) => _apiRequest('PUT', '/servers/'+encodeURIComponent(sid)+'/roles', { roles })
 
     },
 
@@ -6027,9 +6145,15 @@
 
     servers[serverId] = Object.assign(servers[serverId] || {}, server);
 
-    // Roles are recomputed from admins/members each render via ensureRoles.
+    // If the server didn't ship persisted roles, drop the cached copy so
 
-    delete servers[serverId].roles;
+    // ensureRoles() can rebuild owner/admin from membership. If the server
+
+    // *did* ship roles (custom + persisted), `Object.assign` already wrote
+
+    // them in — keep them as the new source of truth.
+
+    if (!Array.isArray(server.roles)) delete servers[serverId].roles;
 
     // Re-materialise channelData entries for any new voice channels.
 
@@ -12001,6 +12125,8 @@
 
     renderRolesList(); renderRoleEditor();
 
+    persistRoles(s);
+
     showToast('Role created','success');
 
   });
@@ -12017,7 +12143,7 @@
 
       if (r.system){ showToast('The Owner role always has every permission','warn'); return; }
 
-      const k = perm.dataset.rolePerm; r.perms[k] = !r.perms[k]; renderRoleEditor(); return;
+      const k = perm.dataset.rolePerm; r.perms[k] = !r.perms[k]; renderRoleEditor(); persistRoles(s); return;
 
     }
 
@@ -12049,6 +12175,8 @@
 
       renderServerOverview();
 
+      persistRoles(s);
+
       return;
 
     }
@@ -12079,6 +12207,8 @@
 
       renderServerOverview();
 
+      persistRoles(s);
+
       return;
 
     }
@@ -12101,6 +12231,8 @@
 
       renderRolesList(); renderRoleEditor();
 
+      persistRoles(s);
+
       showToast('Role deleted','warn');
 
     }
@@ -12119,6 +12251,8 @@
 
       r.name = e.target.value; renderRolesList(); if (membersOpen) renderMembers(); renderServerOverview();
 
+      persistRoles(s);
+
     }
 
     if (e.target.id === 'roleColorInp'){
@@ -12134,6 +12268,8 @@
       renderRolesList(); if (membersOpen) renderMembers();
 
       renderServerOverview();
+
+      persistRoles(s);
 
     }
 
@@ -13893,7 +14029,35 @@
 
   const dmInputEl = document.getElementById('dmInput');
 
-  dmInputEl.addEventListener('input', e => { autoResizeInput(e.target); updateSendBtn(); });
+  dmInputEl.addEventListener('input', e => {
+
+    autoResizeInput(e.target); updateSendBtn();
+
+    // Push a typing event to the current peer at most once every 2.5s.
+
+    // The receiving client's _onTyping auto-clears the indicator after 4s,
+
+    // so we only need to keep ticking while the user is actively typing.
+
+    if (!currentConversation || currentConversation === 'saved') return;
+
+    if (!conversations[currentConversation] || conversations[currentConversation].isSaved) return;
+
+    const now = Date.now();
+
+    if (!_dmTypingLastSent || now - _dmTypingLastSent > 2500){
+
+      _dmTypingLastSent = now;
+
+      const handle = conversations[currentConversation].handle;
+
+      if (handle) wsSend({ type:'typing', to: handle });
+
+    }
+
+  });
+
+  let _dmTypingLastSent = 0;
 
   dmInputEl.addEventListener('keydown', e => {
 
@@ -14655,25 +14819,11 @@
 
   }, 200);
 
-  setInterval(()=>{
+  // (Removed: a demo timer that randomly flipped 'typing' on online
 
-    const keys = Object.keys(conversations).filter(k=>conversations[k].online && k !== currentConversation);
+  // conversations every 9s. Real typing indicators come from WS 'typing'
 
-    if (keys.length === 0) return;
-
-    if (Math.random() < 0.18){
-
-      const k = keys[Math.floor(Math.random()*keys.length)];
-
-      conversations[k].typing = true;
-
-      renderDmList();
-
-      setTimeout(()=>{ conversations[k].typing = false; renderDmList(); }, 2200);
-
-    }
-
-  }, 9000);
+  // events handled by _onTyping().)
 
   (function setupAsyncButtonUI(){
 
