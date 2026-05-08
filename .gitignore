@@ -6,7 +6,8 @@ server/node_modules/
 server/.env
 server/uploads/*
 !server/uploads/.gitkeep
-server/package-lock.json
+# We DO commit server/package-lock.json now — npm ci needs it for
+# reproducible production installs.
 
 # OS / editors
 .DS_Store
