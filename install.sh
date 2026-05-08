@@ -96,7 +96,20 @@ apt-get install -y -qq \
   mariadb-server mariadb-client \
   nginx certbot python3-certbot-nginx \
   coturn \
-  ufw openssl jq
+  ufw openssl jq \
+  unattended-upgrades apt-listchanges
+
+# Enable unattended security upgrades. The default policy on Ubuntu only
+# pulls "${distro_id}:${distro_codename}-security" sources, which is
+# exactly what we want — kernel + openssl + libc patches without surprise
+# feature bumps.
+say "Enabling unattended-upgrades"
+cat > /etc/apt/apt.conf.d/20auto-upgrades <<'EOF'
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";
+EOF
+systemctl enable --now unattended-upgrades.service 2>/dev/null || true
 
 # ------ 2. user + dirs ------
 if ! id "$APP_USER" >/dev/null 2>&1; then

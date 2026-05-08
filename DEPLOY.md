@@ -256,6 +256,42 @@ their next request).
 - [ ] `PUBLIC_ORIGIN` matches your real domain (CORS will reject otherwise)
 - [ ] `client_max_body_size 8m` in nginx matches the backend's express.json limit
 - [ ] Off-site backup is running
+- [ ] Unattended security upgrades are enabled (see below)
+
+## Patching the host
+
+Orblood runs on plain Ubuntu without a control panel — no cPanel, no
+Plesk, nothing the data centre might be advertising CVEs against. The
+attack surface is whatever Ubuntu ships plus the four daemons we install
+(`nginx`, `mariadb`, `nodejs`, `coturn`). Keep them current with
+unattended-upgrades:
+
+```bash
+sudo apt-get install -y unattended-upgrades apt-listchanges
+sudo dpkg-reconfigure -plow unattended-upgrades   # answer "Yes"
+```
+
+Verify it's actually applying things:
+
+```bash
+sudo unattended-upgrade --dry-run --debug | head -30
+sudo cat /var/log/unattended-upgrades/unattended-upgrades.log
+```
+
+For Node.js itself, the NodeSource repo we added in step 2 keeps
+`nodejs` up to date through `apt-get upgrade`. The Orblood code itself
+is updated by the step-10 git pull.
+
+If your provider sends you a "patch X immediately" advisory:
+
+1. **Read whether it actually applies to us.** Provider advisories
+   often target cPanel / WHM / Plesk / Webmin — none of which we
+   install. cPanel CVEs are irrelevant to a vanilla Ubuntu+nginx stack.
+2. **For real upstream CVEs (OpenSSL, kernel, nginx)**: run
+   `sudo apt-get update && sudo apt-get upgrade -y` and reboot if the
+   advisory mentions a kernel or libc change.
+3. **For app-level fixes** (Node, Mongo, etc.): just do step 10 of
+   this guide.
 
 ## Capacity expectations (this VPS profile)
 
