@@ -3251,7 +3251,7 @@
 
         time: nowTime(),
 
-        day: todayDayLabel(),
+        day: 'TODAY',
 
         status: 'pending',
 
@@ -3453,7 +3453,7 @@
 
     const time = nowTime();
 
-    const msg = { id:uid(), sender:'me', time, day:todayDayLabel(), status:'delivered' };
+    const msg = { id:uid(), sender:'me', time, day:'TODAY', status:'delivered' };
 
     if (dmAttachData){
 
@@ -3509,7 +3509,7 @@
 
         const replies = ["Acknowledged.","Copy that.","On it.","Got your transmission.","Stay safe.","Roger."];
 
-        const reply = { id:uid(), sender:'them', text: replies[Math.floor(Math.random()*replies.length)], time:nowTime(), day:todayDayLabel(), status:'read' };
+        const reply = { id:uid(), sender:'them', text: replies[Math.floor(Math.random()*replies.length)], time:nowTime(), day:'TODAY', status:'read' };
 
         messages[currentConversation].push(reply);
 
@@ -10627,7 +10627,7 @@
 
         const tempId = 'tmp_'+uid();
 
-        const newMsg = { id:tempId, sender:'me', time, day:todayDayLabel(), status:'pending', _pending:true, forwarded:true };
+        const newMsg = { id:tempId, sender:'me', time, day:'TODAY', status:'pending', _pending:true, forwarded:true };
 
         // Build the payload we send to /api/dms; the message we drop into
 
@@ -12663,7 +12663,7 @@
 
         const tempId = 'tmp_qs_'+uid();
 
-        const optimistic = { id: tempId, sender:'me', text:cleanText, time:nowTime(), day:todayDayLabel(), status:'pending', _pending:true };
+        const optimistic = { id: tempId, sender:'me', text:cleanText, time:nowTime(), day:'TODAY', status:'pending', _pending:true };
 
         messages[k].push(optimistic);
 
