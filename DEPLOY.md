@@ -8,7 +8,7 @@ nginx + Coturn. Tested for ~30 concurrent users.
 - Ubuntu 22.04 LTS (or 24.04). Minimum 2 GB RAM, 20 GB disk.
 - Open ports 22, 80, 443, 3478 (TURN), 5349 (TURN over TLS), 49152-65535/udp
   (TURN relay range — narrow if you want).
-- Point your DNS A record at the VPS IP, e.g. `orblood.example.com → 1.2.3.4`.
+- Point your DNS A record at the VPS IP, e.g. `orblood.ir → 1.2.3.4`.
 
 ```bash
 adduser orblood
@@ -77,7 +77,7 @@ cp .env.example .env
 # generate a real JWT secret (don't reuse the example)
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 # edit .env with the secret + your DB password + EXPRESSTURN_* (or your own
-# Coturn credentials, see step 6) + PUBLIC_ORIGIN=https://orblood.example.com
+# Coturn credentials, see step 6) + PUBLIC_ORIGIN=https://orblood.ir
 nano .env
 
 npm run init-db
@@ -130,7 +130,7 @@ listening-port=3478
 tls-listening-port=5349
 listening-ip=0.0.0.0
 
-realm=orblood.example.com
+realm=orblood.ir
 fingerprint
 lt-cred-mech
 
@@ -139,8 +139,8 @@ user=orblood:STRONG_TURN_PASSWORD_HERE
 static-auth-secret=ANOTHER_STRONG_SECRET_HERE
 
 # Reuse your nginx Let's Encrypt cert for TLS
-cert=/etc/letsencrypt/live/orblood.example.com/fullchain.pem
-pkey=/etc/letsencrypt/live/orblood.example.com/privkey.pem
+cert=/etc/letsencrypt/live/orblood.ir/fullchain.pem
+pkey=/etc/letsencrypt/live/orblood.ir/privkey.pem
 
 # Don't relay onto loopback / link-local
 no-loopback-peers
@@ -156,7 +156,7 @@ Update `/opt/orblood/server/.env`:
 ```
 EXPRESSTURN_USERNAME=orblood
 EXPRESSTURN_PASSWORD=STRONG_TURN_PASSWORD_HERE
-EXPRESSTURN_URLS=turn:orblood.example.com:3478,turns:orblood.example.com:5349
+EXPRESSTURN_URLS=turn:orblood.ir:3478,turns:orblood.ir:5349
 ```
 
 (The variable names are historical — they're really "TURN credentials".)
@@ -172,23 +172,23 @@ Copy the repo's `nginx.conf` into `/etc/nginx/sites-available/orblood`:
 ```bash
 sudo cp /opt/orblood/nginx.conf /etc/nginx/sites-available/orblood
 sudo nano /etc/nginx/sites-available/orblood
-# replace `server_name _;` with `server_name orblood.example.com;`
+# replace `server_name _;` with `server_name orblood.ir;`
 sudo ln -s /etc/nginx/sites-available/orblood /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 
 # TLS — auto-redirects 80 → 443 and configures the cert.
-sudo certbot --nginx -d orblood.example.com
+sudo certbot --nginx -d orblood.ir
 ```
 
 ## 8. Smoke test
 
 ```bash
-curl https://orblood.example.com/api/healthz
+curl https://orblood.ir/api/healthz
 # {"ok":true,"db":"up"}
 ```
 
-Open `https://orblood.example.com` in a browser. Sign up, create a server,
+Open `https://orblood.ir` in a browser. Sign up, create a server,
 join a voice channel from a second device on a different network. If voice
 fails to connect on the second device, check that 3478/UDP and the relay
 port range reach the VPS (`sudo ufw status` / your firewall provider).
@@ -265,3 +265,79 @@ their next request).
 | Disk | ~10 GB (DB + uploads) | ~80 % free |
 | Egress | ~30-40 GB / month | well under most VPS caps |
 | Voice | P2P, never touches the VPS | TURN-relayed: ~5-15 GB / month for 20 % NAT-restricted users |
+
+---
+
+## Notes for `.ir` deployment
+
+A few things that bite people running `.ir` domains, especially when the
+VPS itself is in Iran:
+
+### Let's Encrypt + IRNIC
+
+Let's Encrypt's HTTP-01 challenge needs an outbound connection from
+Let's Encrypt's verification servers to your `:80`. From most Iranian
+data centres this works fine. If `certbot --nginx` fails with a
+"connection timed out" / "fetching … timed out" error, switch to the
+DNS-01 challenge using your registrar's TXT record:
+
+```bash
+sudo certbot --nginx -d orblood.ir \
+  --preferred-challenges dns \
+  --manual --agree-tos
+```
+
+certbot will print a `_acme-challenge.orblood.ir` TXT record value;
+add it in your IRNIC / ISP DNS panel, wait 60 s, hit Enter. Renewal
+isn't automatic for manual challenges, so set a calendar reminder for
+day 60. Or use `certbot-dns-cloudflare` if you eventually move DNS to
+Cloudflare (allowed for `.ir` via NS delegation).
+
+### TLD-related quirks
+
+- IRNIC sometimes resolves `www.orblood.ir` and the apex differently.
+  Decide whether you want `www` to redirect to apex (recommended) or
+  vice versa, and add an extra `server` block in nginx for the unused
+  one that 301-redirects to the canonical name.
+
+- Some hosting providers in IR block outbound port 25; that's only an
+  issue if you later add transactional email. Voice / API / WebSocket
+  don't touch port 25.
+
+### Choose a TURN port that isn't blocked
+
+Inside Iran, certain ISPs throttle or selectively drop UDP on
+non-standard ports. The Coturn config above uses 3478/UDP (standard);
+if you see voice working over TLS on 5349 but failing peer-to-peer with
+3478, that's a network-side issue not a config bug. Workaround:
+
+```conf
+# In /etc/turnserver.conf — also listen on common HTTPS port for max
+# compatibility with restrictive networks.
+alt-listening-port=443
+alt-tls-listening-port=443
+```
+
+Then add `turn:orblood.ir:443?transport=udp` and
+`turns:orblood.ir:443?transport=tcp` to `EXPRESSTURN_URLS`.
+**Caveat:** this collides with nginx if nginx is also on 443 — use
+this only on a *separate* IP for TURN, or accept that voice over 443
+won't be available alongside the web app on the same port.
+
+### Where to host
+
+A few patterns that work for Iranian users:
+
+- **VPS inside Iran (cheap, low latency for IR users):** TURN bandwidth
+  stays domestic, but Let's Encrypt issuance can be flaky. Use the DNS-01
+  fallback above.
+- **VPS abroad with a Cloudflare proxy:** Cloudflare proxies TLS for
+  free, hides your origin IP, and accepts `.ir` domains. **However**:
+  WebSocket works only on plans where the connection survives idle
+  pings (free tier disconnects after 100 s idle — Orblood already
+  reconnects, so this is OK). Voice WebRTC bypasses Cloudflare
+  entirely (peer-to-peer) so neither side cares.
+- **Hybrid (recommended):** App on a foreign VPS, DNS via Cloudflare,
+  TURN/Coturn on a small IR-based VPS that's reachable on plain UDP.
+  IR users get domestic-quality voice; foreign users still get the
+  full app.
