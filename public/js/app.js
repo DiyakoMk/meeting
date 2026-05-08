@@ -75,6 +75,40 @@
 
   function todayDayLabel(){ return _isoDay(new Date()); }
 
+  // Older clients stored `day` as the raw locale string `5/8/2026`. After
+
+  // the format change everything new is `2026-05-08`. To stop both formats
+
+  // from coexisting in the same conversation (and triggering a divider on
+
+  // every bubble because `'TODAY' !== '2026-05-08'` for example), every
+
+  // bubble passes through this normaliser before render. It accepts the
+
+  // ISO key as-is, parses locale strings, and falls back to "today" so a
+
+  // legacy bubble with `day: 'TODAY'` still buckets correctly.
+
+  function _normalizeDayKey(raw){
+
+    if (!raw) return _isoDay(new Date());
+
+    const s = String(raw).trim().toUpperCase();
+
+    if (s === 'TODAY')     return _isoDay(new Date());
+
+    if (s === 'YESTERDAY') { const y = new Date(); y.setDate(y.getDate()-1); return _isoDay(y); }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;            // already ISO
+
+    const parsed = new Date(s);
+
+    if (!isNaN(parsed.getTime())) return _isoDay(parsed);
+
+    return _isoDay(new Date());
+
+  }
+
   // Translate the YYYY-MM-DD bucket key into the friendly text the divider
 
   // shows. Today / yesterday get the relative label so the chat doesn't
@@ -2223,9 +2257,19 @@
 
     let html = '';
 
-    if (m.day && m.day !== prevDay){
+    // Normalise both sides of the comparison to the ISO key. Without this
 
-      html += '<div class="dm-day-divider"><span>'+escapeHtml(_dayLabel(m.day))+'</span></div>';
+    // a bubble persisted as 'TODAY' (older clients) renders a divider next
+
+    // to a bubble persisted as '2026-05-08' (current code), and vice versa.
+
+    const myDay   = _normalizeDayKey(m.day);
+
+    const prevKey = _normalizeDayKey(prevDay);
+
+    if (myDay && myDay !== prevKey){
+
+      html += '<div class="dm-day-divider"><span>'+escapeHtml(_dayLabel(myDay))+'</span></div>';
 
     }
 
@@ -2425,7 +2469,7 @@
 
           let prevSender = lastCachedIdx >= 0 ? list[lastCachedIdx].sender : null;
 
-          let prevDay    = lastCachedIdx >= 0 ? list[lastCachedIdx].day    : null;
+          let prevDay    = lastCachedIdx >= 0 ? _normalizeDayKey(list[lastCachedIdx].day) : null;
 
           let appendHtml = '';
 
@@ -2435,7 +2479,7 @@
 
             prevSender = list[i].sender;
 
-            if (list[i].day) prevDay = list[i].day;
+            if (list[i].day) prevDay = _normalizeDayKey(list[i].day);
 
             cached.push(String(list[i].id));
 
@@ -2505,11 +2549,19 @@
 
     list.forEach((m) => {
 
-      if (m.day && m.day !== lastDay){
+      // Normalise so legacy "TODAY" / locale-formatted strings collapse to
 
-        html += '<div class="dm-day-divider"><span>'+escapeHtml(_dayLabel(m.day))+'</span></div>';
+      // the same key as a fresh "2026-05-08" bubble — otherwise old data
 
-        lastDay = m.day;
+      // stuck in messages[] keeps drawing a fresh divider on every row.
+
+      const myDay = _normalizeDayKey(m.day);
+
+      if (myDay && myDay !== lastDay){
+
+        html += '<div class="dm-day-divider"><span>'+escapeHtml(_dayLabel(myDay))+'</span></div>';
+
+        lastDay = myDay;
 
         lastSender = null;
 
