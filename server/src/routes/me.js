@@ -4,6 +4,7 @@ import { requireAuth } from '../auth/middleware.js';
 import { hashPassword } from '../auth/hash.js';
 import { parseOr400, profilePatchSchema } from '../validators.js';
 import { publicUser, foreignUser } from '../lib/userShape.js';
+import { emitProfileUpdated } from '../realtime/events.js';
 
 export const meRouter = Router();
 
@@ -52,6 +53,20 @@ meRouter.patch('/', async (req, res, next) => {
     }
     const fresh = await one('SELECT * FROM users WHERE id = ?', [req.user.id]);
     res.json({ user: publicUser(fresh) });
+    // Push the visible-to-others fields to every peer that has us in
+    // their UI (friends + server co-members) so avatar / banner / handle
+    // / bio updates appear without a reload.
+    if (Object.keys(patch).some(k => ['name','handle','bio','baseColor','rank','avImage','bannerImage'].includes(k))){
+      emitProfileUpdated(req.user.id, {
+        name:        fresh.name,
+        handle:      fresh.handle ? '@' + fresh.handle : null,
+        bio:         fresh.bio || '',
+        baseColor:   fresh.base_color || null,
+        rank:        fresh.rank_label || 'EXPLORER',
+        avImage:     fresh.av_image || null,
+        bannerImage: fresh.banner_image || null
+      }).catch(()=>{});
+    }
   } catch (e) { next(e); }
 });
 
@@ -119,6 +134,7 @@ meRouter.get('/snapshot', async (req, res, next) => {
           ? `linear-gradient(135deg,${row.base_color},#1e1b4b)`
           : 'linear-gradient(135deg,#a78bfa,#1e1b4b)',
         avImage: row.av_image || null,
+        bannerImage: row.banner_image || null,
         initial: (row.name || '?').charAt(0).toUpperCase(),
         handle: '@' + row.handle.replace(/^@/, ''),
         bio: row.bio || '',

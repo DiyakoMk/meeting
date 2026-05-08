@@ -1484,11 +1484,13 @@
 
             <label class="sm-label">INVITE / SHARE KEY</label>
 
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
 
-              <input type="text" class="sm-input" id="serverInviteKey" readonly style="flex:1;font-family:Space Mono,monospace;letter-spacing:1.5px" />
+              <input type="text" class="sm-input" id="serverInviteKey" readonly style="flex:1;min-width:120px;font-family:Space Mono,monospace;letter-spacing:1.5px" />
 
               <button class="sm-btn cancel" type="button" id="serverInviteCopy"><i data-lucide="copy" style="width:11px;height:11px"></i>COPY</button>
+
+              <button class="sm-btn cancel" type="button" id="serverInviteRegen"><i data-lucide="refresh-ccw" style="width:11px;height:11px"></i>REGENERATE</button>
 
             </div>
 

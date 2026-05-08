@@ -139,3 +139,21 @@ export function emitVoiceKicked(toUid, serverId, channelId) {
 export function emitBlockedByPeer(toUid, byUid, byHandle, on) {
   sendToUser(toUid, { type: 'block:status', from: String(byUid), handle: byHandle || null, on: !!on });
 }
+
+// "this user updated their public profile fields" — friends + server peers
+// receive the new avatar / banner / name / handle / bio so any avatar in
+// their UI updates without needing a refresh.
+export async function emitProfileUpdated(uid, payload) {
+  const friendRows = await q(
+    `SELECT f.friend_id AS id FROM friendships f WHERE f.user_id = ?`, [uid]);
+  const serverRows = await q(
+    `SELECT DISTINCT sm2.user_id AS id
+       FROM server_members sm
+       JOIN server_members sm2 ON sm2.server_id = sm.server_id
+      WHERE sm.user_id = ? AND sm2.user_id != ?`, [uid, uid]);
+  const ids = new Set();
+  friendRows.forEach(r => ids.add(String(r.id)));
+  serverRows.forEach(r => ids.add(String(r.id)));
+  const data = { type: 'profile:updated', uid: String(uid), ...payload };
+  ids.forEach(rid => sendToUser(rid, data));
+}

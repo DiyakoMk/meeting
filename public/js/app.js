@@ -2115,25 +2115,35 @@
 
     // message doesn't snap the viewport (the visible "glitch") unless the
 
-    // user was already at the bottom. nearBottom uses a 60px tolerance.
+    // user was already at the bottom. The render itself is what causes the
 
-    const wasNearBottom = (msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight) < 60;
+    // brief flash — we set scrollTop SYNCHRONOUSLY right after innerHTML so
 
-    const prevScroll = msgsEl.scrollTop;
+    // the browser never paints the intermediate "scrolled to top" state.
+
+    const SLOP = 80;
+
+    const wasNearBottom = (msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight) < SLOP;
+
+    const prevScrollFromBottom = msgsEl.scrollHeight - msgsEl.scrollTop;
 
     msgsEl.innerHTML = html;
 
-    refreshIcons();
-
     if (wasNearBottom){
 
-      requestAnimationFrame(()=>{ msgsEl.scrollTop = msgsEl.scrollHeight; });
+      msgsEl.scrollTop = msgsEl.scrollHeight;
 
     } else {
 
-      msgsEl.scrollTop = prevScroll;
+      // Maintain distance from bottom so the user's reading position doesn't
+
+      // drift when something below them changes height.
+
+      msgsEl.scrollTop = msgsEl.scrollHeight - prevScrollFromBottom;
 
     }
+
+    refreshIcons();
 
   }
 
@@ -5977,7 +5987,9 @@
 
       saveRoles: (sid, roles) => _apiRequest('PUT', '/servers/'+encodeURIComponent(sid)+'/roles', { roles }),
 
-      markChannelRead: (sid, cid) => _apiRequest('POST', '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(cid)+'/read')
+      markChannelRead: (sid, cid) => _apiRequest('POST', '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(cid)+'/read'),
+
+      regenerateInvite: sid => _apiRequest('POST', '/servers/'+encodeURIComponent(sid)+'/regenerate-invite')
 
     },
 
@@ -6480,6 +6492,12 @@
       case 'block:status':
 
         _onBlockStatus(msg);
+
+        break;
+
+      case 'profile:updated':
+
+        _onProfileUpdated(msg);
 
         break;
 
@@ -7239,6 +7257,10 @@
 
     if (typeof renderOrbSlides === 'function') renderOrbSlides();
 
+    if (typeof renderHomeMarkedOrbits === 'function') renderHomeMarkedOrbits();
+
+    if (typeof renderMarkedPanel === 'function') renderMarkedPanel();
+
     if (typeof renderServerOverview === 'function' && currentServer === serverId) renderServerOverview();
 
     if (typeof renderVoiceUsers === 'function' && voiceUsersSidebarOpen) renderVoiceUsers();
@@ -7400,6 +7422,112 @@
   // Peer just blocked / unblocked us. Update blockedByUsers and lock the
 
   // compose box live so the user can't keep typing into a dead thread.
+
+  // Peer updated their public profile (avatar / banner / handle / bio /
+
+  // name / baseColor / rank). Patch every conversation row that points
+
+  // at this user, plus every server membership that lists their old name,
+
+  // and re-paint surfaces that show their avatar.
+
+  function _onProfileUpdated({ uid, name, handle, bio, baseColor, rank, avImage, bannerImage }){
+
+    if (!uid) return;
+
+    const oldHandleKey = Object.keys(conversations).find(k => {
+
+      const c = conversations[k];
+
+      return c && (String(c.uid||'') === String(uid) || String(c.peerId||'') === String(uid));
+
+    });
+
+    const newHandleKey = (handle || '').replace(/^@/, '').toLowerCase();
+
+    if (oldHandleKey){
+
+      const c = conversations[oldHandleKey];
+
+      if (name)      c.name = name;
+
+      if (handle)    c.handle = handle;
+
+      if (typeof bio === 'string') c.bio = bio;
+
+      if (baseColor) c.baseColor = baseColor;
+
+      if (rank)      c.rank = rank;
+
+      c.avImage      = avImage    || null;
+
+      c.bannerImage  = bannerImage || null;
+
+      if (baseColor){
+
+        c.avColor = 'linear-gradient(135deg,'+baseColor+',#1e1b4b)';
+
+      }
+
+      // If their handle changed, move the conversation under the new key.
+
+      if (newHandleKey && newHandleKey !== oldHandleKey){
+
+        conversations[newHandleKey] = c;
+
+        delete conversations[oldHandleKey];
+
+        if (messages[oldHandleKey]){
+
+          messages[newHandleKey] = messages[oldHandleKey];
+
+          delete messages[oldHandleKey];
+
+        }
+
+        if (currentConversation === oldHandleKey) currentConversation = newHandleKey;
+
+      }
+
+    }
+
+    // Replace the old display name in every server membership list so
+
+    // their avatar repaints with the new image where the renderer keys
+
+    // off m.user.
+
+    if (name){
+
+      Object.values(servers).forEach(s => {
+
+        if (Array.isArray(s.memberDetails)){
+
+          s.memberDetails.forEach(md => { if (String(md.id) === String(uid)) md.name = name; });
+
+        }
+
+      });
+
+    }
+
+    if (typeof renderConversation === 'function' && currentConversation) renderConversation();
+
+    if (typeof renderDmList === 'function') renderDmList();
+
+    if (typeof renderHomeFriends === 'function') renderHomeFriends();
+
+    if (typeof renderMarkedPanel === 'function') renderMarkedPanel();
+
+    if (typeof renderHomeMarkedOrbits === 'function') renderHomeMarkedOrbits();
+
+    if (typeof renderOrbSlides === 'function') renderOrbSlides();
+
+    if (typeof renderServerOverview === 'function' && currentServer) renderServerOverview();
+
+    if (typeof renderVoiceUsers === 'function' && voiceUsersSidebarOpen) renderVoiceUsers();
+
+  }
 
   function _onBlockStatus({ handle, on }){
 
@@ -12679,6 +12807,34 @@
 
   });
 
+  document.getElementById('serverInviteRegen').addEventListener('click', async () => {
+
+    if (!currentServer) return;
+
+    const ok = await appConfirm('Regenerate the invite key? Anyone who saved the old one won\'t be able to use it anymore.', { title: 'NEW INVITE KEY', confirmLabel: 'REGENERATE', danger: true });
+
+    if (!ok) return;
+
+    if (!backend.isConfigured()){ showToast('Cannot reach the server','warn'); return; }
+
+    const r = await backend.servers.regenerateInvite(currentServer);
+
+    if (r && r.error){ showToast('Could not regenerate: '+r.error,'warn'); return; }
+
+    if (r && r.offline){ showToast('Cannot reach the server','warn'); return; }
+
+    if (r && r.inviteKey){
+
+      document.getElementById('serverInviteKey').value = r.inviteKey;
+
+      const s = servers[currentServer]; if (s) s.inviteKey = r.inviteKey;
+
+      showToast('Invite key regenerated','success');
+
+    }
+
+  });
+
   document.getElementById('serverRemoveBtn').addEventListener('click', () => {
 
     if (!currentServer) return;
@@ -12767,35 +12923,85 @@
 
   });
 
+  // Helper: upload an image to /api/uploads/image and return an absolute
+
+  // /uploads/<file> URL the server can store. Falls back to a data URL if
+
+  // the upload endpoint is unreachable or returns nothing.
+
+  async function _uploadImageOrDataUrl(file){
+
+    if (!file || !file.type.startsWith('image/')) return null;
+
+    if (backend.isConfigured()){
+
+      const fd = new FormData(); fd.append('file', file);
+
+      const r = await backend.uploads.image(fd);
+
+      if (r && r.url){
+
+        if (r.url.startsWith('/')){
+
+          const apiBase = (typeof _backendBase === 'function' ? _backendBase() : '') || '';
+
+          return apiBase ? apiBase.replace(/\/api$/, '') + r.url : r.url;
+
+        }
+
+        return r.url;
+
+      }
+
+    }
+
+    return await new Promise((res, rej) => {
+
+      const rd = new FileReader();
+
+      rd.onload = ev => res(ev.target.result);
+
+      rd.onerror = rej;
+
+      rd.readAsDataURL(file);
+
+    });
+
+  }
+
   document.getElementById('coverUploadBtn').addEventListener('click', () => document.getElementById('coverFile').click());
 
-  document.getElementById('coverFile').addEventListener('change', e => {
+  document.getElementById('coverFile').addEventListener('change', async e => {
 
     const f = e.target.files && e.target.files[0]; if (!f) return;
 
     if (!f.type.startsWith('image/')){ showToast('Pick an image file','warn'); return; }
 
-    const rd = new FileReader();
+    const url = await _uploadImageOrDataUrl(f);
 
-    rd.onload = ev => { document.getElementById('coverUrlInput').value = ev.target.result; renderCoverPreview(); };
+    if (!url){ showToast('Could not upload cover','warn'); return; }
 
-    rd.readAsDataURL(f);
+    document.getElementById('coverUrlInput').value = url;
+
+    renderCoverPreview();
 
   });
 
   document.getElementById('emblemUploadBtn').addEventListener('click', () => document.getElementById('emblemFile').click());
 
-  document.getElementById('emblemFile').addEventListener('change', e => {
+  document.getElementById('emblemFile').addEventListener('change', async e => {
 
     const f = e.target.files && e.target.files[0]; if (!f) return;
 
     if (!f.type.startsWith('image/')){ showToast('Pick an image file','warn'); return; }
 
-    const rd = new FileReader();
+    const url = await _uploadImageOrDataUrl(f);
 
-    rd.onload = ev => { document.getElementById('emblemUrlInput').value = ev.target.result; renderCoverPreview(); };
+    if (!url){ showToast('Could not upload emblem','warn'); return; }
 
-    rd.readAsDataURL(f);
+    document.getElementById('emblemUrlInput').value = url;
+
+    renderCoverPreview();
 
   });
 

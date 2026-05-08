@@ -16,8 +16,8 @@ const createServerSchema = z.object({
   baseColor:   z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
   grad:        z.string().max(255).optional().nullable(),
   glow:        z.string().max(64).optional().nullable(),
-  cover:       z.string().max(500).optional().nullable(),
-  emblemImage: z.string().max(500).optional().nullable(),
+  cover:       z.string().max(6 * 1024 * 1024).optional().nullable(),
+  emblemImage: z.string().max(6 * 1024 * 1024).optional().nullable(),
   isPrivate:   z.boolean().optional().default(false)
 });
 
@@ -409,6 +409,19 @@ serversRouter.put('/:id/roles', async (req, res, next) => {
     } finally { conn.release(); }
     const payload = await buildServerPayload(sid);
     res.json({ server: payload });
+    emitServerUpdated(sid, payload);
+  } catch (e) { next(e); }
+});
+
+// Regenerate the server's invite key. Old links stop working immediately.
+serversRouter.post('/:id/regenerate-invite', async (req, res, next) => {
+  try {
+    const sid = req.params.id;
+    if (!await requirePermission(req, res, sid, "manageServer")) return;
+    const newKey = inviteKey();
+    await q('UPDATE servers SET invite_key = ? WHERE id = ?', [newKey, sid]);
+    const payload = await buildServerPayload(sid);
+    res.json({ inviteKey: newKey, server: payload });
     emitServerUpdated(sid, payload);
   } catch (e) { next(e); }
 });
