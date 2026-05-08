@@ -76,6 +76,12 @@ meRouter.get('/snapshot', async (req, res, next) => {
       `SELECT u.* FROM blocked_users b
          JOIN users u ON u.id = b.blocked_id
         WHERE b.user_id = ?`, [me.id]);
+    // Reverse direction: who has *us* blocked. We surface this so the
+    // client can show "this user has blocked you" + disable composing.
+    const blockedByRows = await q(
+      `SELECT u.handle FROM blocked_users b
+         JOIN users u ON u.id = b.user_id
+        WHERE b.blocked_id = ?`, [me.id]);
     const incoming = await q(
       `SELECT fr.id, fr.created_at, u.id AS uid, u.name, u.handle, u.av_image, u.base_color
          FROM friend_requests fr
@@ -246,6 +252,7 @@ meRouter.get('/snapshot', async (req, res, next) => {
       markedTextChannels: markedTcs.map(r => r.server_id + '__' + r.channel_id),
       marked: markedOrbs.map(r => r.channel_id),
       blockedUsers: blockedRows.map(u => u.handle.toLowerCase()),
+      blockedBy: blockedByRows.map(u => u.handle.toLowerCase()),
       notifications: notifs.map(n => ({
         id: n.id, type: n.kind, title: n.title, desc: n.description,
         time: new Date(n.created_at).toISOString(), unread: !n.read_at

@@ -133,3 +133,9 @@ export function emitFriendRemoved(toUid, peerUid, peerHandle) {
 export function emitVoiceKicked(toUid, serverId, channelId) {
   sendToUser(toUid, { type: 'voice:kicked', serverId, channelId });
 }
+
+// "this user just blocked / unblocked you" — peer client toggles the
+// blocked-by-peer state in their copy and locks/unlocks composing.
+export function emitBlockedByPeer(toUid, byUid, byHandle, on) {
+  sendToUser(toUid, { type: 'block:status', from: String(byUid), handle: byHandle || null, on: !!on });
+}

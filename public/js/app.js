@@ -269,6 +269,14 @@
 
   const blockedUsers = new Set();
 
+  // Conversations whose peer has blocked *us*. We can't message them and the
+
+  // input is replaced with a banner — but we keep the chat history visible.
+
+  const blockedByUsers = new Set();
+
+  function isBlockedByPeer(key){ return blockedByUsers.has(key); }
+
   function isBlocked(key){ return blockedUsers.has(key); }
 
   function blockUser(key){
@@ -1775,11 +1783,17 @@
 
     const isSaved = conv && conv.isSaved;
 
+    const youBlocked = !isSaved && currentConversation && isBlocked(currentConversation);
+
+    const peerBlocked = !isSaved && currentConversation && isBlockedByPeer(currentConversation);
+
     const restricted = readFriendsOnly() && currentConversation && !isSaved && !isFriend(currentConversation);
 
     wrap.style.display = 'block';
 
-    if (restricted){
+    const hideCompose = youBlocked || peerBlocked || restricted;
+
+    if (hideCompose){
 
       ibox.style.display = 'none';
 
@@ -1790,6 +1804,66 @@
       if (attBar) attBar.style.display = 'none';
 
       lockedEl.style.display = 'flex';
+
+      // Repaint the locked banner so the message + button match the reason.
+
+      let html;
+
+      if (youBlocked){
+
+        html = '<i data-lucide="shield-off" style="width:14px;height:14px"></i>'+
+
+          '<span class="dm-locked-text">You blocked '+escapeHtml(conv.name)+' — chat history stays, sending is off.</span>'+
+
+          '<button class="sm-btn primary" id="dmLockedUnblock" type="button"><i data-lucide="shield" style="width:11px;height:11px"></i>UNBLOCK</button>';
+
+      } else if (peerBlocked){
+
+        html = '<i data-lucide="ban" style="width:14px;height:14px"></i>'+
+
+          '<span class="dm-locked-text">'+escapeHtml(conv.name)+' blocked you. You can\'t send new messages.</span>';
+
+      } else {
+
+        html = '<i data-lucide="user-x" style="width:14px;height:14px"></i>'+
+
+          '<span class="dm-locked-text">'+escapeHtml(conv.name)+' only accepts messages from friends.</span>'+
+
+          '<button class="sm-btn primary" id="dmLockedAddFriend" type="button"><i data-lucide="user-plus" style="width:11px;height:11px"></i>SEND FRIEND REQUEST</button>';
+
+      }
+
+      lockedEl.innerHTML = html;
+
+      const ub = document.getElementById('dmLockedUnblock');
+
+      if (ub) ub.addEventListener('click', () => {
+
+        unblockUser(currentConversation);
+
+        renderConversation();
+
+        showToast('Unblocked '+conv.name,'success');
+
+      });
+
+      const af = document.getElementById('dmLockedAddFriend');
+
+      if (af) af.addEventListener('click', async () => {
+
+        const handle = conv.handle || ('@'+currentConversation);
+
+        if (backend.isConfigured()){
+
+          const r = await backend.friends.request(handle);
+
+          if (r && r.error){ showToast('Could not send request: '+r.error,'warn'); return; }
+
+        }
+
+        showToast('Friend request sent','success');
+
+      });
 
     } else {
 
@@ -1811,33 +1885,11 @@
 
     const conv = conversations[currentConversation];
 
-    // Blocked: hide chat history, replace with banner + unblock button. Both sides see nothing.
+    // Reflect compose-box state for friends-only / block restrictions.
 
-    if (currentConversation && isBlocked(currentConversation)){
+    // The block UI lives below, after the message list is rendered, so the
 
-      msgsEl.innerHTML = '<div class="dm-block-banner"><i data-lucide="shield-off" style="width:18px;height:18px"></i>'+
-
-        '<div class="dm-block-title">You blocked '+escapeHtml(conv.name)+'</div>'+
-
-        '<div class="dm-block-sub">Messages and history are hidden until you unblock them.</div>'+
-
-        '<button class="sm-btn primary" id="dmUnblockBtn" type="button"><i data-lucide="shield" style="width:11px;height:11px"></i>UNBLOCK</button>'+
-
-      '</div>';
-
-      document.getElementById('dmInputWrap').style.display = 'none';
-
-      refreshIcons();
-
-      const ub = document.getElementById('dmUnblockBtn');
-
-      if (ub) ub.addEventListener('click', () => { unblockUser(currentConversation); document.getElementById('dmInputWrap').style.display = 'block'; renderConversation(); showToast('Unblocked '+conv.name,'success'); });
-
-      return;
-
-    }
-
-    // Reflect compose-box state for friends-only restriction.
+    // user keeps seeing their chat history while composing is locked off.
 
     syncDmComposeLock();
 
@@ -2580,6 +2632,8 @@
     if (!currentConversation) return;
 
     if (isBlocked(currentConversation)){ showToast('You blocked this user. Unblock to send messages.','warn'); return; }
+
+    if (isBlockedByPeer(currentConversation)){ showToast('This user has blocked you. You can\'t send messages.','warn'); return; }
 
     const conv = conversations[currentConversation];
 
@@ -4391,9 +4445,15 @@
 
         } else if (m.type === 'image' && m.src){
 
-          const cap = m.text ? '<div class="ws-msg-text">'+escapeHtml(m.text)+'</div>' : '';
+          // Match the DM image bubble: tap the picture to open the lightbox
 
-          body = cap + '<div class="ws-msg-text image-msg"><img src="'+m.src+'" alt="" data-ch-img="'+m.id+'" /></div>';
+          // viewer, contained max size + padding wrapper so it sits cleanly
+
+          // inside the channel feed.
+
+          body = '<div class="ws-msg-text image-msg"><img src="'+m.src+'" alt="" data-ch-img="'+m.id+'" /></div>';
+
+          if (m.text) body += '<div class="ws-msg-text" style="margin-top:4px">'+escapeHtml(m.text)+'</div>';
 
         } else {
 
@@ -6041,6 +6101,8 @@
 
     if (Array.isArray(snap.blockedUsers)){ blockedUsers.clear(); snap.blockedUsers.forEach(k => blockedUsers.add(k)); }
 
+    if (Array.isArray(snap.blockedBy)){ blockedByUsers.clear(); snap.blockedBy.forEach(k => blockedByUsers.add(k)); }
+
     if (snap.friendRequests){
 
       friendRequests.incoming = Array.isArray(snap.friendRequests.incoming) ? snap.friendRequests.incoming.slice() : [];
@@ -6268,6 +6330,12 @@
       case 'friend:removed':
 
         _onFriendRemoved(msg);
+
+        break;
+
+      case 'block:status':
+
+        _onBlockStatus(msg);
 
         break;
 
@@ -7182,6 +7250,26 @@
     if (typeof renderDmList === 'function') renderDmList();
 
     if (typeof updateBadges === 'function') updateBadges();
+
+  }
+
+  // Peer just blocked / unblocked us. Update blockedByUsers and lock the
+
+  // compose box live so the user can't keep typing into a dead thread.
+
+  function _onBlockStatus({ handle, on }){
+
+    const k = (handle || '').replace(/^@/, '').toLowerCase();
+
+    if (!k) return;
+
+    if (on) blockedByUsers.add(k);
+
+    else blockedByUsers.delete(k);
+
+    if (currentConversation === k && typeof renderConversation === 'function') renderConversation();
+
+    if (typeof renderDmList === 'function') renderDmList();
 
   }
 
@@ -10827,6 +10915,20 @@
 
     document.querySelectorAll('.tb[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
 
+    // Clear "I'm actively viewing this DM" state whenever the user leaves
+
+    // the messages page. Otherwise currentConversation stays set after the
+
+    // user navigates away and incoming dm:new events are silently treated
+
+    // as "already seen" — no toast, no badge.
+
+    if (pageId !== 'pageMessages' && currentConversation){
+
+      currentConversation = null;
+
+    }
+
     if (pageId === 'pageMessages' && !currentConversation){
 
       const firstKey = Object.keys(conversations)[0];
@@ -11241,11 +11343,59 @@
 
         if (!messages[k]) messages[k] = [];
 
-        const id = Date.now()+Math.floor(Math.random()*1000);
+        const tempId = 'tmp_qs_'+uid();
 
-        messages[k].push({ id, sender:'me', text:cleanText, time:'now', date:'TODAY' });
+        const optimistic = { id: tempId, sender:'me', text:cleanText, time:nowTime(), day:'TODAY', status:'pending', _pending:true };
+
+        messages[k].push(optimistic);
+
+        bumpDmList(k);
+
+        // Persist to the backend so the recipient actually receives it.
+
+        if (backend.isConfigured() && k !== 'saved'){
+
+          backend.dms.send(k, { text: cleanText }).then(r => {
+
+            const arr = messages[k] || [];
+
+            const idx = arr.findIndex(x => x.id === tempId);
+
+            if (idx >= 0){
+
+              if (r && r.message){
+
+                arr[idx] = { ...arr[idx], ...r.message, status:'delivered', _pending:false };
+
+              } else if (r && r.error){
+
+                arr[idx].status = 'failed'; arr[idx]._pending = false;
+
+              }
+
+              if (currentConversation === k && typeof renderConversation === 'function') renderConversation();
+
+              if (typeof renderDmList === 'function') renderDmList();
+
+            }
+
+          }).catch(()=>{
+
+            const arr = messages[k] || [];
+
+            const idx = arr.findIndex(x => x.id === tempId);
+
+            if (idx >= 0){ arr[idx].status = 'failed'; arr[idx]._pending = false; }
+
+            if (typeof renderDmList === 'function') renderDmList();
+
+          });
+
+        }
 
       });
+
+      if (typeof renderDmList === 'function') renderDmList();
 
       ip.value = ''; ip.style.height = 'auto';
 
@@ -13125,6 +13275,8 @@
 
   let wsAttachImage = null; // base64 data URL of attached image, if any
 
+  let wsAttachFile = null;  // raw File so we can upload to /api/uploads/image
+
   function wsRefreshSendBtn(){ wsCs.classList.toggle('disabled', !(wsCi.value.trim() || wsAttachImage)); }
 
   wsCi.addEventListener('input', () => {
@@ -13151,6 +13303,8 @@
 
       wsAttachImage = ev.target.result;
 
+      wsAttachFile = f;
+
       const prev = document.getElementById('wsAttachPreview');
 
       prev.innerHTML = '<div class="ws-attach-row"><img src="'+wsAttachImage+'" alt="" /><button class="ws-attach-x" id="wsAttachClear" title="Remove"><i data-lucide="x" style="width:11px;height:11px"></i></button></div>';
@@ -13174,6 +13328,8 @@
   function clearWsAttach(){
 
     wsAttachImage = null;
+
+    wsAttachFile = null;
 
     const prev = document.getElementById('wsAttachPreview');
 
@@ -13217,6 +13373,8 @@
 
     const sentImage = wsAttachImage;
 
+    const sentFile  = wsAttachFile;
+
     clearWsAttach();
 
     chReplyTo = null;
@@ -13227,7 +13385,49 @@
 
       const payload = { text: txt };
 
-      if (sentImage){ payload.payload = { type:'image', src: sentImage }; }
+      // Upload the actual file first so the peer (and a refresh) gets a
+
+      // /uploads/... URL instead of the in-memory data URL we used for
+
+      // the optimistic bubble.
+
+      let uploadedUrl = sentImage;
+
+      if (sentFile){
+
+        const fd = new FormData(); fd.append('file', sentFile);
+
+        const up = await backend.uploads.image(fd);
+
+        if (up && up.url){
+
+          if (up.url.startsWith('/')){
+
+            const apiBase = (typeof _backendBase === 'function' ? _backendBase() : '') || '';
+
+            uploadedUrl = apiBase ? apiBase.replace(/\/api$/, '') + up.url : up.url;
+
+          } else {
+
+            uploadedUrl = up.url;
+
+          }
+
+          // Patch the optimistic bubble to point at the real URL too.
+
+          const idx0 = serverChannelMessages[key].findIndex(m => m.id === tempId);
+
+          if (idx0 >= 0){ serverChannelMessages[key][idx0].src = uploadedUrl; }
+
+        } else {
+
+          showToast('Image upload failed','warn');
+
+        }
+
+      }
+
+      if (uploadedUrl){ payload.payload = { type:'image', src: uploadedUrl }; }
 
       if (replyToId && typeof replyToId !== 'string') payload.replyTo = replyToId;
 
@@ -13268,6 +13468,30 @@
   // Channel message actions (reply / forward / copy / pin / delete)
 
   document.getElementById('wsChannelMsgs').addEventListener('click', async e => {
+
+    // Tap a channel image to open the lightbox viewer (mirrors DM behaviour).
+
+    const chImg = e.target.closest('[data-ch-img]');
+
+    if (chImg){
+
+      e.stopPropagation();
+
+      const k = currentServer+'__'+currentTextChannel;
+
+      const m = (serverChannelMessages[k]||[]).find(x => String(x.id) === String(chImg.dataset.chImg));
+
+      if (m && m.src){
+
+        const av = (function(){ const a = resolveUserAvatar(m.user); return a.bg; })();
+
+        openImageViewer(m.src, { sender: m.user || 'Unknown', time: m.time || '', av });
+
+      }
+
+      return;
+
+    }
 
     // Tapping a channel-msg avatar opens that sender's profile.
 

@@ -16,9 +16,14 @@ const requestSchema = z.object({
 friendsRouter.post('/request', async (req, res, next) => {
   try {
     const body = parseOr400(requestSchema, req.body, res); if (!body) return;
-    const raw = body.target.replace(/^@/, '').toLowerCase();
+    const trimmed = body.target.trim();
+    const raw = trimmed.replace(/^@/, '').toLowerCase();
+    // Try in priority order: handle (without @), email, then exact display
+    // name (case-insensitive). Matching by name lets the profile modal's
+    // "send friend request" button work for users we only know by name.
     let target = await one('SELECT * FROM users WHERE handle = ? LIMIT 1', [raw]);
     if (!target) target = await one('SELECT * FROM users WHERE email = ? LIMIT 1', [raw]);
+    if (!target) target = await one('SELECT * FROM users WHERE LOWER(name) = ? LIMIT 1', [trimmed.toLowerCase()]);
     if (!target) return res.status(404).json({ error: 'user_not_found' });
     if (target.id === req.user.id) return res.status(400).json({ error: 'cannot_friend_self' });
     const exists = await one(
