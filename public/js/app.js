@@ -5735,15 +5735,57 @@
 
     }
 
-    const key = nameOrKey.toLowerCase();
+    const lowerName = String(nameOrKey).toLowerCase();
 
-    const c = conversations[key] || Object.values(conversations).find(x => x && x.name === nameOrKey);
+    // 1) Direct handle match in conversations (cheap, common case).
+
+    let c = conversations[lowerName];
+
+    // 2) Case-insensitive name match across every conversation we know about.
+
+    if (!c){
+
+      c = Object.values(conversations).find(x => x && (
+
+        (x.name && x.name.toLowerCase() === lowerName) ||
+
+        (x.handle && x.handle.replace(/^@/, '').toLowerCase() === lowerName.replace(/^@/, ''))
+
+      ));
+
+    }
 
     if (c){
 
       if (c.avImage) return { bg:'#0a070f url('+c.avImage+') center/cover no-repeat', text:'', isImage:true };
 
       return { bg:c.avColor||c.orbGrad||'linear-gradient(135deg,#a78bfa,#1e1b4b)', text:(c.initial||c.name||'?').charAt(0).toUpperCase(), isImage:false };
+
+    }
+
+    // 3) Fall back to a server member detail row — covers the case where
+
+    //    a non-friend in a voice channel hasn't been promoted to
+
+    //    conversations[] yet (e.g. brand new join with no DM history).
+
+    for (const sid in servers){
+
+      const md = (servers[sid].memberDetails || []).find(m => m.name && m.name.toLowerCase() === lowerName);
+
+      if (md){
+
+        if (md.avImage) return { bg:'#0a070f url('+md.avImage+') center/cover no-repeat', text:'', isImage:true };
+
+        if (md.baseColor){
+
+          return { bg:'linear-gradient(135deg,'+md.baseColor+',#1e1b4b)', text:(md.name||'?').charAt(0).toUpperCase(), isImage:false };
+
+        }
+
+        break;
+
+      }
 
     }
 

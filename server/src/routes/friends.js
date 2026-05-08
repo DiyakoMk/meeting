@@ -126,15 +126,27 @@ friendsRouter.delete('/:rid', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-friendsRouter.post('/remove/:userId', async (req, res, next) => {
+// Both /:userId/remove (the path the client uses today) and the legacy
+// /remove/:userId form unfriend the target.
+async function _removeFriendHandler(req, res, next) {
   try {
+    const targetId = req.params.userId;
+    // Resolve handles too — client occasionally passes a handle string.
+    let resolvedId = targetId;
+    if (!/^\d+$/.test(String(targetId))){
+      const u = await one('SELECT id FROM users WHERE handle = ? LIMIT 1', [String(targetId).replace(/^@/, '').toLowerCase()]);
+      if (!u) return res.status(404).json({ error: 'user_not_found' });
+      resolvedId = u.id;
+    }
     await q(
       'DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)',
-      [req.user.id, req.params.userId, req.params.userId, req.user.id]
+      [req.user.id, resolvedId, resolvedId, req.user.id]
     );
     res.json({ ok: true });
     // Tell the other side their bubble should disappear from the friend
     // sidebar without needing a reload.
-    emitFriendRemoved(req.params.userId, req.user.id, req.user.handle ? '@' + req.user.handle : null);
+    emitFriendRemoved(resolvedId, req.user.id, req.user.handle ? '@' + req.user.handle : null);
   } catch (e) { next(e); }
-});
+}
+friendsRouter.post('/:userId/remove', _removeFriendHandler);
+friendsRouter.post('/remove/:userId', _removeFriendHandler);

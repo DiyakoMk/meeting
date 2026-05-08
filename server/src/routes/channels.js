@@ -293,7 +293,7 @@ channelsRouter.post('/text/:sid/:cid/pin', async (req, res, next) => {
 async function __buildServerPayload(sid) {
   const s = await one('SELECT * FROM servers WHERE id = ?', [sid]);
   if (!s) return null;
-  const members = await q(`SELECT sm.user_id, sm.is_admin, u.name FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?`, [sid]);
+  const members = await q(`SELECT sm.user_id, sm.is_admin, u.name, u.av_image, u.base_color FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id = ?`, [sid]);
   const cats = await q('SELECT * FROM server_categories WHERE server_id = ? ORDER BY position', [sid]);
   const tcs  = await q('SELECT * FROM text_channels    WHERE server_id = ? ORDER BY position', [sid]);
   const vcs  = await q('SELECT * FROM voice_channels   WHERE server_id = ? ORDER BY position', [sid]);
@@ -304,7 +304,7 @@ async function __buildServerPayload(sid) {
     emblemImage: s.emblem_image || null, inviteKey: s.invite_key || null,
     isPrivate: !!s.is_private,
     members: members.map(x => x.name),
-    memberDetails: members.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin })),
+    memberDetails: members.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin, avImage: x.av_image || null, baseColor: x.base_color || null })),
     admins:  members.filter(x => x.is_admin).map(x => x.name),
     pinned: s.pinned_text ? { text: s.pinned_text, by: null, time: null } : null,
     categories: cats.map(c => ({

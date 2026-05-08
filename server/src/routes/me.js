@@ -164,7 +164,7 @@ meRouter.get('/snapshot', async (req, res, next) => {
     if (memberRows.length) {
       const sids = memberRows.map(s => s.id);
       const placeholders = sids.map(() => '?').join(',');
-      const allMembers   = await q(`SELECT sm.server_id, sm.user_id, sm.is_admin, u.name FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id IN (${placeholders})`, sids);
+      const allMembers   = await q(`SELECT sm.server_id, sm.user_id, sm.is_admin, u.name, u.av_image, u.base_color FROM server_members sm JOIN users u ON u.id = sm.user_id WHERE sm.server_id IN (${placeholders})`, sids);
       const cats         = await q(`SELECT * FROM server_categories WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
       const tcs          = await q(`SELECT * FROM text_channels    WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
       const vcs          = await q(`SELECT * FROM voice_channels   WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
@@ -189,7 +189,7 @@ meRouter.get('/snapshot', async (req, res, next) => {
           inviteKey: row.invite_key || null,
           isPrivate: !!row.is_private,
           members: sm.map(x => x.name),
-          memberDetails: sm.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin })),
+          memberDetails: sm.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin, avImage: x.av_image || null, baseColor: x.base_color || null })),
           admins: sm.filter(x => x.is_admin).map(x => x.name),
           pinned: row.pinned_text ? { text: row.pinned_text, by: null, time: null } : null,
           categories: cats.filter(c => c.server_id === sid).map(c => ({
@@ -479,7 +479,10 @@ meRouter.put('/marks/orbits', async (req, res, next) => {
 // Marked text channels. Client sends "<serverId>__<channelId>" composite keys.
 meRouter.put('/marks/text-channels', async (req, res, next) => {
   try {
-    const keys = Array.isArray(req.body && req.body.keys) ? req.body.keys : [];
+    // Accept both `keys` (preferred) and `ids` (legacy) so an older client
+    // that hasn't been updated still works.
+    const raw = (req.body && (req.body.keys || req.body.ids)) || [];
+    const keys = Array.isArray(raw) ? raw : [];
     await q('DELETE FROM user_marked_text_channels WHERE user_id = ?', [req.user.id]);
     let i = 0;
     for (const k of keys) {
