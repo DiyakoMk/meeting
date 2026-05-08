@@ -37,6 +37,15 @@ friendsRouter.post('/request', async (req, res, next) => {
           AND status = 'pending' LIMIT 1`,
       [req.user.id, target.id, target.id, req.user.id]);
     if (pending) return res.status(409).json({ error: 'request_already_pending' });
+    // The (from_id, to_id) pair has a UNIQUE index in the schema. Old rows
+    // with status accepted/rejected/cancelled from a previous friendship
+    // cycle would block the new INSERT, so we wipe stale rows in BOTH
+    // directions before issuing the new request — that way unfriend +
+    // request again works the same as a brand new pairing.
+    await q(
+      'DELETE FROM friend_requests WHERE ((from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)) AND status != "pending"',
+      [req.user.id, target.id, target.id, req.user.id]
+    );
     const r = await q(
       'INSERT INTO friend_requests (from_id, to_id, status) VALUES (?, ?, "pending")',
       [req.user.id, target.id]
@@ -140,6 +149,13 @@ async function _removeFriendHandler(req, res, next) {
     }
     await q(
       'DELETE FROM friendships WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)',
+      [req.user.id, resolvedId, resolvedId, req.user.id]
+    );
+    // Wipe any leftover friend_request rows for this pairing too. Without
+    // this, the unique (from_id, to_id) index blocks a future re-friend
+    // request because the old "accepted" row is still sitting there.
+    await q(
+      'DELETE FROM friend_requests WHERE (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?)',
       [req.user.id, resolvedId, resolvedId, req.user.id]
     );
     res.json({ ok: true });
