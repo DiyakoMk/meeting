@@ -853,23 +853,13 @@
 
     updateOrbStates();
 
-    // Auto-open the voice users sidebar when previewing a real orb so the user
+    // If the sidebar is already open, refresh its contents to reflect the
 
-    // can scrub through orbits and immediately see who's there. Skip the empty
+    // new selected orb. We deliberately don't auto-open here — the click
 
-    // placeholder.
+    // handler decides open/close so the toggle behaviour stays predictable.
 
-    const ch = list[idx];
-
-    if (ch && ch !== '__empty__' && channelData[ch] && (channelData[ch].users||[]).length > 0){
-
-      setVoiceUsers(true);
-
-    } else if (voiceUsersSidebarOpen){
-
-      renderVoiceUsers();
-
-    }
+    if (voiceUsersSidebarOpen) renderVoiceUsers();
 
   }
 
@@ -6089,6 +6079,34 @@
 
     }
 
+    // Seed each thread with its last message preview so quick-access /
+
+    // home cards show real "X said Y" instead of "no transmissions yet"
+
+    // before the user opens the conversation. The full history still
+
+    // lazy-loads via openConversation().
+
+    if (snap.messagePreviews && typeof snap.messagePreviews === 'object'){
+
+      Object.entries(snap.messagePreviews).forEach(([k, prev]) => {
+
+        if (!prev) return;
+
+        if (!messages[k] || messages[k].length === 0){
+
+          const m = { ...prev, status:'delivered', _preview:true };
+
+          _expandChannelMessage(m);
+
+          messages[k] = [m];
+
+        }
+
+      });
+
+    }
+
     if (Array.isArray(snap.friendsList))  friendsList = snap.friendsList.slice();
 
     if (Array.isArray(snap.markedFriends)) markedFriends = snap.markedFriends.slice();
@@ -6096,6 +6114,22 @@
     if (Array.isArray(snap.markedTextChannels)) markedTextChannels = snap.markedTextChannels.slice();
 
     if (Array.isArray(snap.marked))       marked = snap.marked.slice();
+
+    // Drop a stale localStorage 'lastJoined' if we no longer belong to its
+
+    // server. Otherwise the orb column tries to render an unreachable orb,
+
+    // falls through to the empty placeholder, and the user sees the "create
+
+    // / join server" buttons even though they have a marked orb to show.
+
+    if (lastJoinedChannel && !channelData[lastJoinedChannel]){
+
+      lastJoinedChannel = null;
+
+      try { localStorage.removeItem('orblood:lastJoined'); } catch(_){}
+
+    }
 
     if (Array.isArray(snap.notifications)) notifications = snap.notifications.slice();
 
@@ -13889,9 +13923,31 @@
 
     const idx = list.indexOf(ch);
 
-    if (idx >= 0 && idx !== currentSlideIndex){ goToSlide(idx, true); setVoiceUsers(true); }
+    // Always toggle the voice users sidebar based on the live DOM state.
 
-    else toggleVoiceUsers();
+    // If the user clicks a different orb, slide to it first so the carousel
+
+    // catches up — but the *open/closed* decision is the toggle, not a
+
+    // forced "always open". This makes the third / fourth tap behave
+
+    // exactly the same as the first / second.
+
+    const side = document.getElementById('voiceUsersSidebar');
+
+    const isOpenInDom = !!(side && side.classList.contains('open'));
+
+    const movingSlide = idx >= 0 && idx !== currentSlideIndex;
+
+    if (movingSlide) goToSlide(idx, true);
+
+    // After a slide change we want the panel open (showing the new orb's
+
+    // members); on a same-slide click we just flip whatever state the DOM is in.
+
+    if (movingSlide) setVoiceUsers(true);
+
+    else setVoiceUsers(!isOpenInDom);
 
   });
 

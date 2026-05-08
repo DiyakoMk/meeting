@@ -205,6 +205,50 @@ meRouter.get('/snapshot', async (req, res, next) => {
       });
     }
 
+    // Last message preview for every DM thread the user is part of.
+    // Lets the home / quick-access lists show "X said Y" right after a
+    // refresh without each row hitting GET /api/dms separately.
+    const previewRows = await q(
+      `SELECT t.id AS tid, t.user_a, t.user_b, t.is_saved,
+              m.id AS mid, m.body, m.deleted, m.payload_json, m.created_at, m.sender_id
+         FROM dm_threads t
+         LEFT JOIN dm_messages m ON m.id = (
+           SELECT id FROM dm_messages WHERE thread_id = t.id ORDER BY created_at DESC, id DESC LIMIT 1
+         )
+        WHERE t.user_a = ? OR t.user_b = ?`, [me.id, me.id]);
+    const peerIds = new Set();
+    previewRows.forEach(r => {
+      if (r.is_saved) return;
+      const peer = r.user_a === me.id ? r.user_b : r.user_a;
+      peerIds.add(peer);
+    });
+    const peerHandleByUid = new Map();
+    if (peerIds.size){
+      const rows = await q(
+        `SELECT id, handle FROM users WHERE id IN (${[...peerIds].map(()=>'?').join(',')})`,
+        [...peerIds]);
+      rows.forEach(r => peerHandleByUid.set(r.id, r.handle.toLowerCase()));
+    }
+    const messagePreviews = {};
+    previewRows.forEach(r => {
+      if (!r.mid) return;
+      const k = r.is_saved ? 'saved' : peerHandleByUid.get(r.user_a === me.id ? r.user_b : r.user_a);
+      if (!k) return;
+      const sender = r.sender_id === me.id ? 'me' : 'them';
+      let payload = r.payload_json;
+      if (typeof payload === 'string'){ try { payload = JSON.parse(payload); } catch { payload = null; } }
+      messagePreviews[k] = {
+        id: r.mid,
+        sender,
+        text: r.body || '',
+        time: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        day:  new Date(r.created_at).toLocaleDateString().toUpperCase(),
+        deleted: !!r.deleted,
+        payload,
+        type: payload && payload.type ? payload.type : undefined
+      };
+    });
+
     // Marks
     const markedOrbs = await q(
       `SELECT channel_id FROM user_marked_orbits WHERE user_id = ? ORDER BY position`, [me.id]);
@@ -247,6 +291,7 @@ meRouter.get('/snapshot', async (req, res, next) => {
       channelData: voiceMembersByChannel,
       conversations,
       messages: { saved: [] }, // DM threads loaded lazily per-thread
+      messagePreviews,         // last message per DM thread for sidebar previews
       friendsList: friendRows.map(u => u.handle.toLowerCase()),
       markedFriends: markedFr.map(r => r.handle.toLowerCase()),
       markedTextChannels: markedTcs.map(r => r.server_id + '__' + r.channel_id),

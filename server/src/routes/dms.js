@@ -48,9 +48,9 @@ dmsRouter.get('/:peerKey', async (req, res, next) => {
   try {
     const { thread, peer } = await resolveThread(req.params.peerKey, req.user);
     if (!thread) return res.status(404).json({ error: 'peer_not_found' });
-    if (peer && await isBlocked(req.user.id, peer.id)){
-      return res.json({ messages: [], blocked: true });
-    }
+    // History is always visible to both parties, regardless of who blocked
+    // whom. Composing is the only thing that's gated. We still return a
+    // blocked flag so the client can surface the right banner state.
     const rows = await q(
       `SELECT m.*, u.handle AS sender_handle FROM dm_messages m
          JOIN users u ON u.id = m.sender_id
