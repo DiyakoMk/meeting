@@ -196,7 +196,45 @@ channelsRouter.get('/text/:sid/:cid/messages', async (req, res, next) => {
 channelsRouter.post('/text/:sid/:cid/messages', async (req, res, next) => {
   try {
     const { sid, cid } = req.params;
-    if (!await requireMember(req, res, sid)) return;
+    const m = await requireMember(req, res, sid); if (!m) return;
+    // sendMessages defaults to allowed; per-channel deny on the user's role
+    // overrides that. Admins always pass. The deny map is JSON of shape
+    //   { "<role-id>": ["sendMessages", ...] }
+    if (!m.is_admin) {
+      const ch = await one(
+        'SELECT permission_deny FROM text_channels WHERE id = ? AND server_id = ?',
+        [cid, sid]);
+      if (!ch) return res.status(404).json({ error: 'channel_not_found' });
+      let denyMap = ch.permission_deny;
+      if (typeof denyMap === 'string') {
+        try { denyMap = JSON.parse(denyMap); } catch { denyMap = null; }
+      }
+      if (denyMap && Object.keys(denyMap).length) {
+        const roleRows = await q(
+          `SELECT sr.id FROM server_roles sr
+             JOIN server_role_members srm ON srm.role_id = sr.id
+            WHERE sr.server_id = ? AND srm.user_id = ?`,
+          [sid, req.user.id]);
+        // Check the matching allow override too — an explicit allow on a
+        // role defeats a deny on the same role for the same key.
+        let allowMap = null;
+        const allowRow = await one(
+          'SELECT permission_allow FROM text_channels WHERE id = ? AND server_id = ?',
+          [cid, sid]);
+        if (allowRow && allowRow.permission_allow != null) {
+          allowMap = typeof allowRow.permission_allow === 'string'
+            ? (function(){ try { return JSON.parse(allowRow.permission_allow); } catch { return null; }})()
+            : allowRow.permission_allow;
+        }
+        for (const r of roleRows) {
+          const denied  = Array.isArray(denyMap[r.id])  && denyMap[r.id].includes('sendMessages');
+          const allowed = allowMap && Array.isArray(allowMap[r.id]) && allowMap[r.id].includes('sendMessages');
+          if (denied && !allowed) {
+            return res.status(403).json({ error: 'channel_send_denied' });
+          }
+        }
+      }
+    }
     const body = parseOr400(textMessageSchema, req.body, res); if (!body) return;
     const result = await q(
       `INSERT INTO text_channel_messages (channel_id, sender_id, body, payload_json, reply_to)
@@ -248,27 +286,53 @@ channelsRouter.post('/text/:sid/:cid/read', async (req, res, next) => {
 });
 
 // --- Patch (rename / restyle / restrict) a text channel ---
+// Per-role permission overrides:
+//   permissionAllow / permissionDeny shape: { "<role-id>": ["sendMessages", ...] }
+//   - allow grants the perm inside this channel even if the role doesn't
+//     have it server-wide
+//   - deny strips it inside this channel even if the role does have it
+//   - both can coexist; deny always wins
+const overrideMapSchema = z.record(
+  z.string().min(1).max(40),
+  z.array(z.string().min(1).max(40)).max(40)
+).nullable().optional();
+
 const channelPatchSchema = z.object({
   name:            z.string().trim().min(1).max(80).optional(),
   style:           z.string().max(40).optional(),
   // null clears the restriction (visible to everyone). An empty array
   // means "no role can see it", which the client never actually sends
   // but we still store as-is.
-  visibleRoleIds:  z.array(z.string().min(1).max(40)).max(50).nullable().optional()
+  visibleRoleIds:  z.array(z.string().min(1).max(40)).max(50).nullable().optional(),
+  permissionAllow: overrideMapSchema,
+  permissionDeny:  overrideMapSchema
 });
+
+function _buildChannelPatch(body) {
+  const sets = [], args = [];
+  if (body.name  !== undefined) { sets.push('name = ?');  args.push(body.name); }
+  if (body.style !== undefined) { sets.push('style = ?'); args.push(body.style); }
+  if (body.visibleRoleIds !== undefined) {
+    sets.push('visible_role_ids = ?');
+    args.push(body.visibleRoleIds === null ? null : JSON.stringify(body.visibleRoleIds));
+  }
+  if (body.permissionAllow !== undefined) {
+    sets.push('permission_allow = ?');
+    args.push(body.permissionAllow === null ? null : JSON.stringify(body.permissionAllow));
+  }
+  if (body.permissionDeny !== undefined) {
+    sets.push('permission_deny = ?');
+    args.push(body.permissionDeny === null ? null : JSON.stringify(body.permissionDeny));
+  }
+  return { sets, args };
+}
 
 channelsRouter.patch('/text/:sid/:cid', async (req, res, next) => {
   try {
     const sid = req.params.sid;
     if (!await requirePermission(req, res, sid, "manageTextCh")) return;
     const body = parseOr400(channelPatchSchema, req.body, res); if (!body) return;
-    const sets = [], args = [];
-    if (body.name  !== undefined) { sets.push('name = ?');  args.push(body.name); }
-    if (body.style !== undefined) { sets.push('style = ?'); args.push(body.style); }
-    if (body.visibleRoleIds !== undefined) {
-      sets.push('visible_role_ids = ?');
-      args.push(body.visibleRoleIds === null ? null : JSON.stringify(body.visibleRoleIds));
-    }
+    const { sets, args } = _buildChannelPatch(body);
     if (sets.length) {
       args.push(req.params.cid, sid);
       await q('UPDATE text_channels SET ' + sets.join(', ') + ' WHERE id = ? AND server_id = ?', args);
@@ -283,13 +347,7 @@ channelsRouter.patch('/voice/:sid/:cid', async (req, res, next) => {
     const sid = req.params.sid;
     if (!await requirePermission(req, res, sid, "manageVoiceCh")) return;
     const body = parseOr400(channelPatchSchema, req.body, res); if (!body) return;
-    const sets = [], args = [];
-    if (body.name  !== undefined) { sets.push('name = ?');  args.push(body.name); }
-    if (body.style !== undefined) { sets.push('style = ?'); args.push(body.style); }
-    if (body.visibleRoleIds !== undefined) {
-      sets.push('visible_role_ids = ?');
-      args.push(body.visibleRoleIds === null ? null : JSON.stringify(body.visibleRoleIds));
-    }
+    const { sets, args } = _buildChannelPatch(body);
     if (sets.length) {
       args.push(req.params.cid, sid);
       await q('UPDATE voice_channels SET ' + sets.join(', ') + ' WHERE id = ? AND server_id = ?', args);
@@ -348,8 +406,19 @@ async function __buildServerPayload(sid) {
       textChannels:  tcs.filter(t => t.category_id === c.id).map(t => t.id),
       voiceChannels: vcs.filter(v => v.category_id === c.id).map(v => v.id)
     })),
-    textChannels: tcs.map(t => ({ id: t.id, name: t.name, style: t.style || 'glow', unread: 0, pinnedMsgId: t.pinned_msg_id || null, visibleRoleIds: __parseRoleIds(t.visible_role_ids) })),
-    voiceChannels: vcs.map(v => ({ id: v.id, name: v.name, style: v.style || 'indigo', visibleRoleIds: __parseRoleIds(v.visible_role_ids) }))
+    textChannels: tcs.map(t => ({
+      id: t.id, name: t.name, style: t.style || 'glow', unread: 0,
+      pinnedMsgId: t.pinned_msg_id || null,
+      visibleRoleIds:  __parseRoleIds(t.visible_role_ids),
+      permissionAllow: __parseRoleIds(t.permission_allow),
+      permissionDeny:  __parseRoleIds(t.permission_deny)
+    })),
+    voiceChannels: vcs.map(v => ({
+      id: v.id, name: v.name, style: v.style || 'indigo',
+      visibleRoleIds:  __parseRoleIds(v.visible_role_ids),
+      permissionAllow: __parseRoleIds(v.permission_allow),
+      permissionDeny:  __parseRoleIds(v.permission_deny)
+    }))
   };
 }
 

@@ -1999,6 +1999,182 @@
 
   }
 
+  // Cache of (conversationKey -> [messageIds rendered into the DOM]) so we
+
+  // can detect the "user just sent / received one new message" case and
+
+  // append a single bubble instead of rebuilding the whole transcript. The
+
+  // full innerHTML rebuild reset scroll, killed CSS animations and made the
+
+  // chat visibly flash on every keystroke; appending in place is invisible.
+
+  const _dmRenderedIds = Object.create(null);
+
+  // Mutations that change a message in-place (edit, delete, status flip)
+
+  // need a full re-render — the id list is unchanged so the prefix check
+
+  // would happily skip them. Callers that mutate an existing bubble call
+
+  // this so the next renderConversation rebuilds.
+
+  function invalidateDmCache(key){
+
+    if (key && _dmRenderedIds[key]) delete _dmRenderedIds[key];
+
+  }
+
+  function _dmRenderSingleBubble(m, list, prevSender, prevDay){
+
+    const conv = conversations[currentConversation];
+
+    let html = '';
+
+    if (m.day && m.day !== prevDay){
+
+      html += '<div class="dm-day-divider"><span>'+m.day+'</span></div>';
+
+    }
+
+    const grouped = prevSender === m.sender;
+
+    const cls = 'dm-msg '+(m.sender==='me'?'you':'them')+(grouped?' grouped':'');
+
+    const av = (() => {
+
+      const r = m.sender==='me' ? resolveUserAvatar(selfProfile.name) : resolveUserAvatar(conv ? conv.name : '');
+
+      return '<div class="dm-msg-av" style="background:'+r.bg+'">'+(r.isImage?'':escapeHtml(r.text))+'</div>';
+
+    })();
+
+    let bubbleContent = '';
+
+    if (m.deleted){
+
+      bubbleContent = '<div class="dm-bubble deleted" data-msg-id="'+m.id+'">Message deleted</div>';
+
+    } else if (m.type === 'serverCard' && m.serverCard){
+
+      bubbleContent = '<div class="dm-bubble server-card-bubble" data-msg-id="'+m.id+'">'+renderServerCardHtml(m.serverCard)+'</div>';
+
+    } else if (m.type === 'channelCard' && m.channelCard){
+
+      bubbleContent = '<div class="dm-bubble server-card-bubble" data-msg-id="'+m.id+'">'+renderChannelCardHtml(m.channelCard)+'</div>';
+
+    } else if (m.type === 'userCard' && m.userCard){
+
+      bubbleContent = '<div class="dm-bubble server-card-bubble" data-msg-id="'+m.id+'">'+renderUserCardHtml(m.userCard)+'</div>';
+
+    } else if (m.type === 'image'){
+
+      const cap = m.caption ? '<div class="dm-bubble-cap">'+escapeHtml(m.caption)+'</div>' : '';
+
+      let replyPrev = '';
+
+      if (m.replyTo){
+
+        const orig = list.find(x => String(x.id) === String(m.replyTo));
+
+        if (orig && conv){
+
+          const who = orig.sender==='me'?'You':conv.name;
+
+          const txt = orig.deleted?'Message deleted':(orig.type==='image'?'🖼 Photo':(orig.text||'').slice(0,80));
+
+          replyPrev = '<div class="dm-reply-preview" data-jump-to="'+orig.id+'"><div class="drp-name">'+who+'</div><div class="drp-text">'+escapeHtml(txt)+'</div></div>';
+
+        }
+
+      }
+
+      bubbleContent = '<div class="dm-bubble image-bubble" data-msg-id="'+m.id+'">'+replyPrev+'<img class="dm-bubble-img" src="'+m.src+'" alt="" data-msg-id="'+m.id+'" />'+cap+'</div>';
+
+    } else {
+
+      const fwdTag = m.forwarded ? '<div class="dm-fwd-tag"><i data-lucide="share-2" style="width:9px;height:9px"></i>FORWARDED</div>' : '';
+
+      const editedCls = m.edited ? ' edited' : '';
+
+      let replyPrev = '';
+
+      if (m.replyTo){
+
+        const orig = list.find(x => String(x.id) === String(m.replyTo));
+
+        if (orig && conv){
+
+          const who = orig.sender==='me'?'You':conv.name;
+
+          const txt = orig.deleted?'Message deleted':(orig.type==='image'?'🖼 Photo':(orig.text||'').slice(0,80));
+
+          replyPrev = '<div class="dm-reply-preview" data-jump-to="'+orig.id+'"><div class="drp-name">'+who+'</div><div class="drp-text">'+escapeHtml(txt)+'</div></div>';
+
+        }
+
+      }
+
+      bubbleContent = '<div class="dm-bubble'+(m.forwarded?' forwarded':'')+editedCls+'" data-msg-id="'+m.id+'">'+fwdTag+replyPrev+escapeHtml(m.text||'')+'</div>';
+
+    }
+
+    let statusIcon = '';
+
+    if (m.sender === 'me'){
+
+      if (m.status === 'failed'){
+
+        statusIcon = '<i data-lucide="alert-circle" class="dm-status-icon" style="color:var(--danger)" title="Failed to send — tap to retry"></i>';
+
+      } else if (m.status === 'pending'){
+
+        statusIcon = '<i data-lucide="clock" class="dm-status-icon dm-status-pending" title="Sending…"></i>';
+
+      } else {
+
+        const ic = m.status === 'read' ? 'check-check' : (m.status === 'delivered' ? 'check-check' : 'check');
+
+        statusIcon = '<i data-lucide="'+ic+'" class="dm-status-icon" style="'+(m.status==='read'?'color:var(--accent)':'')+'"></i>';
+
+      }
+
+    }
+
+    const meta = '<div class="dm-bubble-meta"><span>'+m.time+'</span>'+statusIcon+'</div>';
+
+    let hoverActions = '';
+
+    if (!m.deleted){
+
+      const pinned = String(dmPinnedByConv[currentConversation] ?? '') === String(m.id);
+
+      hoverActions = '<div class="dm-bubble-hover-actions">'+
+
+        '<button class="dm-bubble-action" data-msg-action="reply" data-msg-id="'+m.id+'" title="Reply"><i data-lucide="reply" style="width:13px;height:13px"></i></button>'+
+
+        '<button class="dm-bubble-action" data-msg-action="forward" data-msg-id="'+m.id+'" title="Forward"><i data-lucide="share-2" style="width:13px;height:13px"></i></button>'+
+
+        '<button class="dm-bubble-action" data-msg-action="pin" data-msg-id="'+m.id+'" title="'+(pinned?'Unpin':'Pin')+'"><i data-lucide="pin" style="width:13px;height:13px;'+(pinned?'color:var(--warn)':'')+'"></i></button>'+
+
+        (m.sender==='me' && m.type !== 'image' ? '<button class="dm-bubble-action" data-msg-action="edit" data-msg-id="'+m.id+'" title="Edit"><i data-lucide="edit-2" style="width:13px;height:13px"></i></button>' : '') +
+
+        (m.type !== 'image' ? '<button class="dm-bubble-action" data-msg-action="copy" data-msg-id="'+m.id+'" title="Copy"><i data-lucide="copy" style="width:13px;height:13px"></i></button>' : '<button class="dm-bubble-action" data-msg-action="download-img" data-msg-id="'+m.id+'" title="Download"><i data-lucide="download" style="width:13px;height:13px"></i></button>') +
+
+        (m.sender==='me' ? '<button class="dm-bubble-action danger" data-msg-action="delete" data-msg-id="'+m.id+'" title="Delete"><i data-lucide="trash-2" style="width:13px;height:13px"></i></button>' : '') +
+
+      '</div>';
+
+    }
+
+    const selCls = (dmSelectMode && dmSelectedIds.has(String(m.id))) ? ' is-selected' : '';
+
+    html += '<div class="'+cls+selCls+'" data-msg-row="'+m.id+'">'+av+'<div class="dm-bubble-wrap">'+bubbleContent+meta+'</div>'+hoverActions+'</div>';
+
+    return html;
+
+  }
+
   function renderConversation(){
 
     const msgsEl = document.getElementById('dmMsgs');
@@ -2006,6 +2182,100 @@
     const list = messages[currentConversation] || [];
 
     const conv = conversations[currentConversation];
+
+    // Fast path: the cached id list matches everything but the new tail. We
+
+    // append the missing bubbles in place so scroll, focus, hover state and
+
+    // the input field stay intact. Anything that breaks this assumption
+
+    // (edit, delete, pin change, day-divider boundary, conversation switch)
+
+    // falls through to the full rebuild below.
+
+    const cached = _dmRenderedIds[currentConversation];
+
+    if (cached && cached.length && list.length >= cached.length){
+
+      let prefixOk = true;
+
+      for (let i = 0; i < cached.length; i++){
+
+        if (cached[i] !== String(list[i].id)) { prefixOk = false; break; }
+
+      }
+
+      const onlyAppended = prefixOk && list.length > cached.length;
+
+      if (onlyAppended){
+
+        // We also need the pinned banner to be unchanged — when a pin is
+
+        // added/removed the banner area shifts and incremental render misses
+
+        // it. Stamp the current pin id and only fast-path when it matches.
+
+        const expectedPin = msgsEl.dataset.pinId || '';
+
+        const actualPin   = String(dmPinnedByConv[currentConversation] || '');
+
+        if (expectedPin === actualPin){
+
+          const SLOP = 80;
+
+          const wasNearBottom = (msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight) < SLOP;
+
+          // Build only the new bubbles, with sender/day stitched from the last
+
+          // cached message so grouping still collapses correctly.
+
+          const lastCachedIdx = cached.length - 1;
+
+          let prevSender = lastCachedIdx >= 0 ? list[lastCachedIdx].sender : null;
+
+          let prevDay    = lastCachedIdx >= 0 ? list[lastCachedIdx].day    : null;
+
+          let appendHtml = '';
+
+          for (let i = cached.length; i < list.length; i++){
+
+            appendHtml += _dmRenderSingleBubble(list[i], list, prevSender, prevDay);
+
+            prevSender = list[i].sender;
+
+            if (list[i].day) prevDay = list[i].day;
+
+            cached.push(String(list[i].id));
+
+          }
+
+          if (appendHtml){
+
+            const tmp = document.createElement('div');
+
+            tmp.innerHTML = appendHtml;
+
+            while (tmp.firstChild) msgsEl.appendChild(tmp.firstChild);
+
+            if (wasNearBottom) msgsEl.scrollTop = msgsEl.scrollHeight;
+
+            // Lucide icons inside the appended fragment need to be hydrated
+
+            // — createIcons re-scans the document but since the new SVGs
+
+            // are still <i data-lucide="...">, this just upgrades them.
+
+            refreshIcons();
+
+          }
+
+          return;
+
+        }
+
+      }
+
+    }
 
     // Reflect compose-box state for friends-only / block restrictions.
 
@@ -2210,6 +2480,14 @@
     const prevScrollFromBottom = msgsEl.scrollHeight - msgsEl.scrollTop;
 
     msgsEl.innerHTML = html;
+
+    // Re-seed the per-conversation cache so the next render can skip the
+
+    // full rebuild when only a tail bubble is appended.
+
+    _dmRenderedIds[currentConversation] = (list || []).map(x => String(x.id));
+
+    msgsEl.dataset.pinId = String(dmPinnedByConv[currentConversation] || '');
 
     if (wasNearBottom){
 
@@ -2637,6 +2915,12 @@
 
     const m = findMsg(id); if (!m) return;
 
+    // Editing in-place changes the bubble content but not the id ordering,
+
+    // so the append-only fast path would skip it — invalidate the cache.
+
+    invalidateDmCache(currentConversation);
+
     // Optimistic local delete first so the UI is instant.
 
     m.deleted = true;
@@ -2949,6 +3233,14 @@
 
         if (idx >= 0) arr[idx] = merged; else arr.push(merged);
 
+        // The bubble's id changed from "tmp_..." to the server-issued id and
+
+        // its status flipped from pending to delivered. Both are in-place
+
+        // mutations the append-only path can't see, so rebuild fresh.
+
+        invalidateDmCache(currentConversation);
+
       } catch (e) {
 
         const arr = messages[currentConversation] || [];
@@ -2956,6 +3248,8 @@
         const idx = arr.findIndex(x => x.id === tempId);
 
         if (idx >= 0){ arr[idx].status = 'failed'; arr[idx]._pending = false; }
+
+        invalidateDmCache(currentConversation);
 
         showToast('Send failed','warn');
 
@@ -2974,6 +3268,8 @@
       const editedId = dmEditingId;
 
       if (m){ m.text = text; m.edited = true; }
+
+      invalidateDmCache(currentConversation);
 
       cancelEdit();
 
@@ -4053,6 +4349,76 @@
 
   }
 
+  // Same as memberHasPerm but consults the per-channel allow/deny maps too.
+
+  // Used for permissions that make sense per-channel (sendMessages mostly).
+
+  // Owner + admin always pass. Deny beats allow on the same role.
+
+  function memberHasPermInChannel(s, name, key, entity){
+
+    if (s && Array.isArray(s.admins) && s.admins.includes(name)) return true;
+
+    const roles = getMemberRoles(s, name);
+
+    // Server-wide grant from any role.
+
+    let granted = roles.some(r => r && r.perms && r.perms[key]);
+
+    if (entity){
+
+      const allow = entity.permissionAllow || {};
+
+      const deny  = entity.permissionDeny  || {};
+
+      for (const r of roles){
+
+        if (Array.isArray(allow[r.id]) && allow[r.id].includes(key)) { granted = true; break; }
+
+      }
+
+      for (const r of roles){
+
+        if (Array.isArray(deny[r.id]) && deny[r.id].includes(key))  { granted = false; break; }
+
+      }
+
+    }
+
+    // sendMessages defaults to allowed for everyone — only an explicit deny
+
+    // turns it off. Other keys default to "no" (the role-grant check above).
+
+    if (key === 'sendMessages' && entity){
+
+      const deny = entity.permissionDeny || {};
+
+      let denied = false;
+
+      for (const r of roles){
+
+        if (Array.isArray(deny[r.id]) && deny[r.id].includes('sendMessages')) { denied = true; break; }
+
+      }
+
+      if (!denied) granted = true;
+
+      const allow = entity.permissionAllow || {};
+
+      // Allow on a role overrides deny on the same role.
+
+      for (const r of roles){
+
+        if (Array.isArray(allow[r.id]) && allow[r.id].includes('sendMessages')) { granted = true; break; }
+
+      }
+
+    }
+
+    return granted;
+
+  }
+
   // Whether the given member can see an entity (category/textChannel/voiceChannel).
 
   // entity.visibleRoleIds is null/empty -> visible to everyone. Owner + admins always pass.
@@ -4076,6 +4442,58 @@
     if (roles.some(r => r.id === 'owner' || r.id === 'admin')) return true;
 
     return roles.some(r => allow.includes(r.id));
+
+  }
+
+  // True when the entity has any kind of access restriction baked in —
+
+  // visibleRoleIds non-empty, or any per-role allow/deny override. Used
+
+  // purely to decide whether to draw a small lock chip next to the
+
+  // channel/category name so admins can spot private rooms at a glance.
+
+  function isEntityRestricted(entity){
+
+    if (!entity) return false;
+
+    if (Array.isArray(entity.visibleRoleIds) && entity.visibleRoleIds.length) return true;
+
+    const a = entity.permissionAllow;
+
+    const d = entity.permissionDeny;
+
+    if (a && typeof a === 'object' && Object.keys(a).length) return true;
+
+    if (d && typeof d === 'object' && Object.keys(d).length) return true;
+
+    return false;
+
+  }
+
+  // Renders the inline lock chip next to a private channel name. Only the
+
+  // server owner / admins / users with manageRoles see it — for everyone
+
+  // else a private channel they can't access is hidden anyway, and the
+
+  // ones they CAN access shouldn't broadcast their privacy.
+
+  function _privateLockHtml(s, entity){
+
+    if (!isEntityRestricted(entity)) return '';
+
+    const me = selfProfile && selfProfile.name;
+
+    if (!me) return '';
+
+    const isAdmin = (s && Array.isArray(s.admins) && s.admins.includes(me));
+
+    const canManage = isAdmin || memberHasPerm(s, me, 'manageRoles');
+
+    if (!canManage) return '';
+
+    return '<span class="priv-lock" title="Restricted access"><i data-lucide="lock" style="width:11px;height:11px"></i></span>';
 
   }
 
@@ -4383,7 +4801,7 @@
 
       const active = tc.id === currentTextChannel;
 
-      html += '<button class="ws-channel-pill'+(active?' active':'')+'" data-strip-tc="'+tc.id+'"><i data-lucide="hash"></i>'+escapeHtml(tc.name)+(tc.unread?'<span class="ws-channel-pill-badge">'+tc.unread+'</span>':'')+'</button>';
+      html += '<button class="ws-channel-pill'+(active?' active':'')+'" data-strip-tc="'+tc.id+'"><i data-lucide="hash"></i>'+escapeHtml(tc.name)+_privateLockHtml(s, tc)+(tc.unread?'<span class="ws-channel-pill-badge">'+tc.unread+'</span>':'')+'</button>';
 
     });
 
@@ -4551,17 +4969,23 @@
 
     const key = currentServer+'__'+currentTextChannel;
 
+    // First time we open this channel locally we just initialise an empty
+
+    // buffer; the real history streams in from /api/channels/text/.../
+
+    // messages on demand. Previously we seeded two fake "Welcome" / "Got
+
+    // it" bubbles which the server feed then nuked on the next render —
+
+    // that two-frame ghost is what looked like "the page is reloading"
+
+    // when entering a text channel.
+
     let msgs = serverChannelMessages[key];
 
     if (!msgs){
 
-      msgs = [
-
-        { id:Date.now()-2000, user:s.admins[0], text:'Welcome to #'+tc.name+' — let\'s keep it focused.', time:'2h ago' },
-
-        { id:Date.now()-1000, user:s.members[Math.floor(Math.random()*s.members.length)], text:'Got it. Standing by for orders.', time:'1h ago' },
-
-      ];
+      msgs = [];
 
       serverChannelMessages[key] = msgs;
 
@@ -4883,7 +5307,7 @@
 
         html += '<div class="ws-cat'+spanCls+'" data-cat-id="'+cat.id+'" data-key="'+cat.id+'"'+catDrag+'>';
 
-        html += '<div class="ws-cat-h"><div class="ws-cat-h-name" data-cat-glow>'+escapeHtml(cat.name)+'</div>'+
+        html += '<div class="ws-cat-h"><div class="ws-cat-h-name" data-cat-glow>'+escapeHtml(cat.name)+_privateLockHtml(s, cat)+'</div>'+
 
           (memberHasPerm(s,selfProfile.name,'manageCategory') ? '<button class="ws-cat-del" data-cat-delete="'+cat.id+'" title="Delete category"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>' : '')+
 
@@ -4927,7 +5351,7 @@
 
             const tcDrag = canManageTc ? ' draggable="true"' : '';
 
-            html += '<div class="ws-cat-tc style-'+tc.style+(tc.unread?' has-unread':'')+'" data-tc-id="'+tc.id+'" data-key="'+tc.id+'"'+tcDrag+' role="button" tabindex="0"><i data-lucide="hash"></i><span class="ws-cat-tc-n">'+escapeHtml(tc.name)+'</span>'+(tc.unread?'<span class="ws-cat-tc-b">'+tc.unread+'</span>':'')+tcDel+'</div>';
+            html += '<div class="ws-cat-tc style-'+tc.style+(tc.unread?' has-unread':'')+'" data-tc-id="'+tc.id+'" data-key="'+tc.id+'"'+tcDrag+' role="button" tabindex="0"><i data-lucide="hash"></i><span class="ws-cat-tc-n">'+escapeHtml(tc.name)+_privateLockHtml(s, tc)+'</span>'+(tc.unread?'<span class="ws-cat-tc-b">'+tc.unread+'</span>':'')+tcDel+'</div>';
 
           });
 
@@ -4993,7 +5417,7 @@
 
             const vcDel = (memberHasPerm(s,selfProfile.name,'manageVoiceCh')) ? '<button class="ws-cat-vc-del" data-vc-delete="'+vc.id+'" title="Delete voice channel"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
 
-            html += '<div class="ws-cat-vc'+(isConn?' connected':'')+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
+            html += '<div class="ws-cat-vc'+(isConn?' connected':'')+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+_privateLockHtml(s, vc)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
 
           });
 
@@ -7215,7 +7639,7 @@
 
       const m = arr.find(x => String(x.id) === target);
 
-      if (m){ m.text = text || ''; m.edited = true; touched = true; }
+      if (m){ m.text = text || ''; m.edited = true; touched = true; invalidateDmCache(k); }
 
     });
 
@@ -7249,7 +7673,7 @@
 
       const m = arr.find(x => String(x.id) === target);
 
-      if (m){ m.deleted = true; m.text = ''; }
+      if (m){ m.deleted = true; m.text = ''; invalidateDmCache(k); }
 
     });
 
@@ -9555,6 +9979,32 @@
 
     renderChanSettingsRoles();
 
+    // Per-role allow/deny editor lives on text channels only — categories
+
+    // and voice orbs use visibility for now. Reset the local buffer from
+
+    // the entity so reopening the modal shows whatever the user already
+
+    // saved; clear it on cancel-by-not-touching.
+
+    chanSettings_overrideAllow = JSON.parse(JSON.stringify(ent.permissionAllow || {}));
+
+    chanSettings_overrideDeny  = JSON.parse(JSON.stringify(ent.permissionDeny  || {}));
+
+    const permField = document.getElementById('chanSettingsPermsField');
+
+    if (permField){
+
+      permField.style.display = (target.type === 'text') ? '' : 'none';
+
+      document.getElementById('chanSettingsPerms').style.display = 'none';
+
+      document.getElementById('chanSettingsPermsToggle').textContent = 'SHOW';
+
+      if (target.type === 'text') renderChanSettingsOverrides();
+
+    }
+
     document.getElementById('chanSettingsBackdrop').classList.add('show');
 
   }
@@ -9564,6 +10014,84 @@
     document.querySelectorAll('[data-cs-vis]').forEach(b => b.classList.toggle('active', b.dataset.csVis === mode));
 
     document.getElementById('chanSettingsRoles').style.display = mode === 'roles' ? 'flex' : 'none';
+
+  }
+
+  // Per-role override editor state. Each map is { roleId: ["sendMessages",...] }.
+
+  // Cleared on every openChanSettings, persisted on Save.
+
+  let chanSettings_overrideAllow = {};
+
+  let chanSettings_overrideDeny  = {};
+
+  function renderChanSettingsOverrides(){
+
+    if (!currentServer) return;
+
+    const s = servers[currentServer]; const ent = getEntity(s, chanSettingsTarget); if (!ent) return;
+
+    const wrap = document.getElementById('chanSettingsPerms');
+
+    if (!wrap) return;
+
+    const roles = (s.roles||[]).filter(r => r.id !== 'owner');
+
+    if (!roles.length){ wrap.innerHTML = '<div style="font-size:0.7rem;color:var(--t3)">No roles defined yet.</div>'; return; }
+
+    let html = '';
+
+    roles.forEach(r => {
+
+      const allowList = chanSettings_overrideAllow[r.id] || [];
+
+      const denyList  = chanSettings_overrideDeny[r.id]  || [];
+
+      const isAllow = allowList.includes('sendMessages');
+
+      const isDeny  = denyList.includes('sendMessages');
+
+      html += '<div class="cs-ovr-row" style="--role-c:'+r.color+'">' +
+
+        '<div class="cs-ovr-label">'+escapeHtml(r.name)+'</div>' +
+
+        '<button type="button" class="cs-ovr-pill '+(isAllow?'allow':'')+'" data-ovr-role="'+r.id+'" data-ovr-target="allow">ALLOW</button>' +
+
+        '<button type="button" class="cs-ovr-pill '+(isDeny?'deny':'')+'" data-ovr-role="'+r.id+'" data-ovr-target="deny">DENY</button>' +
+
+      '</div>';
+
+    });
+
+    wrap.innerHTML = html;
+
+  }
+
+  function _toggleSendOverride(roleId, target){
+
+    // Toggle: clicking the same pill again clears it (back to inherit).
+
+    const allowList = chanSettings_overrideAllow[roleId] || [];
+
+    const denyList  = chanSettings_overrideDeny[roleId]  || [];
+
+    const wasAllow  = allowList.includes('sendMessages');
+
+    const wasDeny   = denyList.includes('sendMessages');
+
+    chanSettings_overrideAllow[roleId] = allowList.filter(p => p !== 'sendMessages');
+
+    chanSettings_overrideDeny[roleId]  = denyList.filter(p => p !== 'sendMessages');
+
+    if (target === 'allow' && !wasAllow) chanSettings_overrideAllow[roleId].push('sendMessages');
+
+    if (target === 'deny'  && !wasDeny)  chanSettings_overrideDeny[roleId].push('sendMessages');
+
+    if (!chanSettings_overrideAllow[roleId].length) delete chanSettings_overrideAllow[roleId];
+
+    if (!chanSettings_overrideDeny[roleId].length)  delete chanSettings_overrideDeny[roleId];
+
+    renderChanSettingsOverrides();
 
   }
 
@@ -14075,6 +14603,24 @@
 
     if (!currentServer || !currentTextChannel) return;
 
+    // Honour per-channel send-message override before optimistically
+
+    // appending — otherwise the bubble would appear, the server would
+
+    // reject it, and the user would see an inconsistent UI flash.
+
+    const _s = servers[currentServer];
+
+    const _tc = _s && (_s.textChannels || []).find(t => t.id === currentTextChannel);
+
+    if (_s && _tc && !memberHasPermInChannel(_s, selfProfile.name, 'sendMessages', _tc)){
+
+      showToast("You can\u2019t send messages in this channel.", 'warn');
+
+      return;
+
+    }
+
     const key = currentServer+'__'+currentTextChannel;
 
     serverChannelMessages[key] = serverChannelMessages[key] || [];
@@ -15085,6 +15631,44 @@
 
   });
 
+  // Expand / collapse the per-role override panel.
+
+  const _csPermsHead = document.getElementById('chanSettingsPermsHead');
+
+  if (_csPermsHead){
+
+    _csPermsHead.addEventListener('click', () => {
+
+      const body  = document.getElementById('chanSettingsPerms');
+
+      const label = document.getElementById('chanSettingsPermsToggle');
+
+      const isOpen = body.style.display !== 'none';
+
+      body.style.display = isOpen ? 'none' : 'flex';
+
+      if (label) label.textContent = isOpen ? 'SHOW' : 'HIDE';
+
+    });
+
+  }
+
+  // Click an Allow / Deny pill to toggle that role's send-message override.
+
+  const _csPerms = document.getElementById('chanSettingsPerms');
+
+  if (_csPerms){
+
+    _csPerms.addEventListener('click', e => {
+
+      const pill = e.target.closest('[data-ovr-role]'); if (!pill) return;
+
+      _toggleSendOverride(pill.dataset.ovrRole, pill.dataset.ovrTarget);
+
+    });
+
+  }
+
   document.getElementById('chanSettingsSave').addEventListener('click', async () => {
 
     if (!currentServer || !chanSettingsTarget) return;
@@ -15121,6 +15705,22 @@
 
       patch.visibleRoleIds = newVisible;
 
+      // Send the per-role allow/deny maps too, but only for text channels —
+
+      // categories + voice orbs don't surface the editor yet. Empty maps
+
+      // send as null so the column actually clears, otherwise we'd happily
+
+      // store {} forever.
+
+      if (tType === 'text'){
+
+        patch.permissionAllow = Object.keys(chanSettings_overrideAllow).length ? chanSettings_overrideAllow : null;
+
+        patch.permissionDeny  = Object.keys(chanSettings_overrideDeny ).length ? chanSettings_overrideDeny  : null;
+
+      }
+
       let r = null;
 
       if (tType === 'text')      r = await backend.servers.patchTextChannel(currentServer, ent.id, patch);
@@ -15150,6 +15750,14 @@
     }
 
     ent.visibleRoleIds = newVisible;
+
+    if (tType === 'text'){
+
+      ent.permissionAllow = Object.keys(chanSettings_overrideAllow).length ? chanSettings_overrideAllow : null;
+
+      ent.permissionDeny  = Object.keys(chanSettings_overrideDeny ).length ? chanSettings_overrideDeny  : null;
+
+    }
 
     document.getElementById('chanSettingsBackdrop').classList.remove('show');
 

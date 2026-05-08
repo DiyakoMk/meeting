@@ -34,6 +34,16 @@ const schemaPath = path.resolve(here, '..', 'schema.sql');
   await ensureCol('text_channels',     'visible_role_ids', 'JSON NULL');
   await ensureCol('voice_channels',    'visible_role_ids', 'JSON NULL');
   await ensureCol('server_categories', 'visible_role_ids', 'JSON NULL');
+  // Per-role allow / deny lists for the few permissions that make sense
+  // per-channel (sendMessages mostly, but also managePins / manageMessages
+  // in case you want a Mod role that can pin only in one specific channel).
+  // Stored as JSON dicts of { role_id: ["sendMessages", ...] }. Allow grants
+  // the perm inside this channel only; deny strips it inside this channel
+  // only; deny wins on the same role. NULL = no overrides.
+  await ensureCol('text_channels',  'permission_allow', 'JSON NULL');
+  await ensureCol('text_channels',  'permission_deny',  'JSON NULL');
+  await ensureCol('voice_channels', 'permission_allow', 'JSON NULL');
+  await ensureCol('voice_channels', 'permission_deny',  'JSON NULL');
   await root.end();
   console.log(`[init-db] schema applied to ${config.db.database}`);
   process.exit(0);

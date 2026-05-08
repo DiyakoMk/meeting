@@ -1296,6 +1296,17 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .cs-role-chip::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--role-c,var(--t2))}
 
 .cs-role-chip.on{color:#fff;background:var(--brand-glow-soft);border-color:var(--role-c,var(--accent))}
+.cs-overrides{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding:10px;background:var(--tint-1);border:1px solid var(--gb);border-radius:10px;max-height:280px;overflow-y:auto}
+.cs-ovr-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 8px;background:var(--tint-2);border-radius:8px}
+.cs-ovr-label{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1px;color:var(--t1);display:flex;align-items:center;gap:6px}
+.cs-ovr-label::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--role-c,var(--t2))}
+.cs-ovr-pill{padding:4px 10px;border-radius:6px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;letter-spacing:1.4px;cursor:pointer;background:var(--tint-2);border:1px solid var(--gb);color:var(--t3);transition:all 0.15s}
+.cs-ovr-pill:hover{color:var(--t1);border-color:var(--accent)}
+.cs-ovr-pill.allow{background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.45);color:#86efac}
+.cs-ovr-pill.deny{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.45);color:#fca5a5}
+/* Tiny lock chip drawn inline next to private channel/category names so the
+   admin sees at a glance which entities are role-restricted. */
+.priv-lock{display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;margin-left:4px;color:var(--warn);opacity:0.85;vertical-align:-1px}
 
 .dm-bubble-meta{display:flex;align-items:center;gap:6px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3);padding:0 6px;letter-spacing:0.5px}
 

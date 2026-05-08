@@ -211,11 +211,15 @@ meRouter.get('/snapshot', async (req, res, next) => {
           textChannels: tcs.filter(t => t.server_id === sid).map(t => ({
             id: t.id, name: t.name, style: t.style || 'glow', unread: 0,
             pinnedMsgId: t.pinned_msg_id || null,
-            visibleRoleIds: parseRoleIds(t.visible_role_ids)
+            visibleRoleIds:  parseRoleIds(t.visible_role_ids),
+            permissionAllow: parseRoleIds(t.permission_allow),
+            permissionDeny:  parseRoleIds(t.permission_deny)
           })),
           voiceChannels: vcs.filter(v => v.server_id === sid).map(v => ({
             id: v.id, name: v.name, style: v.style || 'indigo',
-            visibleRoleIds: parseRoleIds(v.visible_role_ids)
+            visibleRoleIds:  parseRoleIds(v.visible_role_ids),
+            permissionAllow: parseRoleIds(v.permission_allow),
+            permissionDeny:  parseRoleIds(v.permission_deny)
           })),
           roles: (function(){
             const here = roleRows.filter(r => r.server_id === sid);

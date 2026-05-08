@@ -91,8 +91,19 @@ async function buildServerPayload(sid) {
       textChannels:  tcs.filter(t => t.category_id === c.id).map(t => t.id),
       voiceChannels: vcs.filter(v => v.category_id === c.id).map(v => v.id)
     })),
-    textChannels: tcs.map(t => ({ id: t.id, name: t.name, style: t.style || 'glow', unread: 0, pinnedMsgId: t.pinned_msg_id || null, visibleRoleIds: parseRoleIds(t.visible_role_ids) })),
-    voiceChannels: vcs.map(v => ({ id: v.id, name: v.name, style: v.style || 'indigo', visibleRoleIds: parseRoleIds(v.visible_role_ids) })),
+    textChannels: tcs.map(t => ({
+      id: t.id, name: t.name, style: t.style || 'glow', unread: 0,
+      pinnedMsgId: t.pinned_msg_id || null,
+      visibleRoleIds:  parseRoleIds(t.visible_role_ids),
+      permissionAllow: parseRoleIds(t.permission_allow),
+      permissionDeny:  parseRoleIds(t.permission_deny)
+    })),
+    voiceChannels: vcs.map(v => ({
+      id: v.id, name: v.name, style: v.style || 'indigo',
+      visibleRoleIds:  parseRoleIds(v.visible_role_ids),
+      permissionAllow: parseRoleIds(v.permission_allow),
+      permissionDeny:  parseRoleIds(v.permission_deny)
+    })),
     // Roles are returned only when the server has any custom roles persisted.
     // If null, the frontend's ensureRoles() builds owner/admin from membership.
     roles
