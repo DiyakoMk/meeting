@@ -426,11 +426,36 @@ serversRouter.post('/:id/kick', async (req, res, next) => {
     const tm = await one('SELECT * FROM server_members WHERE server_id = ? AND user_id = ?', [sid, targetId]);
     if (!tm) return res.status(404).json({ error: 'not_member' });
     if (tm.is_admin) return res.status(403).json({ error: 'cannot_kick_admin' });
+    // Also yank the kicked user out of every voice channel they were in,
+    // so the orb UI updates without waiting for them to reload, and the
+    // peer client tears down its WebRTC peers via voice:kicked.
+    const voiceRows = await q(
+      `SELECT vm.channel_id AS cid FROM voice_channel_members vm
+         JOIN voice_channels vc ON vc.id = vm.channel_id
+        WHERE vc.server_id = ? AND vm.user_id = ?`, [sid, targetId]);
+    if (voiceRows.length){
+      await q('DELETE FROM voice_channel_members WHERE user_id = ? AND channel_id IN (' + voiceRows.map(()=>'?').join(',') + ')',
+        [targetId, ...voiceRows.map(r => r.cid)]);
+    }
     await q('DELETE FROM server_members WHERE server_id = ? AND user_id = ?', [sid, targetId]);
     const u = await one('SELECT name FROM users WHERE id = ?', [targetId]);
     res.json({ ok: true });
     emitServerMemberLeft(sid, u ? u.name : '');
     emitToUser(targetId, { type: 'server:kicked', serverId: sid });
+    // Tell the kicked user (any open tabs) to drop the active call too.
+    for (const row of voiceRows){
+      emitToUser(targetId, { type: 'voice:kicked', serverId: sid, channelId: row.cid });
+      // Update the rest of the server's avatars in the orb / overview.
+      const remaining = await q(
+        `SELECT u.name FROM voice_channel_members vm JOIN users u ON u.id = vm.user_id WHERE vm.channel_id = ?`,
+        [row.cid]);
+      const names = remaining.map(r => r.name);
+      const memberRows = await q('SELECT user_id FROM server_members WHERE server_id = ?', [sid]);
+      const memberUids = memberRows.map(r => String(r.user_id));
+      const data = JSON.stringify({ type: 'voice:leave', serverId: sid, channelId: row.cid, userName: u ? u.name : '', members: names });
+      const { sendToServer } = await import('../realtime/ws.js');
+      sendToServer(memberUids, JSON.parse(data));
+    }
     emitServerUpdated(sid, await buildServerPayload(sid));
   } catch (e) { next(e); }
 });

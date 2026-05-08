@@ -1857,6 +1857,10 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ws-msg-text.deleted{color:var(--t3);font-style:italic;opacity:0.6}
 
+.ws-msg-text.image-msg{padding:0;background:transparent;border:none;margin-top:4px;max-width:340px}
+
+.ws-msg-text img{max-width:320px;width:auto;height:auto;max-height:360px;border-radius:10px;cursor:zoom-in;display:block;background:rgba(255,255,255,0.02);object-fit:contain}
+
 .ws-msg-reply{margin-bottom:5px;padding:6px 9px;border-left:2px solid var(--accent);background:rgba(185,28,74,0.08);border-radius:0 6px 6px 0;cursor:pointer}
 
 .ws-msg-reply .wsr-name{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--accent);letter-spacing:1px;font-weight:600;margin-bottom:1px}

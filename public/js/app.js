@@ -1509,6 +1509,18 @@
 
       if (!conv) return;
 
+      // Hide synthetic temp profiles (__u_*) — they're scratch entries
+
+      // generated for "open profile of someone we have no DM with" and
+
+      // would otherwise show up as a duplicate row alongside the real
+
+      // conversation once the peer messages back.
+
+      if (typeof key === 'string' && key.startsWith('__')) return;
+
+      if (conv.isTemp) return;
+
       if (!conv.isSaved && dmListHidden.has(key)) return;
 
       // Blocked users are still listed in the chat sidebar — the chat panel
@@ -2591,19 +2603,27 @@
 
     // never wonders whether their message was actually sent.
 
-    if (backend.isConfigured() && !dmEditingId && !dmAttachData){
+    if (backend.isConfigured() && !dmEditingId){
 
       const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
 
       const tempId = 'tmp_'+uid();
+
+      // If there's an image attachment we need to upload it first; the
+
+      // optimistic bubble shows the local data URL immediately so the
+
+      // user sees it without waiting for the round trip.
+
+      const hasImage = !!dmAttachData;
+
+      const localImageSrc = hasImage ? dmAttachData.src : null;
 
       const optimistic = {
 
         id: tempId,
 
         sender: 'me',
-
-        text,
 
         time: nowTime(),
 
@@ -2615,6 +2635,20 @@
 
       };
 
+      if (hasImage){
+
+        optimistic.type = 'image';
+
+        optimistic.src = localImageSrc;
+
+        if (text) optimistic.caption = text;
+
+      } else {
+
+        optimistic.text = text;
+
+      }
+
       if (dmReplyTo) optimistic.replyTo = dmReplyTo.id;
 
       if (!messages[currentConversation]) messages[currentConversation] = [];
@@ -2624,6 +2658,8 @@
       bumpDmList(currentConversation);
 
       const replyId = dmReplyTo ? dmReplyTo.id : undefined;
+
+      const localFile = hasImage ? dmAttachData.file : null;
 
       inp.value = '';
 
@@ -2637,7 +2673,57 @@
 
       try {
 
-        const r = await backend.dms.send(peerKey, { text, replyTo: replyId });
+        let payload = null;
+
+        let serverImageSrc = localImageSrc;
+
+        if (hasImage && localFile){
+
+          // Upload the file first so the peer (and our future reload) gets
+
+          // a real /uploads/... URL instead of an unbounded data URL.
+
+          const fd = new FormData(); fd.append('file', localFile);
+
+          const up = await backend.uploads.image(fd);
+
+          if (up && up.url){
+
+            if (up.url.startsWith('/')){
+
+              const apiBase = (typeof _backendBase === 'function' ? _backendBase() : '') || '';
+
+              serverImageSrc = apiBase ? apiBase.replace(/\/api$/, '') + up.url : up.url;
+
+            } else {
+
+              serverImageSrc = up.url;
+
+            }
+
+          } else {
+
+            // Upload failed — fall back to the local data URL so at least we
+
+            // see our own bubble. The peer won't get the image; surface a
+
+            // toast so it's not invisible.
+
+            showToast('Image upload failed; sending text only','warn');
+
+          }
+
+          payload = { type: 'image', src: serverImageSrc };
+
+          if (text) payload.caption = text;
+
+        }
+
+        const sendBody = { text, replyTo: replyId };
+
+        if (payload) sendBody.payload = payload;
+
+        const r = await backend.dms.send(peerKey, sendBody);
 
         const arr = messages[currentConversation] || [];
 
@@ -2659,7 +2745,9 @@
 
         }
 
-        const merged = { ...r.message, status: 'delivered', _pending: false };
+        const merged = { ...arr[idx], ...r.message, status: 'delivered', _pending: false };
+
+        if (hasImage){ merged.type = 'image'; merged.src = serverImageSrc; if (text) merged.caption = text; }
 
         if (replyId) merged.replyTo = replyId;
 
@@ -2853,7 +2941,7 @@
 
     reader.onload = (e)=>{
 
-      dmAttachData = { src: e.target.result, name: file.name, size: file.size };
+      dmAttachData = { src: e.target.result, name: file.name, size: file.size, file };
 
       const thumb = document.getElementById('dmAttachThumb');
 
@@ -5091,21 +5179,43 @@
 
           if (!md){ showToast('Cannot resolve member id','warn'); return; }
 
+          const ok = await appConfirm(
+
+            'Remove '+userName+' from '+ownerSrv.name+'? This also disconnects them from any voice channel and they\'ll need a new invite to come back.',
+
+            { title: 'REMOVE MEMBER', confirmLabel: 'REMOVE', danger: true }
+
+          );
+
+          if (!ok) return;
+
           if (backend.isConfigured()){
 
             const r = await backend.servers.kickMember(ownerSrv.id, md.id);
 
-            if (r.error){ showToast('Could not remove: '+r.error,'warn'); return; }
+            if (r && r.error){ showToast('Could not remove: '+r.error,'warn'); return; }
 
-            if (r.offline){ showToast('Cannot reach the server','warn'); return; }
-
-          }
-
-          if (channelData[channelKey]){
-
-            channelData[channelKey].users = channelData[channelKey].users.filter(u => u !== userName);
+            if (r && r.offline){ showToast('Cannot reach the server','warn'); return; }
 
           }
+
+          // Pull the kicked user out of every voice channel snapshot we
+
+          // hold for this server, so the orb UI updates immediately even
+
+          // before the server's voice:leave fan-out arrives.
+
+          (ownerSrv.voiceChannels || []).forEach(vc => {
+
+            const cd = channelData[vc.id];
+
+            if (cd && Array.isArray(cd.users)){
+
+              cd.users = cd.users.filter(u => u !== userName);
+
+            }
+
+          });
 
           showToast(userName+' removed from '+ownerSrv.name,'warn');
 
@@ -7885,19 +7995,73 @@
 
     if (name === selfProfile.name){ openProfile(null); return; }
 
-    const ckey = name.toLowerCase();
+    // First try to match an existing conversation by lowercased display name
 
-    if (conversations[ckey]){ openProfile(ckey); return; }
+    // OR by display name itself (conversations[] is keyed by handle, not name).
 
-    const tempKey = '__u_'+ckey;
+    const lower = name.toLowerCase();
 
-    if (!conversations[tempKey]){
+    if (conversations[lower]){ openProfile(lower); return; }
 
-      conversations[tempKey] = { name, online:false, unread:0, avColor:'linear-gradient(135deg,#a78bfa,#1a0b2e)', initial:name.charAt(0).toUpperCase(), handle:'@'+ckey, bio:'No bio yet.', stats:{posts:0,friends:0,orbits:0}, joined:'—', lastSeen:'unknown', rank:'EXPLORER', orbColor:'#a78bfa', orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#a78bfa 55%,#1e1b4b)', isTemp:true };
+    const byName = Object.entries(conversations).find(([k, c]) => c && c.name === name && !c.isSaved);
+
+    if (byName){ openProfile(byName[0]); return; }
+
+    // Otherwise resolve via the backend so we get the *real* handle / id
+
+    // before stamping a temp entry. Without this, the synthesized handle
+
+    // ends up as "@<lowercased name with spaces>" and friend requests
+
+    // against it always 404.
+
+    const tempKey = '__u_'+lower.replace(/\s+/g, '_');
+
+    const stamp = (handle, avImage, bio) => {
+
+      conversations[tempKey] = {
+
+        name, online:false, unread:0, avColor:'linear-gradient(135deg,#a78bfa,#1a0b2e)', avImage: avImage || null,
+
+        initial: name.charAt(0).toUpperCase(), handle: handle || '@'+lower.replace(/\s+/g,''),
+
+        bio: bio || 'No bio yet.', stats:{posts:0,friends:0,orbits:0}, joined:'—',
+
+        lastSeen:'unknown', rank:'EXPLORER', orbColor:'#a78bfa',
+
+        orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#a78bfa 55%,#1e1b4b)',
+
+        isTemp:true
+
+      };
+
+    };
+
+    if (backend.isConfigured()){
+
+      backend.users.lookup(name).then(r => {
+
+        if (r && r.user){
+
+          stamp('@'+(r.user.handle||'').replace(/^@/,''), r.user.avImage || null, r.user.bio || '');
+
+        } else {
+
+          stamp(null);
+
+        }
+
+        openProfile(tempKey);
+
+      }).catch(() => { stamp(null); openProfile(tempKey); });
+
+    } else {
+
+      stamp(null);
+
+      openProfile(tempKey);
 
     }
-
-    openProfile(tempKey);
 
   }
 
@@ -11637,19 +11801,27 @@
 
     if (isAlreadyFriend(targetKey)){ showToast('Already friends','warn'); return; }
 
-    if (friendRequests.outgoing.some(r => r.name.toLowerCase() === targetKey)){ showToast('Friend request already pending','warn'); return; }
-
     const conv = conversations[targetKey];
 
-    if (!conv) return;
+    if (!conv){ showToast('Cannot resolve user','warn'); return; }
+
+    if (friendRequests.outgoing.some(r => (r.name||'').toLowerCase() === (conv.name||'').toLowerCase())){ showToast('Friend request already pending','warn'); return; }
 
     let req;
 
     if (backend.isConfigured()){
 
-      const r = await backend.friends.request(conv.handle || ('@'+targetKey));
+      const r = await backend.friends.request(conv.handle || conv.name);
 
-      if (r.error){ showToast('Could not send request','warn'); return; }
+      if (r.error === 'user_not_found'){ showToast('No user found','warn'); return; }
+
+      if (r.error === 'already_friends'){ showToast('Already friends','warn'); return; }
+
+      if (r.error === 'request_already_pending'){ showToast('Request already pending','warn'); return; }
+
+      if (r.error){ showToast('Could not send request: '+r.error,'warn'); return; }
+
+      if (r.offline){ showToast('Cannot reach the server','warn'); return; }
 
       req = r.request;
 
