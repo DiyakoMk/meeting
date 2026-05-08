@@ -373,6 +373,42 @@
 
   function isFriend(key){ if (!key) return false; return friendsList.includes(key.toLowerCase()); }
 
+  // Resolve the peer key we send to /api/dms/:peerKey. The frontend uses
+
+  // synthetic '__u_<name>' keys for non-friend profiles we discover from
+
+  // server members or search results, but the backend only accepts a real
+
+  // handle. This walks conversations[k].handle to recover the actual
+
+  // handle ('user2'), or returns the input unchanged when it's already a
+
+  // handle ('saved' / 'user2').
+
+  function resolvePeerKeyForBackend(key){
+
+    if (!key) return key;
+
+    if (key === 'saved') return 'saved';
+
+    const conv = conversations[key];
+
+    if (conv && conv.handle){
+
+      const clean = conv.handle.replace(/^@/, '').trim();
+
+      if (clean && !/\s/.test(clean)) return clean.toLowerCase();
+
+    }
+
+    // Last resort: strip the synthetic prefix if present.
+
+    if (key.startsWith('__u_')) return null;
+
+    return key;
+
+  }
+
   function addFriend(key){
 
     if (!key) return;
@@ -2365,7 +2401,7 @@
 
     if (backend.isConfigured()){
 
-      const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
+      const peerKey = resolvePeerKeyForBackend(currentConversation);
 
       const r = await backend.dms.clear(peerKey);
 
@@ -2543,7 +2579,7 @@
 
     if (backend.isConfigured()){
 
-      const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
+      const peerKey = resolvePeerKeyForBackend(currentConversation);
 
       ids.forEach(id => {
 
@@ -2623,7 +2659,7 @@
 
     if (typeof id === 'string' && id.startsWith('tmp_')) return;
 
-    const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
+    const peerKey = resolvePeerKeyForBackend(currentConversation);
 
     backend.dms.del(peerKey, id).catch(()=>{ /* the bubble already shows as deleted; surface a toast on hard failure only */ });
 
@@ -2757,7 +2793,15 @@
 
     if (backend.isConfigured() && !dmEditingId){
 
-      const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
+      const peerKey = resolvePeerKeyForBackend(currentConversation);
+
+      if (!peerKey){
+
+        showToast('Cannot resolve recipient handle','warn');
+
+        return;
+
+      }
 
       const tempId = 'tmp_'+uid();
 
@@ -2951,7 +2995,7 @@
 
       if (backend.isConfigured() && currentConversation && !(typeof editedId === 'string' && editedId.startsWith('tmp_'))){
 
-        const peerKey = currentConversation === 'saved' ? 'saved' : currentConversation;
+        const peerKey = resolvePeerKeyForBackend(currentConversation);
 
         backend.dms.edit(peerKey, editedId, text).catch(()=>{});
 
