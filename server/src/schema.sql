@@ -141,6 +141,7 @@ CREATE TABLE IF NOT EXISTS server_categories (
   position   INT NOT NULL DEFAULT 0,
   pinned_text TEXT,
   pinned_by   BIGINT UNSIGNED NULL,
+  visible_role_ids JSON NULL,
   PRIMARY KEY (id),
   KEY idx_server (server_id),
   FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE,
@@ -155,6 +156,8 @@ CREATE TABLE IF NOT EXISTS text_channels (
   style       VARCHAR(40),
   position    INT NOT NULL DEFAULT 0,
   pinned_msg_id BIGINT UNSIGNED NULL,
+  -- JSON array of role ids that can see this channel; NULL = visible to everyone.
+  visible_role_ids JSON NULL,
   PRIMARY KEY (id),
   KEY idx_server (server_id),
   FOREIGN KEY (server_id)   REFERENCES servers(id)            ON DELETE CASCADE,
@@ -168,6 +171,8 @@ CREATE TABLE IF NOT EXISTS voice_channels (
   name        VARCHAR(80) NOT NULL,
   style       VARCHAR(40),
   position    INT NOT NULL DEFAULT 0,
+  -- JSON array of role ids that can see this channel; NULL = visible to everyone.
+  visible_role_ids JSON NULL,
   PRIMARY KEY (id),
   KEY idx_server (server_id),
   FOREIGN KEY (server_id)   REFERENCES servers(id)            ON DELETE CASCADE,

@@ -3967,19 +3967,45 @@
 
   // Look up the highest-priority role for a member (owner > admin > others). Returns null if no role.
 
+  // Every role this member holds, in role-priority order (top of s.roles
+
+  // list = highest priority). A member can hold multiple roles; permissions
+
+  // are the union, but the "primary" role for grouping/coloring is the
+
+  // first one in the list.
+
+  function getMemberRoles(s, name){
+
+    if (!s || !s.roles) return [];
+
+    return s.roles.filter(r => (r.members||[]).includes(name));
+
+  }
+
+  // Single best role — used by anything that just needs a colour or label
+
+  // (member list grouping, name colour). Equivalent to "highest priority
+
+  // role this member holds".
+
   function getMemberRole(s, name){
 
-    if (!s || !s.roles) return null;
-
-    return s.roles.find(r => (r.members||[]).includes(name)) || null;
+    return getMemberRoles(s, name)[0] || null;
 
   }
 
   function memberHasPerm(s, name, key){
 
-    const r = getMemberRole(s, name);
+    // Permissions are unioned across every role the member holds, so
 
-    return !!(r && r.perms && r.perms[key]);
+    // adding a side role with a single permission grants exactly that
+
+    // permission without overriding anything else.
+
+    const roles = getMemberRoles(s, name);
+
+    return roles.some(r => r && r.perms && r.perms[key]);
 
   }
 
@@ -3995,13 +4021,17 @@
 
     if (!allow || !allow.length) return true;
 
-    const role = getMemberRole(s, name);
+    // Multi-role: the member can see the entity if ANY of their roles is
 
-    if (!role) return false;
+    // in the allowed set. Owner + admin always pass.
 
-    if (role.id === 'owner' || role.id === 'admin') return true;
+    const roles = getMemberRoles(s, name);
 
-    return allow.includes(role.id);
+    if (!roles.length) return false;
+
+    if (roles.some(r => r.id === 'owner' || r.id === 'admin')) return true;
+
+    return roles.some(r => allow.includes(r.id));
 
   }
 
@@ -12067,6 +12097,8 @@
 
     }
 
+    if (tab === 'appearance'){ syncThemePicker(); }
+
   }
 
   document.querySelectorAll('.settings-side-item').forEach(t => t.addEventListener('click', () => {
@@ -12076,6 +12108,46 @@
     setSettingsTab(t.dataset.stTab);
 
   }));
+
+  // Theme switcher: paint the active card and persist the chosen theme to
+
+  // localStorage. The early <head> script already applies it on next boot
+
+  // so the user never sees a flash of the wrong palette.
+
+  function readActiveTheme(){
+
+    try { return localStorage.getItem('orblood:theme') || 'orblood-dark'; } catch(_){ return 'orblood-dark'; }
+
+  }
+
+  function applyTheme(name){
+
+    document.documentElement.setAttribute('data-theme', name);
+
+    try { localStorage.setItem('orblood:theme', name); } catch(_){}
+
+    syncThemePicker();
+
+  }
+
+  function syncThemePicker(){
+
+    const active = readActiveTheme();
+
+    document.querySelectorAll('[data-theme-pick]').forEach(c => c.classList.toggle('active', c.dataset.themePick === active));
+
+  }
+
+  document.addEventListener('click', e => {
+
+    const card = e.target.closest('[data-theme-pick]');
+
+    if (!card) return;
+
+    applyTheme(card.dataset.themePick);
+
+  });
 
   // Friend panel actions
 
@@ -13321,9 +13393,11 @@
 
       if (!r.members.includes(name)){
 
-        // A user can only hold one role at a time — remove from any other role first.
+        // A user can hold multiple roles — additive. Each role's permissions
 
-        s.roles.forEach(other => { if (other !== r) other.members = (other.members||[]).filter(x => x !== name); });
+        // are unioned, and the member list groups them under the highest
+
+        // role they hold (see renderMembers).
 
         r.members.push(name);
 
@@ -14951,15 +15025,39 @@
 
     const tType = chanSettingsTarget.type;
 
-    if (newName && backend.isConfigured()){
+    // Resolve the new visibility from the modal first so we can send it in
+
+    // the same patch as the rename, instead of two round trips.
+
+    const visMode = document.querySelector('[data-cs-vis].active').dataset.csVis;
+
+    let newVisible = null;
+
+    if (visMode === 'all'){
+
+      newVisible = null;
+
+    } else {
+
+      newVisible = Array.from(document.querySelectorAll('#chanSettingsRoles .cs-role-chip.on')).map(el => el.dataset.csRole);
+
+    }
+
+    if (backend.isConfigured()){
+
+      const patch = {};
+
+      if (newName) patch.name = (tType === 'voice') ? newName.toUpperCase() : newName;
+
+      patch.visibleRoleIds = newVisible;
 
       let r = null;
 
-      if (tType === 'text')      r = await backend.servers.patchTextChannel(currentServer, ent.id, { name: newName });
+      if (tType === 'text')      r = await backend.servers.patchTextChannel(currentServer, ent.id, patch);
 
-      else if (tType === 'voice') r = await backend.servers.patchVoiceChannel(currentServer, ent.id, { name: newName.toUpperCase() });
+      else if (tType === 'voice') r = await backend.servers.patchVoiceChannel(currentServer, ent.id, patch);
 
-      else if (tType === 'cat')   r = await backend.servers.patchCategory(currentServer, ent.id, { name: newName });
+      else if (tType === 'cat')   r = await backend.servers.patchCategory(currentServer, ent.id, patch);
 
       if (r && r.error){ showToast('Could not save: '+r.error,'warn'); return; }
 
@@ -14981,19 +15079,7 @@
 
     }
 
-    const visMode = document.querySelector('[data-cs-vis].active').dataset.csVis;
-
-    if (visMode === 'all'){
-
-      ent.visibleRoleIds = null;
-
-    } else {
-
-      const ids = Array.from(document.querySelectorAll('#chanSettingsRoles .cs-role-chip.on')).map(el => el.dataset.csRole);
-
-      ent.visibleRoleIds = ids;
-
-    }
+    ent.visibleRoleIds = newVisible;
 
     document.getElementById('chanSettingsBackdrop').classList.remove('show');
 

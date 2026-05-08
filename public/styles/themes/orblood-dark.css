@@ -1,0 +1,44 @@
+/* Orblood — original dark theme. Token-only file: no structural CSS lives here.
+ * Loaded by default; switching themes replaces these CSS variables. */
+
+:root[data-theme="orblood-dark"],
+:root:not([data-theme]) {
+  /* Surfaces */
+  --bg:           #020103;
+  --panel:        rgba(8, 5, 7, 0.97);
+  --glass:        rgba(255, 255, 255, 0.018);
+  --gb:           rgba(255, 255, 255, 0.045);
+
+  /* Typography */
+  --t1: rgba(248, 240, 240, 0.95);
+  --t2: rgba(220, 210, 210, 0.55);
+  --t3: rgba(195, 185, 185, 0.22);
+
+  /* Brand accent (deep-red rose) */
+  --accent:   #b91c4a;
+  --accent-2: #7f1d1d;
+  --ag:       rgba(185, 28, 74, 0.4);
+
+  /* Semantic */
+  --success:  #22c55e;
+  --warn:     #f59e0b;
+  --danger:   #ef4444;
+  --pink:     #be123c;
+
+  /* Tier badges */
+  --legendary: #f59e0b;
+  --epic:      #9f1239;
+  --rare:      #b91c4a;
+  --common:    #a8a29e;
+
+  /* Selection highlight */
+  --selection-bg: rgba(185, 28, 74, 0.35);
+  --selection-fg: #ffffff;
+
+  /* Decorative scene paint applied on <body> behind the app shell. */
+  --scene-paint:
+    radial-gradient(circle at 50% 0%,
+      rgba(185, 28, 74, 0.05),
+      transparent 50%),
+    var(--bg);
+}

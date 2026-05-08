@@ -247,10 +247,14 @@ channelsRouter.post('/text/:sid/:cid/read', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// --- Patch (rename / restyle) a text channel ---
+// --- Patch (rename / restyle / restrict) a text channel ---
 const channelPatchSchema = z.object({
-  name:  z.string().trim().min(1).max(80).optional(),
-  style: z.string().max(40).optional()
+  name:            z.string().trim().min(1).max(80).optional(),
+  style:           z.string().max(40).optional(),
+  // null clears the restriction (visible to everyone). An empty array
+  // means "no role can see it", which the client never actually sends
+  // but we still store as-is.
+  visibleRoleIds:  z.array(z.string().min(1).max(40)).max(50).nullable().optional()
 });
 
 channelsRouter.patch('/text/:sid/:cid', async (req, res, next) => {
@@ -261,6 +265,10 @@ channelsRouter.patch('/text/:sid/:cid', async (req, res, next) => {
     const sets = [], args = [];
     if (body.name  !== undefined) { sets.push('name = ?');  args.push(body.name); }
     if (body.style !== undefined) { sets.push('style = ?'); args.push(body.style); }
+    if (body.visibleRoleIds !== undefined) {
+      sets.push('visible_role_ids = ?');
+      args.push(body.visibleRoleIds === null ? null : JSON.stringify(body.visibleRoleIds));
+    }
     if (sets.length) {
       args.push(req.params.cid, sid);
       await q('UPDATE text_channels SET ' + sets.join(', ') + ' WHERE id = ? AND server_id = ?', args);
@@ -278,6 +286,10 @@ channelsRouter.patch('/voice/:sid/:cid', async (req, res, next) => {
     const sets = [], args = [];
     if (body.name  !== undefined) { sets.push('name = ?');  args.push(body.name); }
     if (body.style !== undefined) { sets.push('style = ?'); args.push(body.style); }
+    if (body.visibleRoleIds !== undefined) {
+      sets.push('visible_role_ids = ?');
+      args.push(body.visibleRoleIds === null ? null : JSON.stringify(body.visibleRoleIds));
+    }
     if (sets.length) {
       args.push(req.params.cid, sid);
       await q('UPDATE voice_channels SET ' + sets.join(', ') + ' WHERE id = ? AND server_id = ?', args);
@@ -332,10 +344,18 @@ async function __buildServerPayload(sid) {
     categories: cats.map(c => ({
       id: c.id, name: c.name,
       pinned: c.pinned_text ? { text: c.pinned_text, by: null, time: null } : null,
+      visibleRoleIds: __parseRoleIds(c.visible_role_ids),
       textChannels:  tcs.filter(t => t.category_id === c.id).map(t => t.id),
       voiceChannels: vcs.filter(v => v.category_id === c.id).map(v => v.id)
     })),
-    textChannels: tcs.map(t => ({ id: t.id, name: t.name, style: t.style || 'glow', unread: 0, pinnedMsgId: t.pinned_msg_id || null })),
-    voiceChannels: vcs.map(v => ({ id: v.id, name: v.name, style: v.style || 'indigo' }))
+    textChannels: tcs.map(t => ({ id: t.id, name: t.name, style: t.style || 'glow', unread: 0, pinnedMsgId: t.pinned_msg_id || null, visibleRoleIds: __parseRoleIds(t.visible_role_ids) })),
+    voiceChannels: vcs.map(v => ({ id: v.id, name: v.name, style: v.style || 'indigo', visibleRoleIds: __parseRoleIds(v.visible_role_ids) }))
   };
+}
+
+function __parseRoleIds(raw) {
+  if (raw == null) return null;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return null; } }
+  return null;
 }

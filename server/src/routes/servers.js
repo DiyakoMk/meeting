@@ -27,6 +27,16 @@ const categorySchema = z.object({
   name: z.string().trim().min(1).max(80)
 });
 
+// Helper: visible_role_ids comes back from MySQL JSON column as either a
+// parsed array (driver default) or a string (older driver versions). We
+// normalise both shapes to "array or null".
+function parseRoleIds(raw) {
+  if (raw == null) return null;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return null; } }
+  return null;
+}
+
 // Serialise the way /me/snapshot does, so the frontend can drop the result
 // straight into `servers[id]`.
 async function buildServerPayload(sid) {
@@ -77,11 +87,12 @@ async function buildServerPayload(sid) {
     categories: cats.map(c => ({
       id: c.id, name: c.name,
       pinned: c.pinned_text ? { text: c.pinned_text, by: null, time: null } : null,
+      visibleRoleIds: parseRoleIds(c.visible_role_ids),
       textChannels:  tcs.filter(t => t.category_id === c.id).map(t => t.id),
       voiceChannels: vcs.filter(v => v.category_id === c.id).map(v => v.id)
     })),
-    textChannels: tcs.map(t => ({ id: t.id, name: t.name, style: t.style || 'glow', unread: 0, pinnedMsgId: t.pinned_msg_id || null })),
-    voiceChannels: vcs.map(v => ({ id: v.id, name: v.name, style: v.style || 'indigo' })),
+    textChannels: tcs.map(t => ({ id: t.id, name: t.name, style: t.style || 'glow', unread: 0, pinnedMsgId: t.pinned_msg_id || null, visibleRoleIds: parseRoleIds(t.visible_role_ids) })),
+    voiceChannels: vcs.map(v => ({ id: v.id, name: v.name, style: v.style || 'indigo', visibleRoleIds: parseRoleIds(v.visible_role_ids) })),
     // Roles are returned only when the server has any custom roles persisted.
     // If null, the frontend's ensureRoles() builds owner/admin from membership.
     roles
@@ -304,10 +315,11 @@ serversRouter.post('/:id/transfer-ownership', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-// --- Patch / rename a category ---
+// --- Patch / rename / restrict a category ---
 const categoryPatchSchema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
-  pinnedText: z.string().max(2000).nullable().optional()
+  pinnedText: z.string().max(2000).nullable().optional(),
+  visibleRoleIds: z.array(z.string().min(1).max(40)).max(50).nullable().optional()
 });
 
 serversRouter.patch('/:id/categories/:cid', async (req, res, next) => {
@@ -320,6 +332,10 @@ serversRouter.patch('/:id/categories/:cid', async (req, res, next) => {
     if (body.pinnedText !== undefined) {
       sets.push('pinned_text = ?'); args.push(body.pinnedText || null);
       sets.push('pinned_by = ?');   args.push(body.pinnedText ? req.user.id : null);
+    }
+    if (body.visibleRoleIds !== undefined) {
+      sets.push('visible_role_ids = ?');
+      args.push(body.visibleRoleIds === null ? null : JSON.stringify(body.visibleRoleIds));
     }
     if (sets.length) {
       args.push(req.params.cid, sid);

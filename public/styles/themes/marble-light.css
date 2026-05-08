@@ -1,0 +1,122 @@
+/* Marble Light — white marble with red and black veins.
+ *
+ * Surfaces lean cool/warm white, accents are blood red, contrast comes from
+ * deep ink black for borders and text instead of the usual translucent white.
+ * Selection and brand glow stay red so the visual language matches Orblood. */
+
+:root[data-theme="marble-light"] {
+  /* Surfaces — slight warm white with a faint vein pattern painted via the
+     scene-paint variable below. The base solid color is what controls the
+     "marble feel" of every panel. */
+  --bg:           #f4eee9;
+  --panel:        rgba(252, 248, 245, 0.96);
+  --glass:        rgba(0, 0, 0, 0.025);
+  --gb:           rgba(0, 0, 0, 0.07);
+
+  /* Typography — deep ink + warm gray. Contrast is high enough to read on
+     both pure white panels and the veined background. */
+  --t1: rgba(20, 8, 8, 0.94);
+  --t2: rgba(60, 30, 35, 0.66);
+  --t3: rgba(80, 40, 45, 0.34);
+
+  /* Brand accent: blood red on white reads cleaner with a slightly darker
+     primary so it doesn't fluoresce against the bright canvas. */
+  --accent:   #b40224;
+  --accent-2: #7a0a14;
+  --ag:       rgba(180, 2, 36, 0.32);
+
+  /* Semantic — same hues, nudged for legibility on light surfaces. */
+  --success:  #15803d;
+  --warn:     #b45309;
+  --danger:   #b91c1c;
+  --pink:     #9d174d;
+
+  /* Tier badges */
+  --legendary: #b45309;
+  --epic:      #831843;
+  --rare:      #b91c4a;
+  --common:    #57534e;
+
+  --selection-bg: rgba(180, 2, 36, 0.25);
+  --selection-fg: #1a0a0a;
+
+  /* Marble veining: layered radial + linear gradients evoke red and black
+     veins running through warm white stone. The bottom layer is the solid
+     base color. */
+  --scene-paint:
+    radial-gradient(ellipse 90% 60% at 12% 18%, rgba(0, 0, 0, 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 86% 8%,  rgba(180, 2, 36, 0.10), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 78% 92%, rgba(0, 0, 0, 0.08),  transparent 65%),
+    radial-gradient(ellipse 50% 30% at 25% 78%, rgba(180, 2, 36, 0.07), transparent 70%),
+    linear-gradient(125deg, rgba(255,255,255,0.6) 0%, rgba(244,238,233,0) 30%, rgba(245,235,232,0.5) 70%, rgba(252,250,247,0.7) 100%),
+    var(--bg);
+}
+
+/* Per-element tweaks: the dark theme uses a lot of `rgba(255,255,255,...)`
+ * overlays for borders and hover states which look wrong on a white canvas.
+ * We override just those baseline patterns when the marble theme is active.
+ * Anything that already uses our token variables continues to work without
+ * any change. */
+
+:root[data-theme="marble-light"] body {
+  background: var(--scene-paint);
+}
+
+:root[data-theme="marble-light"] .ob,
+:root[data-theme="marble-light"] .vu-close:hover,
+:root[data-theme="marble-light"] .ms-close:hover,
+:root[data-theme="marble-light"] .orb-edit-btn:hover,
+:root[data-theme="marble-light"] .orb-nav-arrow,
+:root[data-theme="marble-light"] .orb-nav-arrow:hover {
+  background: rgba(0, 0, 0, 0.045);
+  border-color: rgba(0, 0, 0, 0.10);
+  color: var(--t1);
+}
+
+:root[data-theme="marble-light"] .orb-empty-actions .ob-empty-btn.cancel {
+  background: rgba(0, 0, 0, 0.035);
+  color: var(--t1);
+  border-color: var(--gb);
+}
+:root[data-theme="marble-light"] .orb-empty-actions .ob-empty-btn.cancel:hover {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+/* Card borders + hover surfaces in the side rails / DM list. */
+:root[data-theme="marble-light"] .vu-item::after,
+:root[data-theme="marble-light"] [class*="-card"],
+:root[data-theme="marble-light"] [class*="-row"]:hover {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Avatar fallback gradient — replace cosmic indigo with warm linen so a
+ * faceless bubble on a white surface doesn't suddenly look like a hole. */
+:root[data-theme="marble-light"] .ms-av,
+:root[data-theme="marble-light"] .vu-av {
+  border-color: rgba(0, 0, 0, 0.10);
+}
+
+/* Inputs and modals: invert the dark glass aesthetic into light-frost. */
+:root[data-theme="marble-light"] input,
+:root[data-theme="marble-light"] textarea,
+:root[data-theme="marble-light"] .sm-input,
+:root[data-theme="marble-light"] .smodal,
+:root[data-theme="marble-light"] .auth-card,
+:root[data-theme="marble-light"] .ctx-menu,
+:root[data-theme="marble-light"] .banner-portal-menu {
+  background: var(--panel);
+  color: var(--t1);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+}
+
+:root[data-theme="marble-light"] .ctx-menu .ctx-item:hover,
+:root[data-theme="marble-light"] .bpm-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Toasts: keep them readable. */
+:root[data-theme="marble-light"] .toast {
+  background: var(--panel);
+  color: var(--t1);
+  border-color: rgba(0, 0, 0, 0.10);
+}

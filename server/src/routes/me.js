@@ -6,6 +6,15 @@ import { parseOr400, profilePatchSchema } from '../validators.js';
 import { publicUser, foreignUser } from '../lib/userShape.js';
 import { emitProfileUpdated } from '../realtime/events.js';
 
+// Normalise visible_role_ids to "array or null". MySQL JSON column can come
+// back as either a parsed value or a string depending on driver version.
+function parseRoleIds(raw) {
+  if (raw == null) return null;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return null; } }
+  return null;
+}
+
 export const meRouter = Router();
 
 meRouter.use(requireAuth);
@@ -195,15 +204,18 @@ meRouter.get('/snapshot', async (req, res, next) => {
           categories: cats.filter(c => c.server_id === sid).map(c => ({
             id: c.id, name: c.name,
             pinned: c.pinned_text ? { text: c.pinned_text, by: null, time: null } : null,
+            visibleRoleIds: parseRoleIds(c.visible_role_ids),
             textChannels:  tcs.filter(t => t.server_id === sid && t.category_id === c.id).map(t => t.id),
             voiceChannels: vcs.filter(v => v.server_id === sid && v.category_id === c.id).map(v => v.id)
           })),
           textChannels: tcs.filter(t => t.server_id === sid).map(t => ({
             id: t.id, name: t.name, style: t.style || 'glow', unread: 0,
-            pinnedMsgId: t.pinned_msg_id || null
+            pinnedMsgId: t.pinned_msg_id || null,
+            visibleRoleIds: parseRoleIds(t.visible_role_ids)
           })),
           voiceChannels: vcs.filter(v => v.server_id === sid).map(v => ({
-            id: v.id, name: v.name, style: v.style || 'indigo'
+            id: v.id, name: v.name, style: v.style || 'indigo',
+            visibleRoleIds: parseRoleIds(v.visible_role_ids)
           })),
           roles: (function(){
             const here = roleRows.filter(r => r.server_id === sid);
