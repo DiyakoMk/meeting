@@ -397,7 +397,13 @@
 
     // their conversation around so message history isn't lost.
 
-    if (typeof markedFriends !== 'undefined'){ markedFriends = markedFriends.filter(x => x !== k); }
+    if (typeof markedFriends !== 'undefined' && markedFriends.includes(k)){
+
+      markedFriends = markedFriends.filter(x => x !== k);
+
+      if (typeof persistMarkedFriends === 'function') persistMarkedFriends();
+
+    }
 
   }
 
@@ -1827,7 +1833,17 @@
 
     const peerBlocked = !isSaved && currentConversation && isBlockedByPeer(currentConversation);
 
-    const restricted = readFriendsOnly() && currentConversation && !isSaved && !isFriend(currentConversation);
+    // Friends-only is the *peer*'s privacy toggle, not ours: we can only
+
+    // message them when we're already in their friends list. Our own
+
+    // readFriendsOnly() flag controls who can DM *us* — the server
+
+    // enforces that on incoming, so we don't gate the compose box on it.
+
+    const peerFriendsOnly = !!(conv && conv.friendsOnly);
+
+    const restricted = peerFriendsOnly && currentConversation && !isSaved && !isFriend(currentConversation);
 
     wrap.style.display = 'block';
 
@@ -2687,7 +2703,9 @@
 
     const conv = conversations[currentConversation];
 
-    if (readFriendsOnly() && conv && !conv.isSaved && !isFriend(currentConversation)){
+    // Same gate as syncDmComposeLock: peer's friends_only flag, not ours.
+
+    if (conv && conv.friendsOnly && !conv.isSaved && !isFriend(currentConversation)){
 
       showToast('Only friends can be messaged. Send a friend request first.','warn'); return;
 
@@ -6029,7 +6047,9 @@
 
       edit:   (peer, mid, text) => _apiRequest('PATCH', '/dms/'+encodeURIComponent(peer)+'/'+encodeURIComponent(mid), { text }),
 
-      markRead: peer => _apiRequest('POST', '/dms/'+encodeURIComponent(peer)+'/read')
+      markRead: peer => _apiRequest('POST', '/dms/'+encodeURIComponent(peer)+'/read'),
+
+      pin:      (peer, messageId) => _apiRequest('POST', '/dms/'+encodeURIComponent(peer)+'/pin', { messageId: messageId === null ? null : messageId })
 
     },
 
@@ -6198,6 +6218,16 @@
     // everything as seen. Server snapshot computes these from
 
     // dm_read_state / text_channel_read_state.
+
+    // Per-DM-thread pinned message id, persisted server-side so the pin
+
+    // survives reload + appears for both peers.
+
+    if (snap.dmPinned && typeof snap.dmPinned === 'object'){
+
+      Object.entries(snap.dmPinned).forEach(([k, mid]) => { dmPinnedByConv[k] = mid; });
+
+    }
 
     if (snap.unreadDm && typeof snap.unreadDm === 'object'){
 
@@ -6498,6 +6528,12 @@
       case 'profile:updated':
 
         _onProfileUpdated(msg);
+
+        break;
+
+      case 'dm:pin':
+
+        _onDmPin(msg);
 
         break;
 
@@ -7526,6 +7562,44 @@
     if (typeof renderServerOverview === 'function' && currentServer) renderServerOverview();
 
     if (typeof renderVoiceUsers === 'function' && voiceUsersSidebarOpen) renderVoiceUsers();
+
+  }
+
+  // Server fan-out: someone (us or the peer) pinned/unpinned a DM message.
+
+  // We can't trivially map thread_id back to peerKey here, so the WS
+
+  // payload includes the message id; we re-render every conversation
+
+  // view that's open and let renderConversation pick up the new value
+
+  // from dmPinnedByConv on next paint.
+
+  function _onDmPin({ threadId, messageId }){
+
+    void threadId;
+
+    // Cheap approach: walk every conversation and find the one whose
+
+    // history includes that message id (server-only path), or just
+
+    // re-render the active conversation. The next snapshot will
+
+    // reconcile any drift.
+
+    if (currentConversation && messages[currentConversation]){
+
+      const has = (messages[currentConversation]||[]).some(m => String(m.id) === String(messageId));
+
+      if (has){
+
+        dmPinnedByConv[currentConversation] = messageId || null;
+
+        if (typeof renderConversation === 'function') renderConversation();
+
+      }
+
+    }
 
   }
 
@@ -13897,7 +13971,21 @@
 
       const tc = s.textChannels.find(x => x.id === currentTextChannel);
 
-      if (tc){ tc.pinnedMsgId = null; tc.pinnedMsg = null; tc.pinnedBy = null; renderChannelView(); showToast('Unpinned','warn'); }
+      if (tc){
+
+        tc.pinnedMsgId = null; tc.pinnedMsg = null; tc.pinnedBy = null;
+
+        if (backend.isConfigured()){
+
+          backend.servers.pinChannelMessage(currentServer, currentTextChannel, null).catch(()=>{});
+
+        }
+
+        renderChannelView();
+
+        showToast('Unpinned','warn');
+
+      }
 
       return;
 
@@ -15209,7 +15297,21 @@
 
       e.stopPropagation();
 
-      if (currentConversation){ dmPinnedByConv[currentConversation] = null; renderConversation(); showToast('Unpinned','warn'); }
+      if (currentConversation){
+
+        dmPinnedByConv[currentConversation] = null;
+
+        if (backend.isConfigured() && currentConversation !== 'saved'){
+
+          backend.dms.pin(currentConversation, null).catch(()=>{});
+
+        }
+
+        renderConversation();
+
+        showToast('Unpinned','warn');
+
+      }
 
       return;
 
@@ -15305,19 +15407,19 @@
 
         const cur = dmPinnedByConv[currentConversation];
 
-        if (cur !== undefined && cur !== null && String(cur) === String(id)){
+        const wasPinned = cur !== undefined && cur !== null && String(cur) === String(id);
 
-          dmPinnedByConv[currentConversation] = null;
+        const next = wasPinned ? null : id;
 
-          showToast('Unpinned','warn');
+        dmPinnedByConv[currentConversation] = next;
 
-        } else {
+        if (backend.isConfigured() && currentConversation !== 'saved'){
 
-          dmPinnedByConv[currentConversation] = id;
-
-          showToast('Pinned to chat','success');
+          backend.dms.pin(currentConversation, next).catch(()=>{});
 
         }
+
+        showToast(wasPinned ? 'Unpinned' : 'Pinned to chat', wasPinned ? 'warn' : 'success');
 
         renderConversation();
 

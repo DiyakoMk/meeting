@@ -131,6 +131,34 @@ dmsRouter.post('/:peerKey', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Pin / unpin a single message in a DM thread. Pin state is shared
+// between both peers (one row per thread). Pass {messageId: null} to clear.
+const pinSchema = z.object({ messageId: z.union([z.string(), z.number()]).nullable().optional() });
+dmsRouter.post('/:peerKey/pin', async (req, res, next) => {
+  try {
+    const { thread } = await resolveThread(req.params.peerKey, req.user);
+    if (!thread) return res.status(404).json({ error: 'peer_not_found' });
+    const body = parseOr400(pinSchema, req.body, res); if (!body) return;
+    if (!body.messageId){
+      await q('DELETE FROM dm_pinned WHERE thread_id = ?', [thread.id]);
+      res.json({ ok: true, pinnedMessageId: null });
+      sendToUser(thread.user_a, { type: 'dm:pin', threadId: thread.id, messageId: null });
+      sendToUser(thread.user_b, { type: 'dm:pin', threadId: thread.id, messageId: null });
+      return;
+    }
+    const mid = Number(body.messageId);
+    const m = await one('SELECT id FROM dm_messages WHERE id = ? AND thread_id = ?', [mid, thread.id]);
+    if (!m) return res.status(404).json({ error: 'message_not_found' });
+    await q(
+      `INSERT INTO dm_pinned (thread_id, message_id) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE message_id = VALUES(message_id), pinned_at = CURRENT_TIMESTAMP`,
+      [thread.id, mid]);
+    res.json({ ok: true, pinnedMessageId: mid });
+    sendToUser(thread.user_a, { type: 'dm:pin', threadId: thread.id, messageId: mid });
+    sendToUser(thread.user_b, { type: 'dm:pin', threadId: thread.id, messageId: mid });
+  } catch (e) { next(e); }
+});
+
 // Mark every message in this thread as read (up to current max id) for the
 // caller. Snapshot's unreadDm uses dm_read_state.last_read_id to compute
 // "X new messages since you last looked".

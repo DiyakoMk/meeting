@@ -139,7 +139,8 @@ meRouter.get('/snapshot', async (req, res, next) => {
         handle: '@' + row.handle.replace(/^@/, ''),
         bio: row.bio || '',
         rank: row.rank_label || 'EXPLORER',
-        baseColor: row.base_color || null
+        baseColor: row.base_color || null,
+        friendsOnly: !!row.friends_only
       };
     });
 
@@ -244,6 +245,13 @@ meRouter.get('/snapshot', async (req, res, next) => {
       const peer = r.user_a === me.id ? r.user_b : r.user_a;
       peerIds.add(peer);
     });
+    // Per-thread pinned message id (one row max per thread).
+    const dmPinRows = await q(
+      `SELECT dp.thread_id, dp.message_id
+         FROM dm_pinned dp
+         JOIN dm_threads t ON t.id = dp.thread_id
+        WHERE t.user_a = ? OR t.user_b = ?`, [me.id, me.id]);
+    const pinByThread = new Map(dmPinRows.map(r => [r.thread_id, Number(r.message_id)]));
     const peerHandleByUid = new Map();
     if (peerIds.size){
       const rows = await q(
@@ -252,6 +260,13 @@ meRouter.get('/snapshot', async (req, res, next) => {
       rows.forEach(r => peerHandleByUid.set(r.id, r.handle.toLowerCase()));
     }
     const messagePreviews = {};
+    const dmPinned = {};
+    previewRows.forEach(r => {
+      const pid = pinByThread.get(r.tid);
+      if (!pid) return;
+      const k = r.is_saved ? 'saved' : peerHandleByUid.get(r.user_a === me.id ? r.user_b : r.user_a);
+      if (k) dmPinned[k] = pid;
+    });
     previewRows.forEach(r => {
       if (!r.mid) return;
       const k = r.is_saved ? 'saved' : peerHandleByUid.get(r.user_a === me.id ? r.user_b : r.user_a);
@@ -270,6 +285,42 @@ meRouter.get('/snapshot', async (req, res, next) => {
         type: payload && payload.type ? payload.type : undefined
       };
     });
+
+    // Promote every non-friend DM peer into conversations[] too, so the
+    // chat doesn't disappear after a refresh just because the user hasn't
+    // friended them yet. We use the same shape as friendRows above but
+    // with a fresh user lookup; "friendsOnly" still flows through so the
+    // compose box can lock when the peer has the toggle on.
+    const peerUidsAll = [...peerIds];
+    if (peerUidsAll.length){
+      const knownKeys = new Set(Object.keys(conversations));
+      const peerUserRows = await q(
+        `SELECT * FROM users WHERE id IN (${peerUidsAll.map(()=>'?').join(',')})`,
+        peerUidsAll);
+      peerUserRows.forEach(row => {
+        const k = row.handle.toLowerCase();
+        if (knownKeys.has(k)) return; // already populated as a friend
+        conversations[k] = {
+          uid: String(row.id),
+          peerId: String(row.id),
+          name: row.name,
+          online: onlineUids.has(String(row.id)),
+          unread: 0,
+          avColor: row.base_color
+            ? `linear-gradient(135deg,${row.base_color},#1e1b4b)`
+            : 'linear-gradient(135deg,#a78bfa,#1e1b4b)',
+          avImage: row.av_image || null,
+          bannerImage: row.banner_image || null,
+          initial: (row.name || '?').charAt(0).toUpperCase(),
+          handle: '@' + row.handle.replace(/^@/, ''),
+          bio: row.bio || '',
+          rank: row.rank_label || 'EXPLORER',
+          baseColor: row.base_color || null,
+          friendsOnly: !!row.friends_only,
+          isFriend: false
+        };
+      });
+    }
 
     // Compute persistent unread counts. For every DM thread the user is in,
     // count messages with id > last_read_id (saved by /api/me/dms/read) and
@@ -367,6 +418,7 @@ meRouter.get('/snapshot', async (req, res, next) => {
       conversations,
       messages: { saved: [] }, // DM threads loaded lazily per-thread
       messagePreviews,         // last message per DM thread for sidebar previews
+      dmPinned,                // peerHandle -> message id pinned on that thread
       unreadDm,
       unreadChannels,
       friendsList: friendRows.map(u => u.handle.toLowerCase()),
@@ -472,7 +524,7 @@ meRouter.put('/marks/pinned-servers', async (req, res, next) => {
     let i = 0;
     for (const sid of ids) {
       if (typeof sid !== 'string' || !sid) continue;
-      const exists = await one('SELECT id FROM server_members WHERE server_id = ? AND user_id = ?', [sid, req.user.id]);
+      const exists = await one('SELECT user_id FROM server_members WHERE server_id = ? AND user_id = ?', [sid, req.user.id]);
       if (!exists) continue;
       await q(
         'INSERT IGNORE INTO user_pinned_servers (user_id, server_id, position) VALUES (?, ?, ?)',
