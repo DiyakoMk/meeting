@@ -549,6 +549,36 @@
 
     out = out.filter(canSeeVoiceKey);
 
+    // Fallback: if the user has at least one server with at least one
+
+    // voice channel they can see, surface those even when nothing is
+
+    // explicitly marked. Otherwise a fresh user with a server but no
+
+    // marks (or a user who reloaded before clicking "mark") gets stuck
+
+    // looking at the empty placeholder + Create/Join buttons.
+
+    if (out.length === 0){
+
+      Object.values(servers).forEach(srv => {
+
+        (srv.voiceChannels || []).forEach(vc => {
+
+          const k = vcChannelKey(vc);
+
+          if (!k || !channelData[k]) return;
+
+          if (!canSeeVoiceKey(k)) return;
+
+          if (!out.includes(k)) out.push(k);
+
+        });
+
+      });
+
+    }
+
     // Empty state: when the user has no servers and no marked orbits, show
 
     // a single placeholder "EMPTY" orb that cannot be joined.
@@ -1586,6 +1616,18 @@
     currentConversation = key;
 
     conversations[key].unread = 0;
+
+    // Tell the backend we've now read every existing message in this thread
+
+    // so the unread count survives a refresh.
+
+    if (backend.isConfigured() && key && key !== 'saved'){
+
+      const peerKey = conversations[key].isSaved ? 'saved' : key;
+
+      backend.dms.markRead(peerKey).catch(()=>{});
+
+    }
 
     // Quick Access mirrors per-conversation unread; rerender so the red highlight clears
 
@@ -4123,6 +4165,16 @@
 
     if (tc.unread){ tc.unread = 0; updateBadges(); if (typeof renderMarkedPanel === 'function') renderMarkedPanel(); }
 
+    // Persist the read marker so the unread count doesn't reset to >0 on
+
+    // the next reload.
+
+    if (backend.isConfigured()){
+
+      backend.servers.markChannelRead(currentServer, tcId).catch(()=>{});
+
+    }
+
     setServerView('channel');
 
     document.getElementById('worldHeaderTitle').innerHTML = '// '+s.name+' <span style="opacity:0.55"> · </span><span style="color:var(--accent)">#'+escapeHtml(tc.name)+'</span>';
@@ -5905,7 +5957,9 @@
 
       delChannelMessage:   (sid, c, mid)     => _apiRequest('DELETE','/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(c)+'/messages/'+encodeURIComponent(mid)),
 
-      saveRoles: (sid, roles) => _apiRequest('PUT', '/servers/'+encodeURIComponent(sid)+'/roles', { roles })
+      saveRoles: (sid, roles) => _apiRequest('PUT', '/servers/'+encodeURIComponent(sid)+'/roles', { roles }),
+
+      markChannelRead: (sid, cid) => _apiRequest('POST', '/channels/text/'+encodeURIComponent(sid)+'/'+encodeURIComponent(cid)+'/read')
 
     },
 
@@ -5943,7 +5997,9 @@
 
       del:    (peer, mid) => _apiRequest('DELETE', '/dms/'+encodeURIComponent(peer)+'/'+encodeURIComponent(mid)),
 
-      edit:   (peer, mid, text) => _apiRequest('PATCH', '/dms/'+encodeURIComponent(peer)+'/'+encodeURIComponent(mid), { text })
+      edit:   (peer, mid, text) => _apiRequest('PATCH', '/dms/'+encodeURIComponent(peer)+'/'+encodeURIComponent(mid), { text }),
+
+      markRead: peer => _apiRequest('POST', '/dms/'+encodeURIComponent(peer)+'/read')
 
     },
 
@@ -6102,6 +6158,42 @@
           messages[k] = [m];
 
         }
+
+      });
+
+    }
+
+    // Restore persistent unread counts so refresh doesn't silently mark
+
+    // everything as seen. Server snapshot computes these from
+
+    // dm_read_state / text_channel_read_state.
+
+    if (snap.unreadDm && typeof snap.unreadDm === 'object'){
+
+      Object.entries(snap.unreadDm).forEach(([k, n]) => {
+
+        if (conversations[k]) conversations[k].unread = Number(n) || 0;
+
+      });
+
+    }
+
+    if (snap.unreadChannels && typeof snap.unreadChannels === 'object'){
+
+      Object.entries(snap.unreadChannels).forEach(([key, n]) => {
+
+        const sep = key.indexOf('__');
+
+        if (sep < 0) return;
+
+        const sid = key.slice(0, sep), cid = key.slice(sep+2);
+
+        const s = servers[sid]; if (!s) return;
+
+        const tc = (s.textChannels||[]).find(t => t.id === cid);
+
+        if (tc) tc.unread = Number(n) || 0;
 
       });
 
@@ -15602,6 +15694,42 @@
     };
 
   })();
+
+  // Best-effort voice-channel cleanup when the user closes the tab or hits
+
+  // reload while still in a call. Without this, the WS close event races
+
+  // the page's new socket coming up — which can leave the user listed in
+
+  // voice_channel_members on the server even though their browser is gone.
+
+  window.addEventListener('beforeunload', () => {
+
+    if (!inVoice || !connectedChannel || !currentServer) return;
+
+    if (!backend.isConfigured()) return;
+
+    const base = (typeof _backendBase === 'function' ? _backendBase() : '') || '';
+
+    if (!base) return;
+
+    const url = base + '/channels/voice/' + encodeURIComponent(currentServer) + '/' + encodeURIComponent(connectedChannel) + '/leave';
+
+    const tok = backend.token && backend.token.read && backend.token.read();
+
+    try {
+
+      // sendBeacon ignores headers, so we tunnel the auth token in a
+
+      // throwaway query param the leave endpoint accepts via attachUser
+
+      // (it already reads ?token=… for the WS upgrade path).
+
+      navigator.sendBeacon(url + '?token=' + encodeURIComponent(tok || ''), new Blob(['{}'], { type: 'application/json' }));
+
+    } catch(_){}
+
+  });
 
 })();
 

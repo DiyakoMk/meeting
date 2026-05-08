@@ -209,6 +209,22 @@ channelsRouter.delete('/text/:sid/:cid/messages/:mid', async (req, res, next) =>
   } catch (e) { next(e); }
 });
 
+// Mark every message in this text channel as read (up to current max id)
+// for the caller. Mirrors the DM read endpoint.
+channelsRouter.post('/text/:sid/:cid/read', async (req, res, next) => {
+  try {
+    const { sid, cid } = req.params;
+    if (!await requireMember(req, res, sid)) return;
+    const top = await one('SELECT MAX(id) AS m FROM text_channel_messages WHERE channel_id = ?', [cid]);
+    const maxId = (top && top.m) ? Number(top.m) : 0;
+    await q(
+      `INSERT INTO text_channel_read_state (user_id, channel_id, last_read_id) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE last_read_id = GREATEST(last_read_id, VALUES(last_read_id)), updated_at = CURRENT_TIMESTAMP`,
+      [req.user.id, cid, maxId]);
+    res.json({ ok: true, lastReadId: maxId });
+  } catch (e) { next(e); }
+});
+
 // --- Patch (rename / restyle) a text channel ---
 const channelPatchSchema = z.object({
   name:  z.string().trim().min(1).max(80).optional(),

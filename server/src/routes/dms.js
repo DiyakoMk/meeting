@@ -123,6 +123,23 @@ dmsRouter.post('/:peerKey', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Mark every message in this thread as read (up to current max id) for the
+// caller. Snapshot's unreadDm uses dm_read_state.last_read_id to compute
+// "X new messages since you last looked".
+dmsRouter.post('/:peerKey/read', async (req, res, next) => {
+  try {
+    const { thread } = await resolveThread(req.params.peerKey, req.user);
+    if (!thread) return res.status(404).json({ error: 'peer_not_found' });
+    const top = await one('SELECT MAX(id) AS m FROM dm_messages WHERE thread_id = ?', [thread.id]);
+    const maxId = (top && top.m) ? Number(top.m) : 0;
+    await q(
+      `INSERT INTO dm_read_state (user_id, thread_id, last_read_id) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE last_read_id = GREATEST(last_read_id, VALUES(last_read_id)), updated_at = CURRENT_TIMESTAMP`,
+      [req.user.id, thread.id, maxId]);
+    res.json({ ok: true, lastReadId: maxId });
+  } catch (e) { next(e); }
+});
+
 dmsRouter.post('/:peerKey/clear', async (req, res, next) => {
   try {
     const { thread, peer } = await resolveThread(req.params.peerKey, req.user);

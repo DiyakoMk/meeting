@@ -272,4 +272,29 @@ CREATE TABLE IF NOT EXISTS notifications (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ---------- READ STATE ----------
+-- Tracks the user's last-read message id per DM thread and per text channel,
+-- so unread counts survive a reload. We compute the unread count as
+-- `count of messages with id > last_read_id` server-side.
+
+CREATE TABLE IF NOT EXISTS dm_read_state (
+  user_id      BIGINT UNSIGNED NOT NULL,
+  thread_id    BIGINT UNSIGNED NOT NULL,
+  last_read_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, thread_id),
+  FOREIGN KEY (user_id)   REFERENCES users(id)      ON DELETE CASCADE,
+  FOREIGN KEY (thread_id) REFERENCES dm_threads(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS text_channel_read_state (
+  user_id      BIGINT UNSIGNED NOT NULL,
+  channel_id   VARCHAR(40) NOT NULL,
+  last_read_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, channel_id),
+  FOREIGN KEY (user_id)    REFERENCES users(id)         ON DELETE CASCADE,
+  FOREIGN KEY (channel_id) REFERENCES text_channels(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

@@ -249,6 +249,63 @@ meRouter.get('/snapshot', async (req, res, next) => {
       };
     });
 
+    // Compute persistent unread counts. For every DM thread the user is in,
+    // count messages with id > last_read_id (saved by /api/me/dms/read) and
+    // sender_id != me. Same idea for text channels — last_read_id per row
+    // in text_channel_read_state, count messages with bigger ids.
+    const unreadDm = {};
+    if (previewRows.length){
+      const tids = previewRows.map(r => r.tid);
+      const readDm = await q(
+        `SELECT thread_id, last_read_id FROM dm_read_state WHERE user_id = ? AND thread_id IN (${tids.map(()=>'?').join(',')})`,
+        [me.id, ...tids]);
+      const lastReadByThread = new Map(readDm.map(r => [r.thread_id, Number(r.last_read_id)]));
+      const unreadRows = await q(
+        `SELECT thread_id, COUNT(*) AS n FROM dm_messages
+          WHERE thread_id IN (${tids.map(()=>'?').join(',')})
+            AND sender_id != ?
+          GROUP BY thread_id, id HAVING 1=0`, [...tids, me.id]); // dummy for type check
+      // Re-query with last_read filter per thread (cheap: small set).
+      for (const tid of tids){
+        const lastRead = lastReadByThread.get(tid) || 0;
+        const row = await one(
+          `SELECT COUNT(*) AS n FROM dm_messages
+            WHERE thread_id = ? AND sender_id != ? AND id > ?`,
+          [tid, me.id, lastRead]);
+        if (row && row.n > 0){
+          const t = previewRows.find(p => p.tid === tid);
+          if (!t) continue;
+          const k = t.is_saved ? null : peerHandleByUid.get(t.user_a === me.id ? t.user_b : t.user_a);
+          if (k) unreadDm[k] = row.n;
+        }
+      }
+      void unreadRows; // silence unused
+    }
+    const unreadChannels = {};
+    if (memberRows.length){
+      const tcRows = await q(
+        `SELECT t.id, t.server_id FROM text_channels t WHERE t.server_id IN (${memberRows.map(()=>'?').join(',')})`,
+        memberRows.map(r => r.id));
+      const allCids = tcRows.map(r => r.id);
+      if (allCids.length){
+        const readCh = await q(
+          `SELECT channel_id, last_read_id FROM text_channel_read_state WHERE user_id = ? AND channel_id IN (${allCids.map(()=>'?').join(',')})`,
+          [me.id, ...allCids]);
+        const lastReadByCh = new Map(readCh.map(r => [r.channel_id, Number(r.last_read_id)]));
+        for (const cid of allCids){
+          const lastRead = lastReadByCh.get(cid) || 0;
+          const row = await one(
+            `SELECT COUNT(*) AS n FROM text_channel_messages
+              WHERE channel_id = ? AND sender_id != ? AND id > ?`,
+            [cid, me.id, lastRead]);
+          if (row && row.n > 0){
+            const t = tcRows.find(x => x.id === cid);
+            if (t) unreadChannels[t.server_id + '__' + cid] = row.n;
+          }
+        }
+      }
+    }
+
     // Marks
     const markedOrbs = await q(
       `SELECT channel_id FROM user_marked_orbits WHERE user_id = ? ORDER BY position`, [me.id]);
@@ -292,6 +349,8 @@ meRouter.get('/snapshot', async (req, res, next) => {
       conversations,
       messages: { saved: [] }, // DM threads loaded lazily per-thread
       messagePreviews,         // last message per DM thread for sidebar previews
+      unreadDm,
+      unreadChannels,
       friendsList: friendRows.map(u => u.handle.toLowerCase()),
       markedFriends: markedFr.map(r => r.handle.toLowerCase()),
       markedTextChannels: markedTcs.map(r => r.server_id + '__' + r.channel_id),
