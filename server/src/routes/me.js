@@ -184,9 +184,16 @@ meRouter.get('/snapshot', async (req, res, next) => {
       const tcs          = await q(`SELECT * FROM text_channels    WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
       const vcs          = await q(`SELECT * FROM voice_channels   WHERE server_id IN (${placeholders}) ORDER BY position`, sids);
       const roleRows     = await q(`SELECT * FROM server_roles WHERE server_id IN (${placeholders}) ORDER BY position, id`, sids);
-      const roleIdList   = roleRows.map(r => r.id);
-      const roleMembers  = roleIdList.length
-        ? await q(`SELECT rm.role_id, u.name FROM server_role_members rm JOIN users u ON u.id = rm.user_id WHERE rm.role_id IN (${roleIdList.map(()=>'?').join(',')})`, roleIdList)
+      // Pull role members keyed by (server_id, role_id) so we don't pick up
+      // an 'owner' row from a different server when two servers share the
+      // role id. This is the multi-server analogue of the join in
+      // routes/servers.js below.
+      const roleMembers  = roleRows.length
+        ? await q(
+            `SELECT rm.server_id, rm.role_id, u.name FROM server_role_members rm
+               JOIN users u ON u.id = rm.user_id
+              WHERE rm.server_id IN (${placeholders})`,
+            sids)
         : [];
       memberRows.forEach(row => {
         const sid = row.id;
@@ -237,7 +244,11 @@ meRouter.get('/snapshot', async (req, res, next) => {
               system: !!r.is_system,
               position: r.position || 0,
               perms: typeof r.permissions === 'string' ? JSON.parse(r.permissions) : (r.permissions || {}),
-              members: roleMembers.filter(m => m.role_id === r.id).map(m => m.name)
+              // Match BOTH server_id and role_id; without the server_id
+              // qualifier we'd accidentally union members of identically
+              // named roles in other servers (e.g. 'admin' in server A
+              // would inherit members of 'admin' in server B).
+              members: roleMembers.filter(m => m.server_id === sid && m.role_id === r.id).map(m => m.name)
             }));
           })()
         };

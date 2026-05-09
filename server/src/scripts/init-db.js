@@ -44,6 +44,57 @@ const schemaPath = path.resolve(here, '..', 'schema.sql');
   await ensureCol('text_channels',  'permission_deny',  'JSON NULL');
   await ensureCol('voice_channels', 'permission_allow', 'JSON NULL');
   await ensureCol('voice_channels', 'permission_deny',  'JSON NULL');
+
+  // Migrate server_roles primary key from (id) to (server_id, id) so the
+  // role id stays unique only within a server. Original schema treated id
+  // as globally unique, which broke saveRoles on every server after the
+  // first one (duplicate-key INSERT). Detect the old shape and rebuild.
+  // STATISTICS uses SEQ_IN_INDEX in both MySQL and MariaDB; ORDINAL_POSITION
+  // exists only in MySQL 8+. Use SEQ_IN_INDEX for portability.
+  const [pkRows] = await root.query(
+    `SELECT COLUMN_NAME, SEQ_IN_INDEX FROM INFORMATION_SCHEMA.STATISTICS
+      WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'server_roles' AND INDEX_NAME = 'PRIMARY'
+      ORDER BY SEQ_IN_INDEX`,
+    [config.db.database]);
+  const pkCols = pkRows.map(r => r.COLUMN_NAME);
+  if (pkCols.length === 1 && pkCols[0] === 'id'){
+    console.log('[init-db] migrating server_roles primary key to (server_id, id)');
+    await root.query('SET FOREIGN_KEY_CHECKS = 0');
+    // server_role_members had FK -> server_roles(id); drop FKs first.
+    const [fks] = await root.query(
+      `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+        WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'server_role_members' AND CONSTRAINT_TYPE = 'FOREIGN KEY'`,
+      [config.db.database]);
+    for (const fk of fks){
+      await root.query('ALTER TABLE `server_role_members` DROP FOREIGN KEY `' + fk.CONSTRAINT_NAME + '`');
+    }
+    // Backfill server_id on server_role_members if missing, then rebuild key.
+    const [srmCols] = await root.query(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'server_role_members'`,
+      [config.db.database]);
+    const srmHasServer = srmCols.some(c => c.COLUMN_NAME === 'server_id');
+    if (!srmHasServer){
+      await root.query('ALTER TABLE `server_role_members` ADD COLUMN `server_id` VARCHAR(40) NULL FIRST');
+      await root.query(`UPDATE server_role_members srm
+        JOIN server_roles sr ON sr.id = srm.role_id
+        SET srm.server_id = sr.server_id`);
+      await root.query('ALTER TABLE `server_role_members` MODIFY `server_id` VARCHAR(40) NOT NULL');
+    }
+    await root.query('ALTER TABLE `server_role_members` DROP PRIMARY KEY, ADD PRIMARY KEY (`server_id`, `role_id`, `user_id`)');
+    // Rebuild server_roles primary key.
+    await root.query('ALTER TABLE `server_roles` DROP PRIMARY KEY, ADD PRIMARY KEY (`server_id`, `id`)');
+    // Re-add the FKs with the new composite target.
+    await root.query(`ALTER TABLE \`server_role_members\`
+      ADD CONSTRAINT \`fk_srm_role\` FOREIGN KEY (\`server_id\`, \`role_id\`)
+      REFERENCES \`server_roles\` (\`server_id\`, \`id\`) ON DELETE CASCADE`);
+    await root.query(`ALTER TABLE \`server_role_members\`
+      ADD CONSTRAINT \`fk_srm_user\` FOREIGN KEY (\`user_id\`)
+      REFERENCES \`users\` (\`id\`) ON DELETE CASCADE`);
+    await root.query('SET FOREIGN_KEY_CHECKS = 1');
+    console.log('[init-db] server_roles migration done');
+  }
+
   await root.end();
   console.log(`[init-db] schema applied to ${config.db.database}`);
   process.exit(0);

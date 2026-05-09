@@ -188,6 +188,12 @@ CREATE TABLE IF NOT EXISTS voice_channel_members (
   FOREIGN KEY (user_id)    REFERENCES users(id)          ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Note: role ids like 'owner' / 'admin' / 'role-xxx' are unique per-server,
+-- not globally unique. The PRIMARY KEY is composite on (server_id, id) so
+-- two different servers can both have an 'owner' row. Previously this was
+-- PRIMARY KEY (id), which silently broke saveRoles for every server after
+-- the first one — INSERT failed with a duplicate-key error and the role
+-- list looked empty until the user reloaded.
 CREATE TABLE IF NOT EXISTS server_roles (
   id           VARCHAR(40) NOT NULL,
   server_id    VARCHAR(40) NOT NULL,
@@ -196,16 +202,19 @@ CREATE TABLE IF NOT EXISTS server_roles (
   is_system    TINYINT(1) NOT NULL DEFAULT 0,
   position     INT NOT NULL DEFAULT 0,
   permissions  JSON NOT NULL,
-  PRIMARY KEY (id),
+  PRIMARY KEY (server_id, id),
   FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- server_role_members keys on (server_id, role_id, user_id) so the same
+-- 'admin' role id in two different servers stays distinct.
 CREATE TABLE IF NOT EXISTS server_role_members (
-  role_id  VARCHAR(40)     NOT NULL,
-  user_id  BIGINT UNSIGNED NOT NULL,
-  PRIMARY KEY (role_id, user_id),
-  FOREIGN KEY (role_id) REFERENCES server_roles(id) ON DELETE CASCADE,
-  FOREIGN KEY (user_id) REFERENCES users(id)        ON DELETE CASCADE
+  server_id VARCHAR(40)     NOT NULL,
+  role_id   VARCHAR(40)     NOT NULL,
+  user_id   BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (server_id, role_id, user_id),
+  FOREIGN KEY (server_id, role_id) REFERENCES server_roles(server_id, id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------- TEXT CHANNEL MESSAGES ----------

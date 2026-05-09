@@ -215,7 +215,8 @@ channelsRouter.post('/text/:sid/:cid/messages', async (req, res, next) => {
       if (!ch) return res.status(404).json({ error: 'channel_not_found' });
       const userRoleIds = (await q(
         `SELECT sr.id FROM server_roles sr
-           JOIN server_role_members srm ON srm.role_id = sr.id
+           JOIN server_role_members srm
+             ON srm.server_id = sr.server_id AND srm.role_id = sr.id
           WHERE sr.server_id = ? AND srm.user_id = ?`, [sid, req.user.id]
       )).map(r => r.id);
       const _parse = v => {

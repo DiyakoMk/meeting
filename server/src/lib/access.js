@@ -56,7 +56,8 @@ export async function hasPermission(sid, uid, permKey) {
   const rows = await q(
     `SELECT sr.permissions
        FROM server_roles sr
-       JOIN server_role_members srm ON srm.role_id = sr.id
+       JOIN server_role_members srm
+         ON srm.server_id = sr.server_id AND srm.role_id = sr.id
       WHERE sr.server_id = ? AND srm.user_id = ?`,
     [sid, uid]
   );

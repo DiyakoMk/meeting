@@ -53,11 +53,15 @@ async function buildServerPayload(sid) {
     `SELECT * FROM server_roles WHERE server_id = ? ORDER BY position, id`, [sid]);
   let roles = null;
   if (roleRows.length){
+    // Always scope role-member lookups by server_id. Role ids are
+    // per-server now, so two servers can share an id like 'owner' or
+    // 'admin'. Without the server_id filter we'd merge their member
+    // lists.
     const roleMembers = await q(
       `SELECT rm.role_id, u.name FROM server_role_members rm
          JOIN users u ON u.id = rm.user_id
-        WHERE rm.role_id IN (${roleRows.map(()=>'?').join(',')})`,
-      roleRows.map(r => r.id));
+        WHERE rm.server_id = ?`,
+      [sid]);
     roles = roleRows.map(r => ({
       id: r.id,
       name: r.name,
@@ -444,9 +448,12 @@ serversRouter.put('/:id/roles', async (req, res, next) => {
           .map(name => nameToId.get(name))
           .filter(id => id !== undefined);
         for (const uid of memberIds){
+          // (server_id, role_id) is the composite FK target; we always
+          // qualify role_id with server_id because role ids are scoped to
+          // their server (two servers can both have an 'owner' row).
           await conn.execute(
-            'INSERT IGNORE INTO server_role_members (role_id, user_id) VALUES (?, ?)',
-            [r.id, uid]
+            'INSERT IGNORE INTO server_role_members (server_id, role_id, user_id) VALUES (?, ?, ?)',
+            [sid, r.id, uid]
           );
         }
       }
