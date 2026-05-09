@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-f (profile modal glass refined)');
+  console.log('[orblood] client build 2026-05-09-g (profile modal -> quick-access warm glass)');
 
   // ============== STARS ==============
 
