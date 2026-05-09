@@ -61,6 +61,36 @@
 
   function nowTime(){ const n = new Date(); return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); }
 
+  // Format a message timestamp for the bubble's tiny clock. Accepts ISO
+
+  // strings ("2026-05-09T04:42:18.123Z" — what the API now returns) and
+
+  // already-formatted "HH:MM" strings (legacy optimistic bubbles, demo
+
+  // data). For ISO strings we render in the user's local timezone so
+
+  // a server in UTC + a user in Tehran no longer disagree about what
+
+  // "now" means after a reload.
+
+  function fmtMessageTime(raw){
+
+    if (!raw) return '';
+
+    const s = String(raw).trim();
+
+    // Already in HH:MM form — leave as-is.
+
+    if (/^\d{1,2}:\d{2}/.test(s)) return s;
+
+    const d = new Date(s);
+
+    if (isNaN(d.getTime())) return s;
+
+    return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+
+  }
+
   // Day key used to bucket bubbles under a divider. We deliberately use a
 
   // locale-independent ISO-ish key (YYYY-MM-DD) so a server-side render in
@@ -2177,6 +2207,22 @@
 
     });
 
+    // Refresh the clock label too, in case the optimistic bubble used a
+
+    // local "HH:MM" and the server returned an ISO timestamp that we
+
+    // want to render with locale-aware formatting. If the time hasn't
+
+    // changed visibly we still write it — cheap and idempotent.
+
+    const timeSpan = row.querySelector('.dm-bubble-meta > span');
+
+    if (timeSpan && m.time != null){
+
+      timeSpan.textContent = fmtMessageTime(m.time);
+
+    }
+
     // Status icon (the clock / check / check-check on outgoing bubbles).
 
     const statusContainer = row.querySelector('.dm-bubble-meta');
@@ -2397,7 +2443,7 @@
 
     }
 
-    const meta = '<div class="dm-bubble-meta"><span>'+m.time+'</span>'+statusIcon+'</div>';
+    const meta = '<div class="dm-bubble-meta"><span>'+escapeHtml(fmtMessageTime(m.time))+'</span>'+statusIcon+'</div>';
 
     let hoverActions = '';
 
@@ -2707,7 +2753,7 @@
 
       }
 
-      const meta = '<div class="dm-bubble-meta"><span>'+m.time+'</span>'+statusIcon+'</div>';
+      const meta = '<div class="dm-bubble-meta"><span>'+escapeHtml(fmtMessageTime(m.time))+'</span>'+statusIcon+'</div>';
 
       // Hover-based action toolbar (unified: reply, forward, copy/edit/download, pin, delete)
 
@@ -3907,7 +3953,7 @@
 
         '<div class="wmsg-body">'+
 
-          '<div class="wmsg-row1"><div class="'+nameCls+'" data-world-av="'+m.id+'">'+escapeHtml(m.sender)+'</div>'+role+'<div class="wmsg-time">'+m.time+'</div></div>'+
+          '<div class="wmsg-row1"><div class="'+nameCls+'" data-world-av="'+m.id+'">'+escapeHtml(m.sender)+'</div>'+role+'<div class="wmsg-time">'+escapeHtml(fmtMessageTime(m.time))+'</div></div>'+
 
           body+
 
@@ -5381,7 +5427,7 @@
 
           '<div class="ws-msg-body">'+
 
-            '<div class="ws-msg-head"><span class="ws-msg-name">'+escapeHtml(m.user)+'</span><span class="ws-msg-time">'+escapeHtml(m.time)+'</span></div>'+
+            '<div class="ws-msg-head"><span class="ws-msg-name">'+escapeHtml(m.user)+'</span><span class="ws-msg-time">'+escapeHtml(fmtMessageTime(m.time))+'</span></div>'+
 
             replyPrev + body +
 

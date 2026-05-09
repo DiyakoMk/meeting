@@ -80,17 +80,28 @@ dmsRouter.get('/:peerKey', async (req, res, next) => {
       [thread.id, hiddenCutoff]);
     const myId = req.user.id;
     res.json({
-      messages: rows.map(r => ({
-        id: r.id,
-        sender: r.sender_id === myId ? 'me' : 'them',
-        text: r.body || '',
-        time: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        day: dayKey(r.created_at),
-        status: r.status,
-        edited: !!r.edited,
-        deleted: !!r.deleted,
-        payload: r.payload_json
-      }))
+      messages: rows.map(r => {
+        // Send the raw timestamp so the renderer can format it in the
+        // user's local timezone. The legacy `time` field stays for older
+        // clients but it's just an ISO string on the wire now; the
+        // browser converts to "HH:MM" with todayDayLabel-style helpers.
+        const created = (r.created_at instanceof Date)
+          ? r.created_at.toISOString()
+          : new Date(r.created_at).toISOString();
+        return {
+          id: r.id,
+          sender: r.sender_id === myId ? 'me' : 'them',
+          text: r.body || '',
+          createdAt: created,                  // canonical, ISO + UTC
+          time:      created,                  // legacy alias; renderer
+                                               // formats both the same way
+          day:       dayKey(r.created_at),
+          status:    r.status,
+          edited:    !!r.edited,
+          deleted:   !!r.deleted,
+          payload:   r.payload_json
+        };
+      })
     });
   } catch (e) { next(e); }
 });
@@ -118,14 +129,21 @@ dmsRouter.post('/:peerKey', async (req, res, next) => {
       [thread.id, req.user.id, body.text || '', body.payload ? JSON.stringify(body.payload) : null]
     );
     await q('UPDATE dm_threads SET last_msg_at = CURRENT_TIMESTAMP WHERE id = ?', [thread.id]);
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Use the same instant we just stamped on the row so the optimistic
+    // bubble and the persisted bubble share the exact same wall-clock
+    // value. We send ISO + UTC down to the renderer; it formats with the
+    // user's local timezone, which fixes the "time changes after a
+    // reload" report (server was stamping its UTC clock).
+    const created = new Date().toISOString();
     const day  = dayKey(new Date());
     const responsePayload = {
       message: {
         id: result.insertId,
         sender: 'me',
         text: body.text || '',
-        time, day,
+        createdAt: created,
+        time:      created,
+        day,
         status: 'sent',
         payload: body.payload || null
       }
@@ -137,7 +155,9 @@ dmsRouter.post('/:peerKey', async (req, res, next) => {
         id: result.insertId,
         sender: 'them',
         text: body.text || '',
-        time, day,
+        createdAt: created,
+        time:      created,
+        day,
         payload: body.payload || null,
         peerHandle: req.user.handle ? '@' + req.user.handle : null,
         peerName: req.user.name

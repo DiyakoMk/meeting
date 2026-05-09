@@ -183,7 +183,7 @@ channelsRouter.get('/text/:sid/:cid/messages', async (req, res, next) => {
         id: r.id,
         user: r.sender_name,
         text: r.body || '',
-        time: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        time: ((r.created_at instanceof Date) ? r.created_at.toISOString() : new Date(r.created_at).toISOString()),
         replyTo: r.reply_to,
         edited: !!r.edited,
         deleted: !!r.deleted,
@@ -245,7 +245,7 @@ channelsRouter.post('/text/:sid/:cid/messages', async (req, res, next) => {
       id: result.insertId,
       user: req.user.name,
       text: body.text || '',
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: new Date().toISOString(),
       replyTo: body.replyTo || null,
       payload: body.payload || null
     };

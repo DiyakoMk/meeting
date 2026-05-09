@@ -131,6 +131,17 @@ serversRouter.post('/', async (req, res, next) => {
         'INSERT INTO server_members (server_id, user_id, is_admin) VALUES (?, ?, 1)',
         [sid, req.user.id]
       );
+      // Auto-pin the freshly-created server to the creator's home rail
+      // so it shows up immediately. Snapshot only surfaces explicitly
+      // pinned rows, so this is what makes "create server -> see it
+      // on home" work without an extra trip through the world picker.
+      const [posRow] = await conn.execute(
+        'SELECT COALESCE(MAX(position),0) AS p FROM user_pinned_servers WHERE user_id = ?',
+        [req.user.id]);
+      const nextPos = (posRow && posRow[0] && Number(posRow[0].p)) || 0;
+      await conn.execute(
+        'INSERT IGNORE INTO user_pinned_servers (user_id, server_id, position) VALUES (?, ?, ?)',
+        [req.user.id, sid, nextPos + 1]);
       await conn.commit();
     } catch (e) { await conn.rollback(); throw e; }
     finally { conn.release(); }
@@ -260,6 +271,15 @@ serversRouter.post('/:keyOrId/join', async (req, res, next) => {
     if (row.is_private) return res.status(403).json({ error: 'private_server' });
     await q('INSERT INTO server_members (server_id, user_id, is_admin) VALUES (?, ?, 0)',
       [row.id, req.user.id]);
+    // Auto-pin freshly-joined servers to the user's home rail so the
+    // server is visible immediately. They can unpin from World any time.
+    const posRow = await one(
+      'SELECT COALESCE(MAX(position),0) AS p FROM user_pinned_servers WHERE user_id = ?',
+      [req.user.id]);
+    const nextPos = (posRow && Number(posRow.p)) || 0;
+    await q(
+      'INSERT IGNORE INTO user_pinned_servers (user_id, server_id, position) VALUES (?, ?, ?)',
+      [req.user.id, row.id, nextPos + 1]);
     const payload = await buildServerPayload(row.id);
     res.status(201).json({ server: payload });
     emitServerMemberJoined(row.id, req.user.name);

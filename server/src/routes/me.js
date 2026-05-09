@@ -159,16 +159,22 @@ meRouter.get('/snapshot', async (req, res, next) => {
       `SELECT s.* FROM server_members sm
          JOIN servers s ON s.id = sm.server_id
         WHERE sm.user_id = ?`, [me.id]);
-    // Honour the user's preferred display order from user_pinned_servers,
-    // falling back to membership order for any server they haven't
-    // explicitly arranged yet.
+    // The user's home rail / orb sidebar only shows servers they have
+    // *explicitly pinned* via the world UI. Membership without a pin is
+    // still discoverable via /api/servers + the World page, but the
+    // home rail respects "I unpinned this — keep it off my home". The
+    // previous version eagerly auto-filled every membership into
+    // myServers, which made unpins look like they reverted on reload.
+    //
+    // myServers is sourced strictly from user_pinned_servers. New users
+    // / new memberships start empty here — the World page is where the
+    // user picks which servers to surface on home. The "Pin to home"
+    // button on a server's overview is what writes a row to this table.
     const pinnedOrderRows = await q(
       `SELECT server_id FROM user_pinned_servers WHERE user_id = ? ORDER BY position`, [me.id]);
     const pinnedOrder = pinnedOrderRows.map(r => r.server_id);
     const memberSet = new Set(memberRows.map(s => s.id));
-    const ordered = pinnedOrder.filter(id => memberSet.has(id));
-    for (const s of memberRows) if (!ordered.includes(s.id)) ordered.push(s.id);
-    const myServers = ordered;
+    const myServers = pinnedOrder.filter(id => memberSet.has(id));
     const servers = {};
     if (memberRows.length) {
       const sids = memberRows.map(s => s.id);
