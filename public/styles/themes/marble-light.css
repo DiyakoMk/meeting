@@ -229,3 +229,43 @@
   background: var(--selection-bg);
   color: var(--selection-fg);
 }
+
+/* Bottom taskbar — the dark theme paints it with rgba(0,0,0,0.32) which
+ * looks almost black on the cream marble. Swap to a near-white wash with
+ * a brand-red glow so the bar reads as part of the marble panel instead
+ * of a sunken band. The .tb buttons stay legible on the lighter base. */
+:root[data-theme="marble-light"] .taskbar {
+  background:
+    radial-gradient(ellipse at 50% 0%, var(--brand-glow-soft), transparent 65%),
+    rgba(252, 248, 245, 0.85);
+  border-top: 1px solid var(--border-3);
+}
+:root[data-theme="marble-light"] .tb {
+  color: var(--t2);
+}
+:root[data-theme="marble-light"] .tb:hover {
+  background: var(--tint-3);
+  color: var(--t1);
+}
+:root[data-theme="marble-light"] .tb.active {
+  background: linear-gradient(135deg, var(--brand-glow-soft), var(--brand-glow));
+  color: var(--accent);
+  border-color: var(--ag);
+}
+
+/* Category title was a white-to-pastel gradient that disappears on
+ * cream. Repaint with ink + brand-red so it reads on the marble base. */
+:root[data-theme="marble-light"] .ws-cat-h-name {
+  background: linear-gradient(90deg, var(--t1), var(--accent) 50%, var(--t1));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 18px rgba(180, 2, 36, 0.18);
+}
+:root[data-theme="marble-light"] .ws-cat-h-name::before,
+:root[data-theme="marble-light"] .ws-cat-h-name::after {
+  background: linear-gradient(90deg, transparent, rgba(180, 2, 36, 0.6));
+}
+:root[data-theme="marble-light"] .ws-cat-h-name::after {
+  background: linear-gradient(90deg, rgba(180, 2, 36, 0.6), transparent);
+}

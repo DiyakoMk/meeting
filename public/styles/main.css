@@ -1139,8 +1139,19 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 #profileModal{max-width:380px}
 
-#profileModal.is-editing{max-width:780px;width:96vw;max-height:88vh}
-
+/* Settings mode reverts the compact profile-card recipe back to the
+ * original two-column layout. We override the variant-3 minimal-card
+ * styles below (defined later in this file) so the editor regains its
+ * sidebar + content area without inheriting the compact card chrome. */
+#profileModal.is-editing{
+  max-width:780px;width:96vw;max-height:88vh;
+  background:radial-gradient(ellipse at 50% 0%,var(--brand-glow-soft),transparent 65%),var(--panel);
+  border-radius:14px;
+  -webkit-backdrop-filter:none;backdrop-filter:none;
+  overflow:hidden;
+}
+#profileModal.is-editing .smodal-head{display:flex}
+#profileModal.is-editing .profile-view{display:none}
 #profileModal.is-editing .profile-edit{flex:1;flex-direction:row;gap:0;overflow:hidden;min-height:0}
 
 .settings-side{width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--gb);padding:12px 8px;overflow-y:auto}
@@ -1802,17 +1813,37 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ws-banner-actions{position:absolute;top:14px;right:14px;display:flex;gap:6px;z-index:5}
 
-.ws-banner-menu-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
-
-.ws-banner-leave-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
-
+/* Banner action buttons (settings, share, leave): use the brand-red
+ * gradient as the resting state so they read as branded controls,
+ * not generic grey chips. The hover state lifts them to a brighter
+ * fill. Leave keeps a danger tint on hover to telegraph what it does. */
+.ws-banner-menu-btn,
+.ws-banner-share-btn{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  backdrop-filter:blur(10px);
+  border:1px solid var(--ag);
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px var(--brand-glow-soft);
+  transition:filter 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.ws-banner-menu-btn:hover,
+.ws-banner-share-btn:hover{
+  filter:brightness(1.12);
+  box-shadow:0 6px 16px var(--brand-glow);
+  transform:translateY(-1px);
+}
+/* Leave is a destructive action — keep it neutral at rest, danger on
+ * hover so it doesn't compete with the primary brand buttons. */
+.ws-banner-leave-btn{
+  width:32px;height:32px;border-radius:8px;
+  background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);
+  border:1px solid var(--tint-5);color:var(--t1);
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;
+}
 .ws-banner-leave-btn:hover{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.4);color:#fff}
-
-.ws-banner-share-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
-
-.ws-banner-share-btn:hover{background:rgba(185,28,74,0.25);border-color:var(--brand-glow);color:#fff}
-
-.ws-banner-menu-btn:hover{background:rgba(185,28,74,0.25);border-color:var(--brand-glow)}
 
 .ws-banner-menu-pop{display:none}
 
@@ -2466,152 +2497,120 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .smodal{background:radial-gradient(ellipse at 50% 0%,var(--brand-glow-soft),transparent 65%),var(--panel);border:1px solid var(--tint-3);border-radius:14px;width:100%;max-width:420px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 100px rgba(0,0,0,0.7),inset 0 1px 0 var(--tint-3);transform:translateY(20px) scale(0.96);transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);position:relative}
 
-/* ============= USER PROFILE MODAL ============= *
- * Minimal-card layout with a faded cover banner up top so the avatar
- * sits over the cover without crashing into the body. The cover uses
- * a bottom-fade gradient so it bleeds into the panel surface.
- */
+/* ============= USER PROFILE MODAL — VARIANT 3 (Minimal Card) ============= *
+ * 1:1 with the Variant 3 sample in modal-samples.html: compact panel,
+ * no banner, single column. Avatar + name + handle, status pill,
+ * divider, detail rows, pill-shaped action buttons. */
 #profileModal{
-  max-width:320px;
+  max-width:300px;
   background:var(--tint-1);
   border:1px solid var(--tint-3);
   border-radius:12px;
-  -webkit-backdrop-filter:blur(14px);
-  backdrop-filter:blur(14px);
+  padding:0;
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
   box-shadow:0 18px 48px rgba(0,0,0,0.45);
   overflow:hidden;
 }
 #profileModal .smodal-head{display:none}
-#profileModal .profile-view{padding:0;gap:0}
+#profileModal .profile-banner{display:none}
+#profileModal .profile-view{padding:18px;gap:14px;display:flex;flex-direction:column}
 
-/* Cover banner — fades into the body via a darker gradient on top.
- * The image lives on .profile-banner via inline style from JS; this
- * just controls the fade + sizing. */
-#profileModal .profile-banner{
-  display:block;
-  height:90px;
-  border-radius:0;
-  border:none;
-  background-size:cover;
-  background-position:center;
-  position:relative;
-  overflow:visible;
-}
-#profileModal .profile-banner::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:linear-gradient(180deg, transparent 30%, var(--tint-1) 100%);
-  pointer-events:none;
-}
-
-/* Avatar overlaps the cover by ~28px. The orb gets a panel-coloured
- * ring so the join with the cover reads cleanly. */
-#profileModal .profile-head{
-  position:relative;
-  margin:-28px 16px 0;
-  padding:0 0 12px;
-  gap:12px;
-  align-items:center;
-  display:flex;
-  z-index:2;
-}
-#profileModal .profile-orb{width:64px;height:64px;flex-shrink:0;position:relative}
+#profileModal .profile-head{margin:0;padding:0;gap:12px;align-items:center;display:flex}
+#profileModal .profile-orb{width:48px;height:48px;flex-shrink:0;position:relative}
 #profileModal .modal-orb-core{
-  width:64px;height:64px;
-  font-size:1.3rem;
-  border:3px solid var(--tint-1);
-  box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  width:48px;height:48px;font-size:1.1rem;
+  border:1px solid var(--tint-3);
+  box-shadow:0 0 18px var(--brand-glow);
 }
 #profileModal .modal-orb-ring,
 #profileModal .modal-orb-ring.r2,
 #profileModal .modal-orb-ring.r3{display:none}
-#profileModal .profile-orb-status{
-  position:absolute;
-  bottom:0;
-  right:0;
-  width:14px;height:14px;
-  border-radius:50%;
-  background:var(--success);
-  border:2px solid var(--tint-1);
-  box-shadow:0 0 8px rgba(34,197,94,0.5);
-}
-#profileModal .profile-orb-status.offline{background:var(--t3);box-shadow:none}
-#profileModal .profile-head-info{flex:1;min-width:0;padding:0;padding-bottom:6px}
-#profileModal .profile-name{
-  font-size:1rem;font-weight:700;letter-spacing:0.3px;line-height:1.2;
-}
-#profileModal .profile-handle-row{margin-top:3px;display:flex;align-items:center;gap:5px}
+#profileModal .profile-orb-status{display:none}
+#profileModal .profile-head-info{flex:1;min-width:0;padding:0}
+#profileModal .profile-name{font-size:0.95rem;font-weight:600;letter-spacing:0.3px;line-height:1.2}
+#profileModal .profile-handle-row{margin-top:1px;display:flex;align-items:center;gap:5px}
 #profileModal .profile-handle{font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--t3)}
 #profileModal .profile-handle-copy{
-  width:18px;height:18px;border-radius:4px;
+  width:16px;height:16px;border-radius:4px;
   background:transparent;color:var(--t3);
   display:flex;align-items:center;justify-content:center;
 }
 #profileModal .profile-handle-copy:hover{background:var(--tint-3);color:var(--t1)}
 
-/* Tags row, bio, detail rows */
-#profileModal .profile-tags{padding:0 16px;margin:0;gap:5px;display:flex;flex-wrap:wrap}
-#profileModal .profile-tag{padding:3px 9px;border-radius:5px;font-size:0.5rem;letter-spacing:1.4px}
-#profileModal .profile-bio{
-  margin:10px 16px 0;padding:9px 12px;
-  font-size:0.78rem;line-height:1.55;color:var(--t2);
-  background:var(--tint-2);border:1px solid var(--tint-3);border-radius:10px;
+/* Status / tag row — quiet inline tags with a glowing dot for online. */
+#profileModal .profile-tags{padding:0;margin:0;gap:6px;display:flex;flex-wrap:wrap}
+#profileModal .profile-tag{
+  padding:0;background:transparent;border:none;
+  font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.55rem;letter-spacing:1.5px;color:var(--t3);
+  display:inline-flex;align-items:center;gap:5px;
 }
+#profileModal .profile-tag.status{color:var(--success)}
+#profileModal .profile-tag.status::before{
+  content:"";width:7px;height:7px;border-radius:50%;
+  background:var(--success);box-shadow:0 0 6px var(--success);
+}
+#profileModal .profile-tag.offline{color:var(--t3)}
+#profileModal .profile-tag.offline::before{
+  content:"";width:7px;height:7px;border-radius:50%;background:var(--t3);
+}
+
+/* Bio — quiet caption, no chip. */
+#profileModal .profile-bio{padding:0;margin:0;font-size:0.78rem;line-height:1.55;color:var(--t2)}
 #profileModal .profile-bio:empty{display:none}
 
+/* Detail rows — label left / value right, compact. The first detail
+ * row gets a hairline above it that bleeds full width. */
 #profileModal .profile-section{
-  padding:10px 16px;margin:0;
-  border-top:1px solid var(--tint-2);
-  display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px;
+  padding:0;margin:0;border:none;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;min-height:0;font-size:0.78rem;
 }
+#profileModal .profile-section + .profile-section{margin-top:8px}
 #profileModal .profile-section-l{
   font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:1.6px;
   color:var(--t3);margin:0;flex-shrink:0;
 }
 #profileModal .profile-section-v{
-  font-size:0.78rem;color:var(--t1);text-align:right;
+  font-size:0.78rem;color:var(--t1);text-align:right;font-weight:500;
   min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+#profileModal #modalJoinedRow,
+#profileModal #modalSharedRow{position:relative}
+#profileModal #modalJoinedRow:first-of-type::before{
+  content:"";position:absolute;left:-18px;right:-18px;top:-7px;
+  height:1px;background:var(--tint-3);
+}
 
-/* Pill-shaped action row — minimal-card aesthetic. The MESSAGE button
- * is filled with the brand red; the rest are tinted pills. */
+/* Pill action row — MESSAGE filled red, others muted, BLOCK full width. */
 #profileModal .profile-actions{
-  margin:0;padding:12px 16px;
+  margin:0;padding:0;
   display:flex;flex-wrap:wrap;gap:6px;
-  border-top:1px solid var(--tint-2);
-  background:var(--tint-1);
+  border:none;background:transparent;
 }
 #profileModal .profile-actions .sm-btn{
-  flex:1;min-width:0;padding:8px 10px;
+  flex:1;min-width:0;padding:7px 10px;
   border-radius:999px;
   background:var(--tint-2);border:1px solid var(--tint-3);
   color:var(--t1);
   font-family:'Space Mono','Vazirmatn',monospace;
   font-size:0.5rem;letter-spacing:1.4px;
-  justify-content:center;white-space:nowrap;
+  justify-content:center;white-space:nowrap;text-align:center;
 }
 #profileModal .profile-actions .sm-btn:hover{background:var(--tint-4)}
-/* MESSAGE = brand-red filled pill, the focal action of the card. */
 #profileModal .profile-actions #modalMessage{
   background:linear-gradient(135deg,var(--accent),var(--accent-2));
   border-color:transparent;color:#fff;
   box-shadow:0 4px 14px var(--brand-glow);
 }
 #profileModal .profile-actions #modalMessage:hover{
-  filter:brightness(1.08);
-  box-shadow:0 6px 18px var(--brand-glow-strong);
+  filter:brightness(1.08);box-shadow:0 6px 18px var(--brand-glow-strong);
 }
-/* BLOCK spans the full width, danger tinted. */
 #profileModal .profile-actions #modalBlock{
-  flex-basis:100%;
-  color:var(--danger);
-  border-color:rgba(239,68,68,0.3);
+  flex-basis:100%;color:var(--danger);border-color:rgba(239,68,68,0.3);
 }
-#profileModal .profile-actions #modalBlock:hover{
-  background:rgba(239,68,68,0.12);
-}
-/* Self profile uses 2 wide pills. */
+#profileModal .profile-actions #modalBlock:hover{background:rgba(239,68,68,0.12)}
 #profileModal .profile-actions-self{display:flex;gap:8px}
 #profileModal .profile-actions-self .sm-btn{flex:1}
 

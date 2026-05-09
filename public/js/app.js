@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-m (last server, keyboard nav, minimal profile modal)');
+  console.log('[orblood] client build 2026-05-09-n (variant3 modal, dm esc, settings revert, marble nav, brand banner btns)');
 
   // ============== STARS ==============
 
@@ -17715,6 +17715,8 @@
 
       else if (document.getElementById('pageMessages').classList.contains('active') && currentConversation){
 
+        // First Esc: close the open thread but stay on DMs.
+
         currentConversation = null;
 
         document.getElementById('dmEmpty').style.display = 'flex';
@@ -17726,6 +17728,14 @@
         document.getElementById('dmInputWrap').style.display = 'none';
 
         renderDmList();
+
+      }
+
+      else if (document.getElementById('pageMessages').classList.contains('active')){
+
+        // Second Esc on DMs (no open thread): step out to home.
+
+        setPage('pageHome');
 
       }
 
