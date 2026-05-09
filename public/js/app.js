@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-u (rail no-grow, create vis radio, share invite link, pin theme tokens, dm grad, cover gap+curve)');
+  console.log('[orblood] client build 2026-05-09-v (drop dead csColorGrid listener)');
 
   // ============== STARS ==============
 
@@ -14495,15 +14495,7 @@
 
   }));
 
-  document.getElementById('csColorGrid').addEventListener('click', e => {
-
-    const b = e.target.closest('[data-cs-color]'); if (!b) return;
-
-    csSelectedColor = b.dataset.csColor;
-
-    renderCsColors();
-
-  });
+  // Color grid removed — colour is randomised at openCreateServer time.
 
   document.getElementById('csSubmit').addEventListener('click', submitCreateServer);
 
