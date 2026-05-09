@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-j (server_roles primary key fixed — multi-server roles work)');
+  console.log('[orblood] client build 2026-05-09-k (voice orb cascade visibility)');
 
   // ============== STARS ==============
 
@@ -1185,7 +1185,11 @@
 
           if (seen.has(k) || !channelData[k]) return;
 
-          if (!memberCanSee(srv,selfProfile.name, v)) return;
+          // Cascade through the parent category — a voice orb inside a
+
+          // hidden category should not surface here.
+
+          if (!memberCanSeeChannelCascaded(srv,selfProfile.name, v)) return;
 
           order.push(k); seen.add(k);
 
@@ -5091,7 +5095,17 @@
 
     if (!found) return true; // unowned/default channels are public
 
-    return memberCanSee(found.server, selfProfile.name, found.vc);
+    // Cascade through the parent category so a public voice orb that
+
+    // sits inside a category restricted to "Mods" gets hidden from
+
+    // members without the role. Without the cascade the orb would still
+
+    // surface in the home rail / orb slides even though the parent
+
+    // category is hidden in the server view.
+
+    return memberCanSeeChannelCascaded(found.server, selfProfile.name, found.vc);
 
   }
 
@@ -10423,7 +10437,7 @@
 
     if (!ent){ showToast('That channel no longer exists','warn'); return; }
 
-    if (!memberCanSee(srv,selfProfile.name, ent)){
+    if (!memberCanSeeChannelCascaded(srv,selfProfile.name, ent)){
 
       showToast('Restricted access - you do not have the required role','warn');
 

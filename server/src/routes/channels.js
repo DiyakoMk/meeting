@@ -85,9 +85,40 @@ channelsRouter.delete('/voice/:sid/:cid', async (req, res, next) => {
 channelsRouter.post('/voice/:sid/:cid/join', async (req, res, next) => {
   try {
     const { sid, cid } = req.params;
-    if (!await requireMember(req, res, sid)) return;
-    const ch = await one('SELECT * FROM voice_channels WHERE id = ? AND server_id = ?', [cid, sid]);
+    const m = await requireMember(req, res, sid); if (!m) return;
+    const ch = await one(
+      `SELECT v.*, c.visible_role_ids AS cat_visible_role_ids
+         FROM voice_channels v
+         LEFT JOIN server_categories c ON c.id = v.category_id
+        WHERE v.id = ? AND v.server_id = ?`,
+      [cid, sid]);
     if (!ch) return res.status(404).json({ error: 'not_found' });
+    // Cascade visibility check — admin / owner skip, everyone else needs
+    // to satisfy BOTH the parent category's visibleRoleIds and the
+    // channel's own. Without this a user could hit /join directly for an
+    // orb whose parent category their roles can't see.
+    if (!m.is_admin) {
+      const _parse = v => {
+        if (v == null) return null;
+        if (typeof v === 'string') { try { return JSON.parse(v); } catch { return null; } }
+        return v;
+      };
+      const userRoleIds = (await q(
+        `SELECT sr.id FROM server_roles sr
+           JOIN server_role_members srm
+             ON srm.server_id = sr.server_id AND srm.role_id = sr.id
+          WHERE sr.server_id = ? AND srm.user_id = ?`, [sid, req.user.id]
+      )).map(r => r.id);
+      const _hasAny = (allow) => {
+        if (!Array.isArray(allow) || !allow.length) return true; // unrestricted
+        return userRoleIds.some(rid => allow.includes(rid));
+      };
+      const catAllow = _parse(ch.cat_visible_role_ids);
+      const vcAllow  = _parse(ch.visible_role_ids);
+      if (!_hasAny(catAllow) || !_hasAny(vcAllow)){
+        return res.status(403).json({ error: 'channel_not_visible' });
+      }
+    }
     // A user can only be in one voice channel at a time. Drop them out of
     // any *other* voice channel they were in (across every server) before
     // recording the new join, so their avatar doesn't linger on an old
