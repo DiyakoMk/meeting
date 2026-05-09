@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-am (rebrand rainbow→aurora; pack-active lock notice; new Aurora theme; voice-list orb halo only)');
+  console.log('[orblood] client build 2026-05-09-an (aurora text glow; category-style decoupled from pin; identity pack-toggle replaces lock notice)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
