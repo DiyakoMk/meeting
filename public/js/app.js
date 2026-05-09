@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-m (last server, keyboard nav, minimal profile modal)');
+  console.log('[orblood] client build 2026-05-09-n (variant3 modal, dm esc, settings revert, marble nav, brand banner btns)');
 
   // ============== STARS ==============
 
