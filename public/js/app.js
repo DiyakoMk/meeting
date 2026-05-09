@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-v (drop dead csColorGrid listener)');
+  console.log('[orblood] client build 2026-05-09-v (admin perm shortcut, dm input revert, legendary voice name)');
 
   // ============== STARS ==============
 
@@ -4857,6 +4857,18 @@
 
   function memberHasPerm(s, name, key){
 
+    // Owner + admin (anyone in s.admins) always passes. Without this, a
+
+    // momentarily-empty s.roles (snapshot in flight, role list got reset
+
+    // by a buggy save, etc.) would briefly strip every admin permission
+
+    // and leave the user staring at "Server identity" as their only
+
+    // banner-menu option even though they're the server owner.
+
+    if (s && Array.isArray(s.admins) && s.admins.includes(name)) return true;
+
     // Permissions are unioned across every role the member holds, so
 
     // adding a side role with a single permission grants exactly that
@@ -6089,7 +6101,9 @@
 
             const vcDel = (memberHasPerm(s,selfProfile.name,'manageVoiceCh')) ? '<button class="ws-cat-vc-del" data-vc-delete="'+vc.id+'" title="Delete voice channel"><i data-lucide="x" style="width:11px;height:11px"></i></button>' : '';
 
-            html += '<div class="ws-cat-vc'+(isConn?' connected':'')+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+_privateLockHtml(s, vc)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
+            const legendaryCls = style.skin ? ' is-legendary' : '';
+
+            html += '<div class="ws-cat-vc'+(isConn?' connected':'')+legendaryCls+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+_privateLockHtml(s, vc)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
 
           });
 
