@@ -18,12 +18,13 @@ friendsRouter.post('/request', async (req, res, next) => {
     const body = parseOr400(requestSchema, req.body, res); if (!body) return;
     const trimmed = body.target.trim();
     const raw = trimmed.replace(/^@/, '').toLowerCase();
-    // Try in priority order: handle (without @), email, then exact display
-    // name (case-insensitive). Matching by name lets the profile modal's
-    // "send friend request" button work for users we only know by name.
+    // Resolve by handle first, then email. We deliberately do NOT fall
+    // back to display name lookup — names are non-unique and let users
+    // bypass a peer's handle change. If you want to friend-by-name from
+    // a profile modal, the client should pass the up-to-date handle
+    // returned by the snapshot, not a stale string.
     let target = await one('SELECT * FROM users WHERE handle = ? LIMIT 1', [raw]);
     if (!target) target = await one('SELECT * FROM users WHERE email = ? LIMIT 1', [raw]);
-    if (!target) target = await one('SELECT * FROM users WHERE LOWER(name) = ? LIMIT 1', [trimmed.toLowerCase()]);
     if (!target) return res.status(404).json({ error: 'user_not_found' });
     if (target.id === req.user.id) return res.status(400).json({ error: 'cannot_friend_self' });
     const exists = await one(

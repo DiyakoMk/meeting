@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-q (profile modal reverted to original)');
+  console.log('[orblood] client build 2026-05-09-r (friend request: drop name fallback, handle-only)');
 
   // ============== STARS ==============
 
@@ -13935,17 +13935,17 @@
 
       if (r.error === 'user_not_found'){
 
-        // Last-ditch retry by display name in case the handle was bogus.
+        // The handle we know is stale (the peer changed theirs). Prompt the
 
-        if (target !== conv.name){
+        // user to look them up afresh — falling back to display name would
 
-          const r2 = await backend.friends.request(conv.name);
+        // let us route around the peer's handle change which is a privacy
 
-          if (!r2.error && !r2.offline){ req = r2.request; }
+        // hole.
 
-          else { showToast('No user found','warn'); return; }
+        showToast('User not found — handle may have changed','warn');
 
-        } else { showToast('No user found','warn'); return; }
+        return;
 
       } else if (r.error === 'already_friends'){ showToast('Already friends','warn'); return; }
 
