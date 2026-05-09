@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-al (server identity restored; cover/emblem chips fixed; rainbow as built-in voice style; custom-style picker removed from create-channel)');
+  console.log('[orblood] client build 2026-05-09-am (rebrand rainbow→aurora; pack-active lock notice; new Aurora theme; voice-list orb halo only)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -451,7 +451,7 @@
 
     sun:     { label:'SUNFIRE', skin:'fire',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fef3c7 25%,#f59e0b 55%,#7c2d12)', c:'rgba(245,158,11,0.55)', glow:'rgba(245,158,11,0.5)' },
 
-    rainbow: { label:'RAINBOW', skin:'rainbow', grad:'radial-gradient(circle at 35% 30%,#ffffff,#f8f0ff 50%,#ece6ff 100%)', c:'rgba(255,120,255,0.55)', glow:'rgba(255,120,255,0.55)' }
+    aurora:  { label:'AURORA',  skin:'aurora', grad:'radial-gradient(circle at 35% 30%,#ffffff,#fff0f8 45%,#ffe1d6 100%)', c:'rgba(255,160,210,0.55)', glow:'rgba(255,160,210,0.55)' }
 
   };
 
@@ -13284,6 +13284,72 @@
     if (bInp) bInp.value = bannerColor;
 
     renderCoverPreview();
+
+    // Lock cover/emblem inputs when a pack owns those surfaces — typing
+
+    // a URL or uploading wouldn't be visible behind the active pack.
+
+    // We disable the inputs and show a notice with a hint to disable
+
+    // the pack from Customize first. The fields stay visible so the
+
+    // user can read what they would normally edit.
+
+    const coverLocked  = !!s.styleCover;
+
+    const emblemLocked = !!s.styleEmblem;
+
+    const coverInp  = document.getElementById('coverUrlInput');
+
+    const emblemInp = document.getElementById('emblemUrlInput');
+
+    const coverPick = document.getElementById('coverUploadBtn');
+
+    const emblemPick= document.getElementById('emblemUploadBtn');
+
+    [coverInp, emblemInp, coverPick, emblemPick].forEach(el => {
+
+      if (!el) return;
+
+      el.disabled = false; el.style.opacity = ''; el.style.pointerEvents = '';
+
+    });
+
+    let notice = document.getElementById('coverPackLockNotice');
+
+    if (!notice){
+
+      notice = document.createElement('div');
+
+      notice.id = 'coverPackLockNotice';
+
+      notice.className = 'sm-hint';
+
+      notice.style.cssText = 'margin:8px 0;padding:8px 10px;border-radius:8px;background:var(--brand-glow-soft);border:1px solid var(--ag);color:var(--t1);font-size:0.7rem;line-height:1.5';
+
+      const body = document.querySelector('#coverBackdrop .smodal-body');
+
+      if (body) body.insertBefore(notice, body.firstChild);
+
+    }
+
+    if (coverLocked || emblemLocked){
+
+      const which = [coverLocked && 'cover', emblemLocked && 'emblem halo'].filter(Boolean).join(' and ');
+
+      notice.style.display = '';
+
+      notice.textContent = 'A customization pack is currently styling the '+which+'. Manual upload is disabled. Disable the pack from Customize → Library to edit '+which+' here.';
+
+      [coverInp, coverPick].forEach(el => { if (el && coverLocked){ el.disabled = true; el.style.opacity = '0.5'; el.style.pointerEvents = 'none'; } });
+
+      [emblemInp, emblemPick].forEach(el => { if (el && emblemLocked){ el.disabled = true; el.style.opacity = '0.5'; el.style.pointerEvents = 'none'; } });
+
+    } else {
+
+      notice.style.display = 'none';
+
+    }
 
     document.getElementById('coverBackdrop').classList.add('show');
 

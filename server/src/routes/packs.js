@@ -17,12 +17,12 @@ packsRouter.use(requireAuth);
 // Each pack lists which surfaces it can style + the css class prefix.
 const CATALOG = [
   {
-    id: 'rainbow',
-    name: 'Rainbow',
-    desc: 'Animated rainbow gradient on names, pins, channels, categories and orbs.',
+    id: 'aurora',
+    name: 'Aurora',
+    desc: 'Pink + amber + white flow on names, pins, covers, halos, channels and orbs.',
     price: 0,           // free pack to seed the system
     surfaces: ['serverName','serverPin','serverCover','serverEmblem','category','textChannel','voiceChannel','orbit'],
-    cssClass: 'cz-rainbow'
+    cssClass: 'cz-aurora'
   }
 ];
 
