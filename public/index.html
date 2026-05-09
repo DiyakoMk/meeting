@@ -840,9 +840,9 @@
 
         </div>
 
-        <!-- VIEW MODE -->
+        <!-- VIEW MODE — Variant 3 (Minimal Card) -->
 
-        <div class="smodal-body profile-view" style="padding:0;gap:0">
+        <div class="smodal-body profile-view">
 
           <div class="profile-banner" id="modalBanner"></div>
 
@@ -860,17 +860,15 @@
 
               <div class="profile-name" id="modalName"></div>
 
-              <div class="profile-handle-row"><span class="profile-handle" id="modalHandle"></span><button class="profile-handle-copy" id="modalHandleCopy" title="Copy handle"><i data-lucide="copy" style="width:11px;height:11px"></i></button></div>
+              <div class="profile-handle-row"><span class="profile-handle" id="modalHandle"></span><button class="profile-handle-copy" id="modalHandleCopy" title="Copy handle"><i data-lucide="copy" style="width:10px;height:10px"></i></button></div>
 
             </div>
 
           </div>
 
-          <div class="profile-tags">
+          <div class="profile-status-line">
 
-            <span class="profile-tag" id="modalRank">EXPLORER</span>
-
-            <span class="profile-tag status" id="modalStatusV">ONLINE</span>
+            <span class="profile-tag status" id="modalStatusV">ONLINE · ENCRYPTED CHANNEL</span>
 
             <span class="profile-tag" id="modalLastSeen" style="display:none"></span>
 
@@ -878,41 +876,55 @@
 
           <div class="profile-bio" id="modalBio"></div>
 
-          <div class="profile-section" id="modalJoinedRow" style="display:none">
+          <div class="profile-divider"></div>
 
-            <div class="profile-section-l">JOINED</div>
+          <div class="profile-detail-list">
 
-            <div class="profile-section-v" id="modalJoinedV"></div>
+            <div class="profile-section" id="modalJoinedRow" style="display:none">
 
-          </div>
+              <div class="profile-section-l">JOINED</div>
 
-          <div class="profile-section" id="modalSharedRow" style="display:none">
+              <div class="profile-section-v" id="modalJoinedV"></div>
 
-            <div class="profile-section-l">SHARED SERVERS</div>
+            </div>
 
-            <div class="profile-shared-list" id="modalSharedList"></div>
+            <div class="profile-section" id="modalRankRow">
+
+              <div class="profile-section-l">RANK</div>
+
+              <div class="profile-section-v" id="modalRank">EXPLORER</div>
+
+            </div>
+
+            <div class="profile-section" id="modalSharedRow" style="display:none">
+
+              <div class="profile-section-l">SHARED</div>
+
+              <div class="profile-section-v" id="modalSharedList"></div>
+
+            </div>
 
           </div>
 
           <div class="profile-actions profile-actions-other">
 
-            <button class="sm-btn primary" id="modalMessage"><i data-lucide="message-circle" style="width:11px;height:11px"></i>MESSAGE</button>
+            <button class="sm-btn primary" id="modalMessage">MESSAGE</button>
 
-            <button class="sm-btn cancel" id="modalCall" disabled style="opacity:0.45;cursor:not-allowed"><i data-lucide="phone" style="width:11px;height:11px"></i>CALL</button>
+            <button class="sm-btn cancel" id="modalAddFriend">FRIEND</button>
 
-            <button class="sm-btn cancel" id="modalAddFriend"><i data-lucide="user-plus" style="width:11px;height:11px"></i>FRIEND</button>
+            <button class="sm-btn cancel danger" id="modalBlock">BLOCK</button>
 
-            <button class="sm-btn cancel" id="modalShareUser"><i data-lucide="share-2" style="width:11px;height:11px"></i>SHARE</button>
+            <button class="sm-btn cancel" id="modalCall" disabled style="display:none">CALL</button>
 
-            <button class="sm-btn cancel" id="modalBlock" style="color:var(--danger);border-color:rgba(239,68,68,0.3);grid-column:span 2"><i data-lucide="shield-off" style="width:11px;height:11px"></i>BLOCK</button>
+            <button class="sm-btn cancel" id="modalShareUser" style="display:none">SHARE</button>
 
           </div>
 
           <div class="profile-actions profile-actions-self">
 
-            <button class="sm-btn primary" id="modalEditBtn"><i data-lucide="settings" style="width:11px;height:11px"></i>SETTINGS</button>
+            <button class="sm-btn primary" id="modalEditBtn">SETTINGS</button>
 
-            <button class="sm-btn cancel" id="modalShareSelf"><i data-lucide="share-2" style="width:11px;height:11px"></i>SHARE PROFILE</button>
+            <button class="sm-btn cancel" id="modalShareSelf">SHARE PROFILE</button>
 
           </div>
 

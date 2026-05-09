@@ -2498,15 +2498,15 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .smodal{background:radial-gradient(ellipse at 50% 0%,var(--brand-glow-soft),transparent 65%),var(--panel);border:1px solid var(--tint-3);border-radius:14px;width:100%;max-width:420px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 100px rgba(0,0,0,0.7),inset 0 1px 0 var(--tint-3);transform:translateY(20px) scale(0.96);transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);position:relative}
 
 /* ============= USER PROFILE MODAL — VARIANT 3 (Minimal Card) ============= *
- * 1:1 with the Variant 3 sample in modal-samples.html: compact panel,
- * no banner, single column. Avatar + name + handle, status pill,
- * divider, detail rows, pill-shaped action buttons. */
+ * 1:1 with the Variant 3 sample in modal-samples.html. Compact panel,
+ * no banner, single column. Layout: avatar + name + handle row, status
+ * line below, optional bio, full-width hairline divider, detail rows,
+ * then pill-shaped action buttons. MESSAGE filled red. */
 #profileModal{
   max-width:300px;
   background:var(--tint-1);
   border:1px solid var(--tint-3);
   border-radius:12px;
-  padding:0;
   -webkit-backdrop-filter:blur(12px);
   backdrop-filter:blur(12px);
   box-shadow:0 18px 48px rgba(0,0,0,0.45);
@@ -2514,103 +2514,152 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 }
 #profileModal .smodal-head{display:none}
 #profileModal .profile-banner{display:none}
-#profileModal .profile-view{padding:18px;gap:14px;display:flex;flex-direction:column}
+#profileModal .profile-view{
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
 
-#profileModal .profile-head{margin:0;padding:0;gap:12px;align-items:center;display:flex}
-#profileModal .profile-orb{width:48px;height:48px;flex-shrink:0;position:relative}
-#profileModal .modal-orb-core{
-  width:48px;height:48px;font-size:1.1rem;
+/* Identity row */
+#profileModal .profile-head{
+  margin:0;padding:0;
+  display:flex;align-items:center;gap:12px;
+}
+#profileModal .profile-orb{
+  width:48px;height:48px;
+  flex-shrink:0;position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+#profileModal .profile-orb-core{
+  width:48px;height:48px;
+  font-size:1.1rem;font-weight:700;
   border:1px solid var(--tint-3);
   box-shadow:0 0 18px var(--brand-glow);
+  border-radius:50%;
 }
 #profileModal .modal-orb-ring,
 #profileModal .modal-orb-ring.r2,
 #profileModal .modal-orb-ring.r3{display:none}
 #profileModal .profile-orb-status{display:none}
 #profileModal .profile-head-info{flex:1;min-width:0;padding:0}
-#profileModal .profile-name{font-size:0.95rem;font-weight:600;letter-spacing:0.3px;line-height:1.2}
-#profileModal .profile-handle-row{margin-top:1px;display:flex;align-items:center;gap:5px}
-#profileModal .profile-handle{font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--t3)}
+#profileModal .profile-name{
+  font-size:0.95rem;font-weight:600;
+  letter-spacing:0.3px;line-height:1.2;
+  color:var(--t1);
+}
+#profileModal .profile-handle-row{
+  margin-top:2px;display:flex;align-items:center;gap:4px;
+}
+#profileModal .profile-handle{
+  font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.7rem;color:var(--t3);
+}
 #profileModal .profile-handle-copy{
   width:16px;height:16px;border-radius:4px;
   background:transparent;color:var(--t3);
   display:flex;align-items:center;justify-content:center;
+  transition:background 0.15s,color 0.15s;
 }
 #profileModal .profile-handle-copy:hover{background:var(--tint-3);color:var(--t1)}
 
-/* Status / tag row — quiet inline tags with a glowing dot for online. */
-#profileModal .profile-tags{padding:0;margin:0;gap:6px;display:flex;flex-wrap:wrap}
-#profileModal .profile-tag{
-  padding:0;background:transparent;border:none;
+/* Status line — single mono line with glowing dot prefix. */
+#profileModal .profile-status-line{
+  margin:0;padding:0;
+  display:flex;align-items:center;gap:8px;
   font-family:'Space Mono','Vazirmatn',monospace;
-  font-size:0.55rem;letter-spacing:1.5px;color:var(--t3);
-  display:inline-flex;align-items:center;gap:5px;
+  font-size:0.55rem;letter-spacing:1.5px;
 }
-#profileModal .profile-tag.status{color:var(--success)}
-#profileModal .profile-tag.status::before{
+#profileModal .profile-status-line .profile-tag{
+  padding:0;background:transparent;border:none;border-radius:0;
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:0.55rem;letter-spacing:1.5px;
+  color:var(--t3);
+}
+#profileModal .profile-status-line .profile-tag.status{color:var(--success)}
+#profileModal .profile-status-line .profile-tag.status::before{
   content:"";width:7px;height:7px;border-radius:50%;
   background:var(--success);box-shadow:0 0 6px var(--success);
 }
-#profileModal .profile-tag.offline{color:var(--t3)}
-#profileModal .profile-tag.offline::before{
+#profileModal .profile-status-line .profile-tag.offline{color:var(--t3)}
+#profileModal .profile-status-line .profile-tag.offline::before{
   content:"";width:7px;height:7px;border-radius:50%;background:var(--t3);
 }
 
-/* Bio — quiet caption, no chip. */
-#profileModal .profile-bio{padding:0;margin:0;font-size:0.78rem;line-height:1.55;color:var(--t2)}
+/* Bio caption — no chip background, just quiet copy. */
+#profileModal .profile-bio{
+  margin:0;padding:0;
+  font-size:0.75rem;line-height:1.55;
+  color:var(--t2);
+}
 #profileModal .profile-bio:empty{display:none}
 
-/* Detail rows — label left / value right, compact. The first detail
- * row gets a hairline above it that bleeds full width. */
+/* Full-width divider that bleeds to the card edges. */
+#profileModal .profile-divider{
+  height:1px;background:var(--tint-3);
+  margin:0 -18px;
+}
+
+/* Detail list — label / value rows, no per-row borders. */
+#profileModal .profile-detail-list{
+  display:flex;flex-direction:column;gap:8px;
+}
 #profileModal .profile-section{
   padding:0;margin:0;border:none;
   display:flex;align-items:center;justify-content:space-between;
   gap:12px;min-height:0;font-size:0.78rem;
 }
-#profileModal .profile-section + .profile-section{margin-top:8px}
 #profileModal .profile-section-l{
-  font-family:'Space Mono',monospace;font-size:0.5rem;letter-spacing:1.6px;
+  font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.5rem;letter-spacing:1.5px;
   color:var(--t3);margin:0;flex-shrink:0;
 }
 #profileModal .profile-section-v{
-  font-size:0.78rem;color:var(--t1);text-align:right;font-weight:500;
-  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-size:0.75rem;color:var(--t1);font-weight:500;
+  text-align:right;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-#profileModal #modalJoinedRow,
-#profileModal #modalSharedRow{position:relative}
-#profileModal #modalJoinedRow:first-of-type::before{
-  content:"";position:absolute;left:-18px;right:-18px;top:-7px;
-  height:1px;background:var(--tint-3);
+#profileModal .profile-shared-list{
+  display:inline-flex;justify-content:flex-end;align-items:center;gap:4px;
+  font-size:0.75rem;color:var(--t1);
 }
 
-/* Pill action row — MESSAGE filled red, others muted, BLOCK full width. */
+/* Action pills — match variant 3 sample. */
 #profileModal .profile-actions{
   margin:0;padding:0;
   display:flex;flex-wrap:wrap;gap:6px;
   border:none;background:transparent;
 }
 #profileModal .profile-actions .sm-btn{
-  flex:1;min-width:0;padding:7px 10px;
+  flex:1;min-width:0;
+  padding:7px 10px;
   border-radius:999px;
-  background:var(--tint-2);border:1px solid var(--tint-3);
+  background:var(--tint-2);
+  border:1px solid var(--tint-3);
   color:var(--t1);
   font-family:'Space Mono','Vazirmatn',monospace;
-  font-size:0.5rem;letter-spacing:1.4px;
-  justify-content:center;white-space:nowrap;text-align:center;
+  font-size:0.5rem;letter-spacing:1.4px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;
+  white-space:nowrap;text-align:center;
+  cursor:pointer;
+  transition:background 0.15s,filter 0.15s,box-shadow 0.15s;
 }
+#profileModal .profile-actions .sm-btn > i{display:none}
 #profileModal .profile-actions .sm-btn:hover{background:var(--tint-4)}
+#profileModal .profile-actions .sm-btn.danger{
+  color:var(--danger);
+  border-color:rgba(239,68,68,0.3);
+}
+#profileModal .profile-actions .sm-btn.danger:hover{background:rgba(239,68,68,0.12)}
 #profileModal .profile-actions #modalMessage{
   background:linear-gradient(135deg,var(--accent),var(--accent-2));
   border-color:transparent;color:#fff;
   box-shadow:0 4px 14px var(--brand-glow);
 }
 #profileModal .profile-actions #modalMessage:hover{
-  filter:brightness(1.08);box-shadow:0 6px 18px var(--brand-glow-strong);
+  filter:brightness(1.08);
+  box-shadow:0 6px 18px var(--brand-glow-strong);
 }
-#profileModal .profile-actions #modalBlock{
-  flex-basis:100%;color:var(--danger);border-color:rgba(239,68,68,0.3);
-}
-#profileModal .profile-actions #modalBlock:hover{background:rgba(239,68,68,0.12)}
 #profileModal .profile-actions-self{display:flex;gap:8px}
 #profileModal .profile-actions-self .sm-btn{flex:1}
 
