@@ -432,7 +432,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
   to   { transform: rotate(360deg); }
 }
 .orb-slide.skin-aurora .vlabel{
-  background:linear-gradient(90deg,#ff7eb6,#ffb88c,#fff0a8,#ffffff,#ffb6e6,#ff7eb6);
+  background:linear-gradient(90deg,#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
   background-size:400% 100%;
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;
@@ -441,8 +441,8 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .orb-slide.skin-aurora .planet{
   background:radial-gradient(circle at 35% 30%,#ffffff,#f8f0ff 50%,#ece6ff 100%) !important;
   box-shadow:
-    0 0 60px rgba(255,160,210,0.6),
-    0 0 140px rgba(255,196,140,0.45),
+    0 0 60px rgba(255,120,255,0.6),
+    0 0 140px rgba(122,59,255,0.45),
     inset 0 -3px 18px rgba(180,80,255,0.18),
     inset 0 1px 6px rgba(255,255,255,0.95) !important;
   animation:none !important;
@@ -457,21 +457,21 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 }
 .orb-slide.skin-aurora .planet::before{
   inset:-12px;
-  background:conic-gradient(#ff7eb6,#ffb88c,#fff0a8,#ffffff,#ffb6e6,#ff7eb6);
+  background:conic-gradient(#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
   -webkit-mask:radial-gradient(circle,transparent 60%,#000 64%);
           mask:radial-gradient(circle,transparent 60%,#000 64%);
   animation:cz-aurora-spin-core 4s linear infinite;
 }
 .orb-slide.skin-aurora .planet::after{
   inset:-30px;
-  background:conic-gradient(rgba(255,126,182,0.5),rgba(255,184,140,0.5),rgba(255,240,168,0.5),rgba(255,255,255,0.5),rgba(255,182,230,0.5),rgba(255,126,182,0.5));
+  background:conic-gradient(rgba(255,0,102,0.5),rgba(255,136,0,0.5),rgba(255,230,0,0.5),rgba(0,214,94,0.5),rgba(0,180,255,0.5),rgba(122,59,255,0.5),rgba(255,0,212,0.5),rgba(255,0,102,0.5));
   -webkit-mask:radial-gradient(circle,transparent 56%,#000 60%,transparent 75%);
           mask:radial-gradient(circle,transparent 56%,#000 60%,transparent 75%);
   animation:cz-aurora-spin-core 6s linear infinite reverse;
   filter:blur(2px);
 }
 .orb-slide.skin-aurora .atmo{
-  background:radial-gradient(circle,rgba(255,160,210,0.55),rgba(122,59,255,0.25),transparent 70%) !important;
+  background:radial-gradient(circle,rgba(255,120,255,0.55),rgba(122,59,255,0.25),transparent 70%) !important;
 }
 
 /* Voice-list orb (server category row) for the AURORA style. Per
@@ -490,7 +490,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 }
 /* Voice channel name picks up the rainbow when the orb is rainbow. */
 .ws-cat-vc.style-aurora .ws-cat-vc-n{
-  background:linear-gradient(90deg,#ff7eb6,#ffb88c,#fff0a8,#ffffff,#ffb6e6,#ff7eb6);
+  background:linear-gradient(90deg,#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
   background-size:400% 100%;
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;color:transparent;
@@ -502,7 +502,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .mark-orb-card .mo-orb.skin-aurora{
   background:radial-gradient(circle at 35% 30%,#ffffff,#f8f0ff 50%,#ece6ff 100%) !important;
   box-shadow:
-    0 0 18px rgba(255,160,210,0.45),
+    0 0 18px rgba(255,120,255,0.45),
     inset 0 -3px 8px rgba(180,80,255,0.15),
     inset 0 1px 3px rgba(255,255,255,0.85) !important;
   position:relative;
@@ -510,7 +510,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .mark-orb-card.skin-aurora .mo-orb::before{
   content:"";
   position:absolute;inset:-6px;border-radius:50%;
-  background:conic-gradient(#ff7eb6,#ffb88c,#fff0a8,#ffffff,#ffb6e6,#ff7eb6);
+  background:conic-gradient(#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
   -webkit-mask:radial-gradient(circle,transparent 60%,#000 64%);
           mask:radial-gradient(circle,transparent 60%,#000 64%);
   animation:cz-aurora-spin-core 4s linear infinite;
@@ -525,7 +525,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .cc-orb-card.skin-aurora .cc-orb-bead::before{
   content:"";
   position:absolute;inset:-4px;border-radius:50%;
-  background:conic-gradient(#ff7eb6,#ffb88c,#fff0a8,#ffffff,#ffb6e6,#ff7eb6);
+  background:conic-gradient(#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
   -webkit-mask:radial-gradient(circle,transparent 58%,#000 62%);
           mask:radial-gradient(circle,transparent 58%,#000 62%);
   animation:cz-aurora-spin-core 4s linear infinite;
