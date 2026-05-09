@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ao (default channels on server create; flowing names; aurora cover/emblem visible)');
+  console.log('[orblood] client build 2026-05-09-ap (revert global flow; cat-pin pack; voice channelData seed; aurora text legible + animated cover/emblem)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -6151,7 +6151,19 @@
 
         if (cat.pinned){
 
-          const _catPinPackCls = '';
+          // Apply both pin-background and category-text classes from
+
+          // the pack so the wrapper picks up the wash AND the inner
+
+          // text gets the gradient label treatment.
+
+          const _catPinPackCls = cat.customStyle
+
+            ? ' ' + packClassFor(cat.customStyle, 'serverPin')
+
+              + ' ' + packClassFor(cat.customStyle, 'category')
+
+            : '';
 
           html += '<div class="ws-cat-pin'+_catPinPackCls+'" data-cat-pin-id="'+cat.id+'">'+
 
@@ -12448,6 +12460,42 @@
         myServers.push(r.server.id);
 
         persistPinnedServers();
+
+        // Seed channelData for the default voice channels so the orbs
+
+        // column / world view can render their members + skin without
+
+        // waiting for the next snapshot. Without this the freshly-
+
+        // created LOUNGE has no entry in channelData and joining/
+
+        // deleting it desyncs the UI until the next reload.
+
+        (r.server.voiceChannels || []).forEach(vc => {
+
+          if (channelData[vc.id]) return;
+
+          const st = voiceStyles[vc.style] || voiceStyles.indigo;
+
+          const m = (st.glow||'rgba(99,102,241,0.4)').match(/rgba\((\d+),(\d+),(\d+),/);
+
+          channelData[vc.id] = {
+
+            name: vc.name, users: [],
+
+            color: 'rgba('+(m?m[1]:99)+','+(m?m[2]:102)+','+(m?m[3]:241)+',',
+
+            planetGrad: st.grad, atmoColor: st.glow, orbiterColor: st.c,
+
+            avBorder: '#fff', emoji: '🪐',
+
+            tier: st.skin ? 'legendary' : 'common',
+
+            skin: st.skin || undefined
+
+          };
+
+        });
 
         showToast('Server "'+name+'" created','success');
 
