@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-v (admin perm shortcut, dm input revert, legendary voice name)');
+  console.log('[orblood] client build 2026-05-09-v (drop dead csColorGrid listener)');
 
   // ============== STARS ==============
 
