@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-h (profile modal full rework)');
+  console.log('[orblood] client build 2026-05-09-i (profile modal reverted to original)');
 
   // ============== STARS ==============
 
