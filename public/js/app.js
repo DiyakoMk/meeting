@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ai (mobile orb-col drawer with FAB)');
+  console.log('[orblood] client build 2026-05-09-aj (customization packs: rainbow + customize modal + right-click style picker)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
