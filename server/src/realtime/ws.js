@@ -48,33 +48,44 @@ export function attachWs(httpServer) {
       // If NO sockets remain for this user, they went offline. Also drop
       // them from any voice channel they were in so the orb UI on other
       // clients stops showing a phantom listener.
+      //
+      // Grace period: a 12-second delay before we actually evict them
+      // from voice. A network blip, tab backgrounding, or page reload
+      // routinely closes the socket and re-opens it within a couple of
+      // seconds; we don't want every transient drop to flicker the user
+      // out of voice everywhere. If they reconnect within the window
+      // (clients.has(uid) is true again), we cancel the eviction.
       if (!clients.has(uid)) {
         broadcastPresence(uid, user.name, false);
-        try {
-          const rows = await q(
-            `SELECT vm.channel_id AS cid, vc.server_id AS sid
-               FROM voice_channel_members vm
-               JOIN voice_channels vc ON vc.id = vm.channel_id
-              WHERE vm.user_id = ?`, [uid]);
-          if (rows.length) {
-            await q('DELETE FROM voice_channel_members WHERE user_id = ?', [uid]);
-            for (const row of rows) {
-              const remaining = await q(
-                `SELECT u.name FROM voice_channel_members vm
-                   JOIN users u ON u.id = vm.user_id
-                  WHERE vm.channel_id = ?`, [row.cid]);
-              const names = remaining.map(r => r.name);
-              const memberRows = await q('SELECT user_id FROM server_members WHERE server_id = ?', [row.sid]);
-              const memberUids = memberRows.map(r => String(r.user_id));
-              const data = JSON.stringify({ type: 'voice:leave', serverId: row.sid, channelId: row.cid, userName: user.name, members: names });
-              for (const mu of memberUids) {
-                const set2 = clients.get(mu);
-                if (!set2) continue;
-                for (const cws of set2) { try { cws.send(data); } catch (_) {} }
+        const evictionDelayMs = 12000;
+        setTimeout(async () => {
+          if (clients.has(uid)) return;  // they came back; bail.
+          try {
+            const rows = await q(
+              `SELECT vm.channel_id AS cid, vc.server_id AS sid
+                 FROM voice_channel_members vm
+                 JOIN voice_channels vc ON vc.id = vm.channel_id
+                WHERE vm.user_id = ?`, [uid]);
+            if (rows.length) {
+              await q('DELETE FROM voice_channel_members WHERE user_id = ?', [uid]);
+              for (const row of rows) {
+                const remaining = await q(
+                  `SELECT u.name FROM voice_channel_members vm
+                     JOIN users u ON u.id = vm.user_id
+                    WHERE vm.channel_id = ?`, [row.cid]);
+                const names = remaining.map(r => r.name);
+                const memberRows = await q('SELECT user_id FROM server_members WHERE server_id = ?', [row.sid]);
+                const memberUids = memberRows.map(r => String(r.user_id));
+                const data = JSON.stringify({ type: 'voice:leave', serverId: row.sid, channelId: row.cid, userName: user.name, members: names });
+                for (const mu of memberUids) {
+                  const set2 = clients.get(mu);
+                  if (!set2) continue;
+                  for (const cws of set2) { try { cws.send(data); } catch (_) {} }
+                }
               }
             }
-          }
-        } catch (_) { /* swallow */ }
+          } catch (_) { /* swallow */ }
+        }, evictionDelayMs);
       }
     });
 

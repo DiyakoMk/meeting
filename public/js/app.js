@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-v (admin perm shortcut, dm input revert, legendary voice name)');
+  console.log('[orblood] client build 2026-05-09-w (marble dm bars, legendary marble, voice grace, non-friend banner)');
 
   // ============== STARS ==============
 
@@ -9883,19 +9883,43 @@
 
     const tempKey = '__u_'+lower.replace(/\s+/g, '_');
 
-    const stamp = (handle, avImage, bio) => {
+    const stamp = (handle, avImage, bio, bannerImage, baseColor) => {
+
+      // Build the orb gradient from baseColor when we have one, otherwise
+
+      // the indigo fallback. Banner image is also passed straight through
+
+      // so the profile modal can paint the cover for non-friends, not
+
+      // just users we've already DMed.
+
+      const grad = baseColor
+
+        ? 'radial-gradient(circle at 35% 30%,rgba(255,200,200,0.5),'+baseColor+' 55%,#1e1b4b)'
+
+        : 'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#a78bfa 55%,#1e1b4b)';
+
+      const avColor = baseColor
+
+        ? 'linear-gradient(135deg,'+baseColor+',#1e1b4b)'
+
+        : 'linear-gradient(135deg,#a78bfa,#1a0b2e)';
 
       conversations[tempKey] = {
 
-        name, online:false, unread:0, avColor:'linear-gradient(135deg,#a78bfa,#1a0b2e)', avImage: avImage || null,
+        name, online:false, unread:0, avColor, avImage: avImage || null,
+
+        bannerImage: bannerImage || null,
+
+        baseColor: baseColor || null,
 
         initial: name.charAt(0).toUpperCase(), handle: handle || '@'+lower.replace(/\s+/g,''),
 
         bio: bio || 'No bio yet.', stats:{posts:0,friends:0,orbits:0}, joined:'—',
 
-        lastSeen:'unknown', rank:'EXPLORER', orbColor:'#a78bfa',
+        lastSeen:'unknown', rank:'EXPLORER', orbColor: baseColor || '#a78bfa',
 
-        orbGrad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.5),#a78bfa 55%,#1e1b4b)',
+        orbGrad: grad,
 
         isTemp:true
 
@@ -9909,7 +9933,19 @@
 
         if (r && r.user){
 
-          stamp('@'+(r.user.handle||'').replace(/^@/,''), r.user.avImage || null, r.user.bio || '');
+          stamp(
+
+            '@'+(r.user.handle||'').replace(/^@/,''),
+
+            r.user.avImage || null,
+
+            r.user.bio || '',
+
+            r.user.bannerImage || null,
+
+            r.user.baseColor || null
+
+          );
 
         } else {
 

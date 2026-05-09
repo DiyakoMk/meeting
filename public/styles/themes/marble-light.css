@@ -293,3 +293,45 @@
 :root[data-theme="marble-light"] .ws-cat-h-name::after {
   background: linear-gradient(90deg, rgba(180, 2, 36, 0.6), transparent);
 }
+
+/* DM header bar (peer avatar + name + status). On marble the dark-theme
+ * gradient disappears into the cream panel; we want a clean white slab
+ * with a faint blood-red wash and a brand-tinted hairline at the bottom
+ * — the "white marble with blood veins" look from the rest of the
+ * marble theme. The DM input bar mirrors this so the chat area is
+ * sandwiched between two matching surfaces. */
+:root[data-theme="marble-light"] .dm-head {
+  background:
+    linear-gradient(180deg, var(--brand-glow-soft), transparent),
+    rgba(252, 248, 245, 0.92);
+}
+:root[data-theme="marble-light"] .dm-head::after {
+  background: linear-gradient(90deg, transparent, var(--ag), transparent);
+}
+:root[data-theme="marble-light"] .dm-input-wrap {
+  background:
+    linear-gradient(0deg, var(--brand-glow-soft), transparent),
+    rgba(252, 248, 245, 0.92);
+  border-top: 1px solid var(--ag);
+}
+
+/* Legendary voice channel name on marble — the dark-theme uses a gold-
+ * pink gradient on warm white text. On cream it's still legible but the
+ * "warm white" core gets lost; bias the gradient toward deeper amber
+ * and brand red so the name reads as a coloured tier label, not
+ * washed-out cream-on-cream. */
+:root[data-theme="marble-light"] .ws-cat-vc.is-legendary .ws-cat-vc-n {
+  background: linear-gradient(90deg, #b45309, #be185d 45%, var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+  filter: none;
+}
+:root[data-theme="marble-light"] .ws-cat-vc.connected.is-legendary .ws-cat-vc-n {
+  background: linear-gradient(90deg, #15803d, #16a34a 45%, #15803d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
