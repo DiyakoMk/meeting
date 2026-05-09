@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-u (rail no-grow, create vis radio, share invite link, pin theme tokens, dm grad, cover gap+curve)');
+  console.log('[orblood] client build 2026-05-09-v (drop dead csColorGrid listener)');
 
   // ============== STARS ==============
 
