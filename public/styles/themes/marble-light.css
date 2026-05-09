@@ -302,16 +302,35 @@
  * sandwiched between two matching surfaces. */
 :root[data-theme="marble-light"] .dm-head {
   background:
-    linear-gradient(180deg, var(--brand-glow-soft), transparent),
-    rgba(252, 248, 245, 0.92);
+    radial-gradient(ellipse at 12% -10%, rgba(180, 2, 36, 0.16), transparent 55%),
+    repeating-linear-gradient(112deg,
+      transparent 0px, transparent 36px,
+      rgba(180, 2, 36, 0.07) 36px, rgba(180, 2, 36, 0.07) 37px,
+      transparent 37px, transparent 84px),
+    repeating-linear-gradient(72deg,
+      transparent 0px, transparent 56px,
+      rgba(180, 2, 36, 0.045) 56px, rgba(180, 2, 36, 0.045) 57px,
+      transparent 57px, transparent 130px),
+    radial-gradient(ellipse at 78% 110%, rgba(0, 0, 0, 0.07), transparent 55%),
+    rgba(252, 248, 245, 0.95);
 }
 :root[data-theme="marble-light"] .dm-head::after {
   background: linear-gradient(90deg, transparent, var(--ag), transparent);
+  height: 1px;
 }
 :root[data-theme="marble-light"] .dm-input-wrap {
   background:
-    linear-gradient(0deg, var(--brand-glow-soft), transparent),
-    rgba(252, 248, 245, 0.92);
+    radial-gradient(ellipse at 88% 110%, rgba(180, 2, 36, 0.16), transparent 55%),
+    repeating-linear-gradient(108deg,
+      transparent 0px, transparent 32px,
+      rgba(180, 2, 36, 0.06) 32px, rgba(180, 2, 36, 0.06) 33px,
+      transparent 33px, transparent 78px),
+    repeating-linear-gradient(68deg,
+      transparent 0px, transparent 60px,
+      rgba(180, 2, 36, 0.04) 60px, rgba(180, 2, 36, 0.04) 61px,
+      transparent 61px, transparent 140px),
+    radial-gradient(ellipse at 14% -20%, rgba(0, 0, 0, 0.05), transparent 55%),
+    rgba(252, 248, 245, 0.95);
   border-top: 1px solid var(--ag);
 }
 

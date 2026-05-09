@@ -562,14 +562,19 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
  * a max-width / opacity / translate transition so the row can be
  * animated; max-width also clips overflow so the row doesn't push
  * the right-side controls when collapsed. */
+/* Closed state clips the orb row with overflow:hidden so the closing
+ * animation stays clean. When open, we switch to overflow-x:auto so
+ * the user can horizontally scroll a long server list. flex:0 in the
+ * collapsed state keeps the rail from "claiming" any flex space while
+ * shrinking, which is what produced the brief mid-bar flash on close. */
 .ph-server-rail{
   display:flex;align-items:center;gap:8px;
-  overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
-  flex:1;padding:4px 0;
+  overflow:hidden;scrollbar-width:none;
+  flex:0 1 0;padding:4px 0;
   max-width:0;opacity:0;
   transform:translateX(-6px);
   pointer-events:none;
-  transition:max-width 0.22s ease, opacity 0.18s ease, transform 0.22s ease;
+  transition:max-width 0.22s ease, opacity 0.18s ease, transform 0.22s ease, flex-grow 0.22s ease;
 }
 
 .ph-server-rail::-webkit-scrollbar{display:none}
@@ -579,6 +584,8 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
   opacity:1;
   transform:translateX(0);
   pointer-events:auto;
+  flex:1 1 auto;
+  overflow-x:auto;overflow-y:hidden;
 }
 
 .srv-orb{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono','Vazirmatn',monospace;font-weight:700;font-size:0.75rem;color:white;cursor:pointer;flex-shrink:0;border:2px solid transparent;transition:all 0.2s;position:relative;background:var(--srv-grad,linear-gradient(135deg,#6366f1,#1e1b4b));overflow:hidden}

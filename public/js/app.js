@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-x (rail subtle fade-slide, header fixed height)');
+  console.log('[orblood] client build 2026-05-09-y (rail close glitch fix; marble dm bars veined)');
 
   // ============== STARS ==============
 
