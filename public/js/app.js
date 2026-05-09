@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ap (revert global flow; cat-pin pack; voice channelData seed; aurora text legible + animated cover/emblem)');
+  console.log('[orblood] client build 2026-05-09-ao (default channels on server create; flowing names; aurora cover/emblem visible)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
