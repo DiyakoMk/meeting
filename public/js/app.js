@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-r (friend request: drop name fallback, handle-only)');
+  console.log('[orblood] client build 2026-05-09-q (profile modal reverted to original)');
 
   // ============== STARS ==============
 
