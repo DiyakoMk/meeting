@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-y (rail close glitch fix; marble dm bars veined)');
+  console.log('[orblood] client build 2026-05-09-z (marble dm bars: hero-bg recipe; chat surface: scene paint)');
 
   // ============== STARS ==============
 

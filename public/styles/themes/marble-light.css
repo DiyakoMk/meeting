@@ -300,19 +300,15 @@
  * — the "white marble with blood veins" look from the rest of the
  * marble theme. The DM input bar mirrors this so the chat area is
  * sandwiched between two matching surfaces. */
+/* DM header + input bars use the same recipe as the home hero (no
+ * cover) so the chat top/bottom slabs feel like the rest of the marble
+ * canvas. We layer two soft radial vignettes on a near-cream base —
+ * one brand red, one black — exactly mirroring --hero-bg. */
 :root[data-theme="marble-light"] .dm-head {
   background:
-    radial-gradient(ellipse at 12% -10%, rgba(180, 2, 36, 0.16), transparent 55%),
-    repeating-linear-gradient(112deg,
-      transparent 0px, transparent 36px,
-      rgba(180, 2, 36, 0.07) 36px, rgba(180, 2, 36, 0.07) 37px,
-      transparent 37px, transparent 84px),
-    repeating-linear-gradient(72deg,
-      transparent 0px, transparent 56px,
-      rgba(180, 2, 36, 0.045) 56px, rgba(180, 2, 36, 0.045) 57px,
-      transparent 57px, transparent 130px),
-    radial-gradient(ellipse at 78% 110%, rgba(0, 0, 0, 0.07), transparent 55%),
-    rgba(252, 248, 245, 0.95);
+    radial-gradient(ellipse at 80% 20%, rgba(180, 2, 36, 0.08), transparent 55%),
+    radial-gradient(ellipse at 10% 100%, rgba(0, 0, 0, 0.05), transparent 55%),
+    rgba(252, 248, 245, 0.92);
 }
 :root[data-theme="marble-light"] .dm-head::after {
   background: linear-gradient(90deg, transparent, var(--ag), transparent);
@@ -320,18 +316,19 @@
 }
 :root[data-theme="marble-light"] .dm-input-wrap {
   background:
-    radial-gradient(ellipse at 88% 110%, rgba(180, 2, 36, 0.16), transparent 55%),
-    repeating-linear-gradient(108deg,
-      transparent 0px, transparent 32px,
-      rgba(180, 2, 36, 0.06) 32px, rgba(180, 2, 36, 0.06) 33px,
-      transparent 33px, transparent 78px),
-    repeating-linear-gradient(68deg,
-      transparent 0px, transparent 60px,
-      rgba(180, 2, 36, 0.04) 60px, rgba(180, 2, 36, 0.04) 61px,
-      transparent 61px, transparent 140px),
-    radial-gradient(ellipse at 14% -20%, rgba(0, 0, 0, 0.05), transparent 55%),
-    rgba(252, 248, 245, 0.95);
+    radial-gradient(ellipse at 80% 20%, rgba(180, 2, 36, 0.08), transparent 55%),
+    radial-gradient(ellipse at 10% 100%, rgba(0, 0, 0, 0.05), transparent 55%),
+    rgba(252, 248, 245, 0.92);
   border-top: 1px solid var(--ag);
+}
+
+/* DM scroller (the chat surface itself) on marble — instead of a flat
+ * cream rectangle that contrasts with the page, fall back to the same
+ * marble scene paint that the orbits column / body uses. This keeps
+ * the chat blended with the rest of the cosmic-marble canvas. */
+:root[data-theme="marble-light"] .dm-conv,
+:root[data-theme="marble-light"] #dmMsgs {
+  background: transparent;
 }
 
 /* Legendary voice channel name on marble — the dark-theme uses a gold-
