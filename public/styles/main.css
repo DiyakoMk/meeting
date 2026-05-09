@@ -562,19 +562,19 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
  * a max-width / opacity / translate transition so the row can be
  * animated; max-width also clips overflow so the row doesn't push
  * the right-side controls when collapsed. */
-/* Closed state clips the orb row with overflow:hidden so the closing
- * animation stays clean. When open, we switch to overflow-x:auto so
- * the user can horizontally scroll a long server list. flex:0 in the
- * collapsed state keeps the rail from "claiming" any flex space while
- * shrinking, which is what produced the brief mid-bar flash on close. */
+/* The rail collapses BACK toward the orb on close, not outward to the
+ * right. We anchor with transform-origin:left and animate max-width +
+ * opacity only. justify-content:flex-start keeps the orbs hugging the
+ * left edge while max-width shrinks, so the row appears to retract
+ * straight into the purple orb instead of sliding rightward. */
 .ph-server-rail{
-  display:flex;align-items:center;gap:8px;
+  display:flex;align-items:center;justify-content:flex-start;gap:8px;
   overflow:hidden;scrollbar-width:none;
   flex:0 1 0;padding:4px 0;
   max-width:0;opacity:0;
-  transform:translateX(-6px);
+  transform-origin:left center;
   pointer-events:none;
-  transition:max-width 0.22s ease, opacity 0.18s ease, transform 0.22s ease, flex-grow 0.22s ease;
+  transition:max-width 0.24s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease;
 }
 
 .ph-server-rail::-webkit-scrollbar{display:none}
@@ -582,7 +582,6 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .ph-server-rail.open{
   max-width:600px;
   opacity:1;
-  transform:translateX(0);
   pointer-events:auto;
   flex:1 1 auto;
   overflow-x:auto;overflow-y:hidden;
