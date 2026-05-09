@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-p (profile modal CSS pixel-mapped to Variant 3)');
+  console.log('[orblood] client build 2026-05-09-q (profile modal reverted to original)');
 
   // ============== STARS ==============
 
@@ -9929,15 +9929,9 @@
 
     const stat = document.getElementById('modalStatusV');
 
-    // Variant 3 status line: longer descriptive label, with the dot-prefix
-
-    // animation handled in CSS via the .status / .offline classes.
-
-    stat.textContent = data.online ? 'ONLINE · ENCRYPTED CHANNEL' : 'OFFLINE';
+    stat.textContent = data.online?'ONLINE':'OFFLINE';
 
     stat.classList.toggle('offline', !data.online);
-
-    stat.classList.toggle('status', !!data.online);
 
     document.getElementById('modalRank').textContent = data.rank || 'EXPLORER';
 
@@ -10007,17 +10001,13 @@
 
         sharedRow.style.display = '';
 
-        // Variant 3 layout shows just the count + a small server-name
+        sharedList.innerHTML = shared.map(srv => srv.emblemImage
 
-        // tooltip on hover; fits the right column nicely without the
+          ? '<div class="profile-shared-orb" data-shared-server="'+srv.id+'" title="'+escapeHtml(srv.name)+'" style="background-image:url('+srv.emblemImage+')"></div>'
 
-        // multi-orb sprite row.
+          : '<div class="profile-shared-orb" data-shared-server="'+srv.id+'" title="'+escapeHtml(srv.name)+'" style="background:'+srv.grad+';box-shadow:0 0 8px '+srv.glow+'">'+escapeHtml(srv.initial||'?')+'</div>'
 
-        const label = shared.length === 1 ? '1 server' : shared.length + ' servers';
-
-        sharedList.title = shared.map(s => s.name).join(', ');
-
-        sharedList.textContent = label;
+        ).join('');
 
       } else { sharedRow.style.display = 'none'; }
 
