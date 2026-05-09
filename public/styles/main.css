@@ -2203,6 +2203,14 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 /* ============== MODALS ============== */
 
 .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity 0.25s}
+/* Pre-auth lock: while the user hasn't signed in yet, the dashboard
+ * underneath the auth modal becomes inert. The auth modal sits above
+ * everything so nothing can render in front of it, and Escape no longer
+ * dismisses it (handled in app.js). */
+:root.is-pre-auth .page,
+:root.is-pre-auth .ws-bottom-nav,
+:root.is-pre-auth .ph-toolbar{pointer-events:none;user-select:none}
+:root.is-pre-auth #authBackdrop{z-index:9999}
 
 /* Modals that can open while another modal is already showing must sit on top.
 

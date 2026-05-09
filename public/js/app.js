@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-k (voice orb cascade visibility)');
+  console.log('[orblood] client build 2026-05-09-l (marked private hidden, greeting + auth lock fixes)');
 
   // ============== STARS ==============
 
@@ -4135,7 +4135,15 @@
 
     const el = document.getElementById('homeMarkedOrbits');
 
-    if (marked.length === 0){
+    // Hide marked orbs whose channel (or its parent category) the user
+
+    // lost access to. The mark stays in storage so re-granting the role
+
+    // brings it back, but for now we treat it like the orb wasn't there.
+
+    const visible = marked.filter(canSeeVoiceKey);
+
+    if (visible.length === 0){
 
       el.innerHTML = '<div class="mark-orb-empty">No marked orbits yet. Tap <b style="color:var(--accent)">MARK</b> in the orb column to add some.</div>';
 
@@ -4143,7 +4151,7 @@
 
     }
 
-    el.innerHTML = marked.map(ch => {
+    el.innerHTML = visible.map(ch => {
 
       const data = channelData[ch];
 
@@ -4376,6 +4384,14 @@
           const s = servers[sid]; if (!s) return;
 
           const tc = s.textChannels.find(c => c.id === tcId); if (!tc) return;
+
+          // Hide channels the user can no longer see (channel went
+
+          // private, or its parent category did). The mark stays in
+
+          // storage so it returns once the user gets the role back.
+
+          if (!memberCanSeeChannelCascaded(s, selfProfile.name, tc)) return;
 
           const unreadCls = tc.unread ? ' unread' : '';
 
@@ -9275,9 +9291,31 @@
 
   function showAuthError(msg){ document.getElementById('authError').textContent = msg||''; }
 
-  function showAuthModal(){ document.getElementById('authBackdrop').classList.add('show'); }
+  // Pre-auth lock. While the auth modal is up, we add `is-pre-auth` to
 
-  function hideAuthModal(){ document.getElementById('authBackdrop').classList.remove('show'); }
+  // <html> so the dashboard underneath can't be poked at via Escape, the
+
+  // tab key, or third-party browser extensions that try to dismiss the
+
+  // overlay. CSS handles the visual gate (pointer-events:none on the
+
+  // dashboard, and lifting the auth modal above any other modal).
+
+  function showAuthModal(){
+
+    document.documentElement.classList.add('is-pre-auth');
+
+    document.getElementById('authBackdrop').classList.add('show');
+
+  }
+
+  function hideAuthModal(){
+
+    document.documentElement.classList.remove('is-pre-auth');
+
+    document.getElementById('authBackdrop').classList.remove('show');
+
+  }
 
   function resetSelfProfileForSignup(user){
 
@@ -9638,6 +9676,14 @@
     const ok = await hydrateFromBackend();
 
     if (!ok) return;
+
+    // Refresh the home greeting now that selfProfile.name has been set —
+
+    // otherwise the first login still shows "GOOD MORNING, EXPLORER"
+
+    // because the greeting was painted before the auth response arrived.
+
+    if (typeof refreshHomeGreeting === 'function') refreshHomeGreeting();
 
     if (typeof renderHomeFriends === 'function') renderHomeFriends();
 
@@ -17579,7 +17625,21 @@
 
       else if (document.getElementById('forwardBackdrop').classList.contains('show')) closeForwardModal();
 
-      else if (document.querySelector('.modal-backdrop.show')){ document.querySelectorAll('.modal-backdrop.show').forEach(m=>m.classList.remove('show')); }
+      else if (document.querySelector('.modal-backdrop.show')){
+
+        // Don't let Escape dismiss the auth gate. Until login completes
+
+        // there's no usable dashboard underneath; closing the modal would
+
+        // expose a half-empty page. Every other modal closes normally.
+
+        document.querySelectorAll('.modal-backdrop.show').forEach(m => {
+
+          if (m.id !== 'authBackdrop') m.classList.remove('show');
+
+        });
+
+      }
 
       else { hideBubbleActions(); hideCtxMenu(); closeAllPopups(); }
 
