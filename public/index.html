@@ -1460,53 +1460,9 @@
 
           <div id="czLibraryPane">
 
-            <!-- Identity (formerly inside Server Identity modal) — emblem + cover. -->
+            <!-- Pack pickers per surface. Emblem + cover uploads live in
 
-            <div class="cz-section">
-
-              <div class="cz-section-l">SERVER EMBLEM (CIRCLE)</div>
-
-              <div class="cz-uploader-row">
-
-                <div class="cz-uploader-preview" id="czEmblemPrev"></div>
-
-                <div class="cz-uploader-actions">
-
-                  <input type="file" id="czEmblemFile" accept="image/*" style="display:none">
-
-                  <button class="sm-btn cancel" id="czEmblemPick" type="button">UPLOAD EMBLEM</button>
-
-                  <button class="sm-btn cancel" id="czEmblemClear" type="button">CLEAR</button>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            <div class="cz-section">
-
-              <div class="cz-section-l">COVER IMAGE &amp; BANNER TINT</div>
-
-              <div class="cz-uploader-row">
-
-                <div class="cz-cover-preview" id="czCoverPrev"></div>
-
-                <div class="cz-uploader-actions">
-
-                  <input type="file" id="czCoverFile" accept="image/*" style="display:none">
-
-                  <button class="sm-btn cancel" id="czCoverPick" type="button">UPLOAD COVER</button>
-
-                  <button class="sm-btn cancel" id="czCoverClear" type="button">CLEAR</button>
-
-                </div>
-
-              </div>
-
-            </div>
-
-            <!-- Pack pickers per surface. -->
+                 the original Server Identity modal (banner menu). -->
 
             <div class="cz-section">
 
@@ -1613,20 +1569,6 @@
             <label class="sm-label">VOICE ORB STYLE</label>
 
             <div class="sm-style-grid" id="ccVoiceStyleGrid"></div>
-
-          </div>
-
-          <!-- Customization pack picker for voice channels — shows the
-
-               LIBRARY chips (Default + every owned pack that supports
-
-               the voiceChannel surface). Defaults to none. -->
-
-          <div class="sm-field" id="ccCustomStyleField" style="display:none">
-
-            <label class="sm-label">CUSTOM STYLE PACK</label>
-
-            <div class="cz-pack-row" id="ccCustomStyleRow"></div>
 
           </div>
 

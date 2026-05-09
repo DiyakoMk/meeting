@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ak (rainbow v2: full surface coverage; cover/emblem packs; identity moved into customize)');
+  console.log('[orblood] client build 2026-05-09-al (server identity restored; cover/emblem chips fixed; rainbow as built-in voice style; custom-style picker removed from create-channel)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -449,7 +449,9 @@
 
     flame:   { label:'INFERNO', skin:'flame', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fed7aa 20%,#f97316 55%,#7c2d12)', c:'rgba(249,115,22,0.6)',  glow:'rgba(249,115,22,0.5)' },
 
-    sun:     { label:'SUNFIRE', skin:'fire',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fef3c7 25%,#f59e0b 55%,#7c2d12)', c:'rgba(245,158,11,0.55)', glow:'rgba(245,158,11,0.5)' }
+    sun:     { label:'SUNFIRE', skin:'fire',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fef3c7 25%,#f59e0b 55%,#7c2d12)', c:'rgba(245,158,11,0.55)', glow:'rgba(245,158,11,0.5)' },
+
+    rainbow: { label:'RAINBOW', skin:'rainbow', grad:'radial-gradient(circle at 35% 30%,#ffffff,#f8f0ff 50%,#ece6ff 100%)', c:'rgba(255,120,255,0.55)', glow:'rgba(255,120,255,0.55)' }
 
   };
 
@@ -6255,7 +6257,15 @@
 
             const _vcOrbCls = vc.customStyle ? packClassFor(vc.customStyle,'orbit') : '';
 
-            html += '<div class="ws-cat-vc'+(isConn?' connected':'')+legendaryCls+_vcCustomCls+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb '+_vcOrbCls+'"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+_privateLockHtml(s, vc)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
+            // The orb skin class (style-rainbow / style-fire / etc.)
+
+            // drives the built-in voice orb styling, including the new
+
+            // RAINBOW skin which is treated like INFERNO / SOLARIS.
+
+            const _vcStyleCls = vc.style ? ' style-'+vc.style : '';
+
+            html += '<div class="ws-cat-vc'+(isConn?' connected':'')+legendaryCls+_vcCustomCls+_vcStyleCls+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb '+_vcOrbCls+'"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+_privateLockHtml(s, vc)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
 
           });
 
@@ -11069,6 +11079,12 @@
 
     if (!currentServer) return;
 
+    // Force a fresh fetch so newly-added pack surfaces (e.g. serverCover,
+
+    // serverEmblem) show up without a hard reload.
+
+    _packsLoaded = false;
+
     await loadPacksCatalog();
 
     _renderCustomizeModal();
@@ -11091,9 +11107,13 @@
 
       if (!wrap) return;
 
-      const current = target === 'serverName' ? s.styleName
+      const current = target === 'serverName'   ? s.styleName
 
-                    : target === 'serverPin'  ? s.stylePin
+                    : target === 'serverPin'    ? s.stylePin
+
+                    : target === 'serverCover'  ? s.styleCover
+
+                    : target === 'serverEmblem' ? s.styleEmblem
 
                     : null;
 
@@ -11136,42 +11156,6 @@
     renderRow('serverCover');
 
     renderRow('serverEmblem');
-
-    // Sync identity previews from the current server.
-
-    const emblemPrev = document.getElementById('czEmblemPrev');
-
-    const coverPrev  = document.getElementById('czCoverPrev');
-
-    if (emblemPrev){
-
-      if (s.emblemImage){
-
-        emblemPrev.style.backgroundImage = 'url('+s.emblemImage+')';
-
-      } else {
-
-        emblemPrev.style.backgroundImage = '';
-
-        emblemPrev.style.background = s.grad || '';
-
-      }
-
-    }
-
-    if (coverPrev){
-
-      if (s.cover){
-
-        coverPrev.style.backgroundImage = 'url('+s.cover+')';
-
-      } else {
-
-        coverPrev.style.backgroundImage = '';
-
-      }
-
-    }
 
     // Shop tab.
 
@@ -12055,38 +12039,6 @@
 
   let ccActiveTab = 'text';
 
-  let ccSelectedCustomStyle = null;
-
-  async function _renderCcCustomStyleRow(){
-
-    await loadPacksCatalog();
-
-    const owned = ownedPackIds();
-
-    const wrap = document.getElementById('ccCustomStyleRow'); if (!wrap) return;
-
-    const chips = [];
-
-    chips.push('<button class="cz-pack-chip'+(!ccSelectedCustomStyle?' active':'')+'" data-cc-custom="" type="button">DEFAULT</button>');
-
-    (_packsCatalog||[]).filter(p => owned.has(p.id) && packSupports(p, 'voiceChannel')).forEach(p => {
-
-      chips.push(
-
-        '<button class="cz-pack-chip'+(ccSelectedCustomStyle===p.id?' active':'')+'" data-cc-custom="'+p.id+'" type="button">'
-
-          +escapeHtml(p.name.toUpperCase())+
-
-        '</button>'
-
-      );
-
-    });
-
-    wrap.innerHTML = chips.join('');
-
-  }
-
   let ccSelectedStyle = 'glow';
 
   let ccTargetCategory = null;
@@ -12096,8 +12048,6 @@
     ccActiveTab = forceTab || 'text';
 
     ccSelectedStyle = ccActiveTab==='voice' ? 'indigo' : 'glow';
-
-    ccSelectedCustomStyle = null;
 
     ccTargetCategory = targetCatId || null;
 
@@ -12160,14 +12110,6 @@
     // TEXT/VOICE tabs require a category, so keep the select visible.
 
     const vf = document.getElementById('ccVoiceStyleField'); if (vf) vf.style.display = ccActiveTab==='voice'?'flex':'none';
-
-    // Custom style pack picker — only meaningful for voice channels.
-
-    const customField = document.getElementById('ccCustomStyleField');
-
-    if (customField) customField.style.display = ccActiveTab==='voice'?'flex':'none';
-
-    if (ccActiveTab==='voice') _renderCcCustomStyleRow();
 
     const cf = document.getElementById('ccCategoryField'); if (cf) cf.style.display = ccActiveTab==='category'?'none':'flex';
 
@@ -12359,25 +12301,11 @@
 
         newId = r.channel.id;
 
-        // Apply the selected customStyle pack via PATCH after creation.
-
-        // The create endpoint doesn't accept it directly, but the patch
-
-        // route does and the realtime emit re-renders the orb correctly.
-
-        if (ccSelectedCustomStyle){
-
-          try { await _apiRequest('PATCH', '/channels/voice/'+currentServer+'/'+newId, { customStyle: ccSelectedCustomStyle }); }
-
-          catch(_){ /* fall back to local-only style below */ }
-
-        }
-
       }
 
       if (!s.voiceChannels.find(v => v.id === newId)){
 
-        s.voiceChannels.push({ id:newId, name: name.toUpperCase(), style: ccSelectedStyle, customStyle: ccSelectedCustomStyle || null });
+        s.voiceChannels.push({ id:newId, name: name.toUpperCase(), style: ccSelectedStyle });
 
       }
 
@@ -12985,11 +12913,7 @@
 
     if (canCreate && (isOwner || can('manageServer') || can('managePins'))) items.push({ sep:true });
 
-    // 'Server identity' was moved into the Customize modal — the cover
-
-    // image, emblem upload and banner tint now live there alongside the
-
-    // pack pickers. Leaving the entry out keeps the banner menu lean.
+    if (isOwner || can('manageServer')) items.push({ action:'cover', icon:'image', label:'Server identity' });
 
     if (can('managePins'))              items.push({ action:'addpin', icon:'pin',  label:'Edit server pin' });
 
@@ -15227,75 +15151,7 @@
 
   });
 
-  // Customize modal — emblem + cover upload (replaces the legacy Server
 
-  // Identity flow). Both fields persist via PATCH /api/servers/:id and
-
-  // the modal previews refresh on success.
-
-  async function _saveServerImage(field, value){
-
-    if (!currentServer) return;
-
-    const s = servers[currentServer]; if (!s) return;
-
-    const dbField = field === 'emblem' ? 'emblemImage' : 'cover';
-
-    s[dbField] = value;
-
-    if (backend.isConfigured()){
-
-      try {
-
-        const body = {}; body[dbField] = value;
-
-        await _apiRequest('PATCH', '/servers/'+s.id, body);
-
-      } catch(_){ showToast('Could not save '+field,'warn'); return; }
-
-    }
-
-    renderServerOverview && renderServerOverview();
-
-    _renderCustomizeModal();
-
-  }
-
-  document.getElementById('czEmblemPick').addEventListener('click', () => document.getElementById('czEmblemFile').click());
-
-  document.getElementById('czEmblemClear').addEventListener('click', () => _saveServerImage('emblem', null));
-
-  document.getElementById('czEmblemFile').addEventListener('change', async e => {
-
-    const f = e.target.files && e.target.files[0]; if (!f) return;
-
-    if (!f.type.startsWith('image/')){ showToast('Pick an image file','warn'); return; }
-
-    const url = await _uploadImageOrDataUrl(f);
-
-    if (!url){ showToast('Could not upload emblem','warn'); return; }
-
-    _saveServerImage('emblem', url);
-
-  });
-
-  document.getElementById('czCoverPick').addEventListener('click', () => document.getElementById('czCoverFile').click());
-
-  document.getElementById('czCoverClear').addEventListener('click', () => _saveServerImage('cover', null));
-
-  document.getElementById('czCoverFile').addEventListener('change', async e => {
-
-    const f = e.target.files && e.target.files[0]; if (!f) return;
-
-    if (!f.type.startsWith('image/')){ showToast('Pick an image file','warn'); return; }
-
-    const url = await _uploadImageOrDataUrl(f);
-
-    if (!url){ showToast('Could not upload cover','warn'); return; }
-
-    _saveServerImage('cover', url);
-
-  });
 
   // Color grid removed — colour is randomised at openCreateServer time.
 
@@ -15394,22 +15250,6 @@
     ccSelectedStyle = b.dataset.ccVoiceStyle;
 
     document.querySelectorAll('#ccOrbTrack .cc-orb-card').forEach(el => el.classList.toggle('selected', el.dataset.ccVoiceStyle === ccSelectedStyle));
-
-  });
-
-  // Custom-style chip clicks inside the create-channel modal.
-
-  document.getElementById('createChannelBackdrop').addEventListener('click', e => {
-
-    const chip = e.target.closest('[data-cc-custom]');
-
-    if (!chip) return;
-
-    e.stopPropagation();
-
-    ccSelectedCustomStyle = chip.dataset.ccCustom || null;
-
-    _renderCcCustomStyleRow();
 
   });
 

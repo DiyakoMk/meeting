@@ -419,6 +419,140 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .orb-slide.skin-fire .vlabel{background:linear-gradient(90deg,#fef3c7,#fbbf24,#dc2626);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 
+/* Rainbow voice skin — white core, animated rainbow halo + outer wave,
+ * label gets the same flowing gradient as the rest of the rainbow pack.
+ * Same recipe everywhere the orb appears (orb-slide planet, server cat
+ * voice orb, marked orbits) so RAINBOW reads as a built-in tier. */
+@keyframes cz-rainbow-flow-core {
+  0%   { background-position:   0% 50%; }
+  100% { background-position: 400% 50%; }
+}
+@keyframes cz-rainbow-spin-core {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.orb-slide.skin-rainbow .vlabel{
+  background:linear-gradient(90deg,#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
+  background-size:400% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:cz-rainbow-flow-core 2.4s linear infinite;
+}
+.orb-slide.skin-rainbow .planet{
+  background:radial-gradient(circle at 35% 30%,#ffffff,#f8f0ff 50%,#ece6ff 100%) !important;
+  box-shadow:
+    0 0 60px rgba(255,120,255,0.6),
+    0 0 140px rgba(122,59,255,0.45),
+    inset 0 -3px 18px rgba(180,80,255,0.18),
+    inset 0 1px 6px rgba(255,255,255,0.95) !important;
+  animation:none !important;
+  position:relative;
+}
+.orb-slide.skin-rainbow .planet::before,
+.orb-slide.skin-rainbow .planet::after{
+  content:"";
+  position:absolute;
+  border-radius:50%;
+  pointer-events:none;
+}
+.orb-slide.skin-rainbow .planet::before{
+  inset:-12px;
+  background:conic-gradient(#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
+  -webkit-mask:radial-gradient(circle,transparent 60%,#000 64%);
+          mask:radial-gradient(circle,transparent 60%,#000 64%);
+  animation:cz-rainbow-spin-core 4s linear infinite;
+}
+.orb-slide.skin-rainbow .planet::after{
+  inset:-30px;
+  background:conic-gradient(rgba(255,0,102,0.5),rgba(255,136,0,0.5),rgba(255,230,0,0.5),rgba(0,214,94,0.5),rgba(0,180,255,0.5),rgba(122,59,255,0.5),rgba(255,0,212,0.5),rgba(255,0,102,0.5));
+  -webkit-mask:radial-gradient(circle,transparent 56%,#000 60%,transparent 75%);
+          mask:radial-gradient(circle,transparent 56%,#000 60%,transparent 75%);
+  animation:cz-rainbow-spin-core 6s linear infinite reverse;
+  filter:blur(2px);
+}
+.orb-slide.skin-rainbow .atmo{
+  background:radial-gradient(circle,rgba(255,120,255,0.55),rgba(122,59,255,0.25),transparent 70%) !important;
+}
+
+/* Same recipe applied to the smaller voice-orb in the server category
+ * row when style === 'rainbow'. */
+.ws-cat-vc.style-rainbow .ws-cat-vc-orb,
+.ws-vc-orb.skin-rainbow,
+.style-rainbow .ws-cat-vc-orb{
+  background:radial-gradient(circle at 35% 30%,#ffffff,#f8f0ff 50%,#ece6ff 100%) !important;
+  box-shadow:
+    0 0 24px rgba(255,120,255,0.55),
+    0 0 60px rgba(122,59,255,0.35),
+    inset 0 -3px 10px rgba(180,80,255,0.15),
+    inset 0 1px 4px rgba(255,255,255,0.9) !important;
+  position:relative;
+}
+.ws-cat-vc.style-rainbow .ws-cat-vc-orb::before,
+.ws-cat-vc.style-rainbow .ws-cat-vc-orb::after{
+  content:"";
+  position:absolute;
+  border-radius:50%;
+  pointer-events:none;
+}
+.ws-cat-vc.style-rainbow .ws-cat-vc-orb::before{
+  inset:-8px;
+  background:conic-gradient(#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
+  -webkit-mask:radial-gradient(circle,transparent 60%,#000 64%);
+          mask:radial-gradient(circle,transparent 60%,#000 64%);
+  animation:cz-rainbow-spin-core 4s linear infinite;
+}
+.ws-cat-vc.style-rainbow .ws-cat-vc-orb::after{
+  inset:-18px;
+  background:conic-gradient(rgba(255,0,102,0.45),rgba(255,136,0,0.45),rgba(255,230,0,0.45),rgba(0,214,94,0.45),rgba(0,180,255,0.45),rgba(122,59,255,0.45),rgba(255,0,212,0.45),rgba(255,0,102,0.45));
+  -webkit-mask:radial-gradient(circle,transparent 56%,#000 60%,transparent 75%);
+          mask:radial-gradient(circle,transparent 56%,#000 60%,transparent 75%);
+  animation:cz-rainbow-spin-core 6s linear infinite reverse;
+  filter:blur(2px);
+}
+/* Voice channel name picks up the rainbow when the orb is rainbow. */
+.ws-cat-vc.style-rainbow .ws-cat-vc-n{
+  background:linear-gradient(90deg,#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
+  background-size:400% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+  animation:cz-rainbow-flow-core 2.4s linear infinite;
+}
+
+/* Marked orbit card: the small mo-orb mirrors the same look. */
+.mark-orb-card.skin-rainbow .mo-orb,
+.mark-orb-card .mo-orb.skin-rainbow{
+  background:radial-gradient(circle at 35% 30%,#ffffff,#f8f0ff 50%,#ece6ff 100%) !important;
+  box-shadow:
+    0 0 18px rgba(255,120,255,0.45),
+    inset 0 -3px 8px rgba(180,80,255,0.15),
+    inset 0 1px 3px rgba(255,255,255,0.85) !important;
+  position:relative;
+}
+.mark-orb-card.skin-rainbow .mo-orb::before{
+  content:"";
+  position:absolute;inset:-6px;border-radius:50%;
+  background:conic-gradient(#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
+  -webkit-mask:radial-gradient(circle,transparent 60%,#000 64%);
+          mask:radial-gradient(circle,transparent 60%,#000 64%);
+  animation:cz-rainbow-spin-core 4s linear infinite;
+  pointer-events:none;
+}
+
+/* Create-channel orb-style card preview. */
+.cc-orb-card.skin-rainbow .cc-orb-bead{
+  background:radial-gradient(circle at 35% 30%,#ffffff,#f8f0ff 50%,#ece6ff 100%) !important;
+  position:relative;
+}
+.cc-orb-card.skin-rainbow .cc-orb-bead::before{
+  content:"";
+  position:absolute;inset:-4px;border-radius:50%;
+  background:conic-gradient(#ff0066,#ff8800,#ffe600,#00d65e,#00b4ff,#7a3bff,#ff00d4,#ff0066);
+  -webkit-mask:radial-gradient(circle,transparent 58%,#000 62%);
+          mask:radial-gradient(circle,transparent 58%,#000 62%);
+  animation:cz-rainbow-spin-core 4s linear infinite;
+  pointer-events:none;
+}
+
 .vstatus{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:5px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;color:var(--t3);letter-spacing:1px}
 
 .vstatus.connected{color:var(--success)}
