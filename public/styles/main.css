@@ -1032,11 +1032,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 @keyframes typing{0%,60%,100%{opacity:0.3}30%{opacity:1}}
 
-/* DM conversation surface — single soft brand wash from top to bottom.
- * The previous version used two radial gradients which made faint
- * concentric "rings" visible on flat backgrounds; replacing with a
- * linear wash gives a smoother feel without banding. */
-.dm-conv{display:flex;flex-direction:column;height:100%;min-height:0;background:linear-gradient(180deg,var(--brand-glow-soft) 0%,transparent 35%);position:relative}
+.dm-conv{display:flex;flex-direction:column;height:100%;min-height:0;background:radial-gradient(ellipse at 50% 0%,rgba(185,28,74,0.06),transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(190,18,60,0.04),transparent 60%);position:relative}
 
 .dm-pinned-banner{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:8px 14px 10px;background:linear-gradient(135deg,var(--tint-6),var(--brand-glow-soft));border:1px solid var(--tint-7);border-radius:10px;cursor:pointer;color:var(--t1);box-shadow:0 0 10px var(--tint-4)}
 
