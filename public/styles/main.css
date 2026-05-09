@@ -2536,10 +2536,16 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .profile-orb{position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 /* Make the inner orb fill the wrapper so an avatar image touches the
- * outer ring of the modal orb instead of leaving a ~5px halo of
- * background panel around it. The default 78px size is overridden
- * specifically inside the profile modal. */
-#profileModal .profile-orb-core{width:88px;height:88px}
+ * outer ring of the modal orb. We also strip the orb-core border + the
+ * inset highlight/shadow ::before overlay when an image avatar is in
+ * place, so the user's photo reaches all the way to the edge with no
+ * dark rim or warm halo cutting the picture into a smaller circle. */
+#profileModal .profile-orb-core{width:88px;height:88px;border:none}
+/* JS sets backgroundImage on the orb-core when there's an avatar
+ * upload. Hide the depth-pseudo so the image sits flush against the
+ * outer wrapper. The ::before is purely cosmetic; without an image we
+ * still want the sphere shading. */
+#profileModal .profile-orb-core[style*="background-image"]::before{display:none}
 
 .profile-orb-core{width:78px;height:78px;border-radius:50%;background:var(--profile-orb-grad,linear-gradient(135deg,#3a3a45,#1a1a22));box-shadow:0 4px 16px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk','Vazirmatn',sans-serif;font-size:1.6rem;font-weight:700;color:#fff;border:1px solid var(--tint-3);background-size:cover;background-position:center;overflow:hidden}
 
