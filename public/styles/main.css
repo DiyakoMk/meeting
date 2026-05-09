@@ -2458,24 +2458,43 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .smodal{background:radial-gradient(ellipse at 50% 0%,var(--brand-glow-soft),transparent 65%),var(--panel);border:1px solid var(--tint-3);border-radius:14px;width:100%;max-width:420px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 100px rgba(0,0,0,0.7),inset 0 1px 0 var(--tint-3);transform:translateY(20px) scale(0.96);transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);position:relative}
 
-/* User profile modal — compact card variant matching the QUICK TRANSMIT
- * box on the home page. Dropping the banner and pulling the orb up to the
- * top edge gives it the same single-glow + tight padding feel. */
-#profileModal{max-width:380px}
+/* User profile modal — glassy card variant matching the QUICK TRANSMIT
+ * (.qs-box.nx-box) on home. The look comes from the nx-box recipe:
+ *   - subtle radial glow at the top
+ *   - thin .tint-3 border
+ *   - frosted glass via backdrop-filter (same blur as quick transmit)
+ *   - rounded 14px, tight 12px padding
+ * We override the heavier .smodal recipe (panel + 30px shadow + scale-in)
+ * so the modal reads as a floating glass card instead of a sheet. */
+#profileModal{
+  max-width:380px;
+  background:radial-gradient(ellipse at 50% 0%,var(--brand-glow-soft),transparent 65%),var(--tint-1);
+  border:1px solid var(--tint-3);
+  border-radius:14px;
+  box-shadow:0 18px 48px rgba(0,0,0,0.45),inset 0 1px 0 var(--tint-3);
+  -webkit-backdrop-filter:blur(18px);
+  backdrop-filter:blur(18px);
+}
+/* Header strip in the same neutral wash as the rest of the card so
+ * the glass surface reads as one continuous panel — no banded title bar. */
+#profileModal .smodal-head{background:transparent;border-bottom:1px solid var(--tint-2);padding:10px 14px}
+#profileModal .smodal-title{font-size:0.55rem}
 #profileModal .profile-banner{display:none}
-#profileModal .profile-view{padding:18px;gap:10px}
-#profileModal .profile-head{margin-top:0;padding:0;gap:14px;align-items:center}
-#profileModal .profile-orb{width:64px;height:64px}
-#profileModal .modal-orb-core{width:64px;height:64px;font-size:1.4rem;box-shadow:0 0 30px var(--profile-orb-glow,var(--brand-glow)),inset 0 0 14px rgba(255,255,255,0.3)}
+#profileModal .profile-view{padding:14px;gap:10px}
+#profileModal .profile-head{margin-top:0;padding:0;gap:12px;align-items:center}
+#profileModal .profile-orb{width:60px;height:60px}
+#profileModal .modal-orb-core{width:60px;height:60px;font-size:1.3rem;box-shadow:0 0 26px var(--profile-orb-glow,var(--brand-glow)),inset 0 0 12px rgba(255,255,255,0.3)}
 #profileModal .modal-orb-ring,
 #profileModal .modal-orb-ring.r2,
 #profileModal .modal-orb-ring.r3{display:none}
-#profileModal .profile-name{font-size:1.05rem;letter-spacing:0.5px}
+#profileModal .profile-name{font-size:1rem;letter-spacing:0.4px}
 #profileModal .profile-handle-row{margin-top:2px}
 #profileModal .profile-tags{padding:0;gap:5px}
 #profileModal .profile-bio{padding:0;margin:0;font-size:0.78rem;line-height:1.55;color:var(--t2)}
+/* Sub-sections (joined / shared servers) sit on the same glass surface,
+ * separated only by the faintest tint-2 hairline so the card stays calm. */
 #profileModal .profile-section{padding:10px 0;border-top:1px solid var(--tint-2);margin:0}
-#profileModal .profile-actions{padding:6px 0 0;gap:8px}
+#profileModal .profile-actions{padding:8px 0 0;gap:8px;border-top:1px solid var(--tint-2);margin-top:4px}
 
 .modal-backdrop.show .smodal{transform:translateY(0) scale(1)}
 

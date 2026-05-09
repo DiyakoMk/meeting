@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-d (rail keeps memberships, category save fixed, DM spinner, collapse chevron)');
+  console.log('[orblood] client build 2026-05-09-e (profile modal -> glass card)');
 
   // ============== STARS ==============
 
