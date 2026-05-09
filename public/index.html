@@ -1328,9 +1328,31 @@
 
             <div class="sm-field">
 
-              <label class="sm-label">CHOOSE EMBLEM COLOR</label>
+              <label class="sm-label">VISIBILITY</label>
 
-              <div class="sm-style-grid" id="csColorGrid"></div>
+              <div class="sm-toggle-row">
+
+                <label class="sm-radio">
+
+                  <input type="radio" name="csVisibility" value="public" checked />
+
+                  <span class="sm-radio-dot"></span>
+
+                  <span class="sm-radio-l"><b>PUBLIC</b><i>Anyone with the invite can join</i></span>
+
+                </label>
+
+                <label class="sm-radio">
+
+                  <input type="radio" name="csVisibility" value="private" />
+
+                  <span class="sm-radio-dot"></span>
+
+                  <span class="sm-radio-l"><b>PRIVATE</b><i>Invite-only — link sharing disabled</i></span>
+
+                </label>
+
+              </div>
 
             </div>
 
@@ -2055,6 +2077,24 @@
         </div>
 
         <div class="fwd-list" id="fwdList"></div>
+
+        <!-- Server invite link panel — only shown when forwarding a server card. -->
+
+        <div class="fwd-invite-panel" id="fwdInvitePanel" style="display:none">
+
+          <div class="fwd-invite-l">SERVER INVITE</div>
+
+          <div class="fwd-invite-row">
+
+            <input type="text" id="fwdInviteInput" readonly />
+
+            <button class="fwd-invite-copy" id="fwdInviteCopy" type="button" title="Copy invite"><i data-lucide="copy" style="width:12px;height:12px"></i></button>
+
+          </div>
+
+          <div class="fwd-invite-hint">Anyone with this code can join the server. Share it directly or use the recipient picker above.</div>
+
+        </div>
 
         <div class="fwd-foot">
 

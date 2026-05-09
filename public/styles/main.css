@@ -551,11 +551,15 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ph-purple-orb.active{box-shadow:0 0 28px rgba(190,18,60,0.85),inset 0 0 12px var(--tint-9)}
 
-.ph-server-rail{display:none;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;max-width:0;opacity:0;scrollbar-width:none;flex:1;padding:4px 0;transition:max-width 0.3s cubic-bezier(0.4,0,0.2,1),opacity 0.18s}
+/* Server rail starts hidden but at full width — opening it just toggles
+ * display + opacity so there's no width-grow animation that makes the
+ * header look like it's resizing. The user clicks the orb and the orb
+ * row appears at its final size right away. */
+.ph-server-rail{display:none;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex:1;padding:4px 0;opacity:0;transition:opacity 0.18s}
 
 .ph-server-rail::-webkit-scrollbar{display:none}
 
-.ph-server-rail.open{display:flex;max-width:600px;opacity:1}
+.ph-server-rail.open{display:flex;opacity:1}
 
 .srv-orb{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono','Vazirmatn',monospace;font-weight:700;font-size:0.75rem;color:white;cursor:pointer;flex-shrink:0;border:2px solid transparent;transition:all 0.2s;position:relative;background:var(--srv-grad,linear-gradient(135deg,#6366f1,#1e1b4b));overflow:hidden}
 
@@ -1001,7 +1005,11 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 @keyframes typing{0%,60%,100%{opacity:0.3}30%{opacity:1}}
 
-.dm-conv{display:flex;flex-direction:column;height:100%;min-height:0;background:radial-gradient(ellipse at 50% 0%,rgba(185,28,74,0.06),transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(190,18,60,0.04),transparent 60%);position:relative}
+/* DM conversation surface — single soft brand wash from top to bottom.
+ * The previous version used two radial gradients which made faint
+ * concentric "rings" visible on flat backgrounds; replacing with a
+ * linear wash gives a smoother feel without banding. */
+.dm-conv{display:flex;flex-direction:column;height:100%;min-height:0;background:linear-gradient(180deg,var(--brand-glow-soft) 0%,transparent 35%);position:relative}
 
 .dm-pinned-banner{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:8px 14px 10px;background:linear-gradient(135deg,var(--tint-6),var(--brand-glow-soft));border:1px solid var(--tint-7);border-radius:10px;cursor:pointer;color:var(--t1);box-shadow:0 0 10px var(--tint-4)}
 
@@ -1541,7 +1549,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .wmsg:hover{background:var(--tint-1)}
 
-.wmsg.pinned{background:linear-gradient(90deg,rgba(240,244,255,0.05),rgba(159,18,57,0.06));border-left:2px solid #f0f4ff;padding-left:8px;box-shadow:inset 0 0 12px rgba(159,18,57,0.08)}
+.wmsg.pinned{background:linear-gradient(90deg,var(--tint-3),var(--brand-glow-soft));border-left:2px solid var(--accent);padding-left:8px;box-shadow:inset 0 0 12px var(--brand-glow-soft)}
 
 .wmsg-av{width:34px;height:34px;border-radius:50%;background:var(--av-color,var(--av-default-grad));display:flex;align-items:center;justify-content:center;font-size:0.74rem;font-weight:600;color:white;flex-shrink:0;border:1.5px solid var(--tint-4);cursor:pointer;transition:transform 0.2s}
 
@@ -1659,13 +1667,17 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 /* Pinned in server overview */
 
-.ws-pinned-box{margin:14px 22px 0;padding:12px 14px;background:linear-gradient(135deg,rgba(240,244,255,0.08),rgba(159,18,57,0.12));border:1px solid rgba(240,244,255,0.18);border-radius:12px;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden;min-height:64px;width:auto;flex-shrink:0;box-shadow:0 0 14px rgba(240,244,255,0.06),inset 0 0 12px rgba(159,18,57,0.1)}
+/* Server pin banner — same recipe as the DM pin banner so the look is
+ * consistent across pinned places (server, category, dm, channel).
+ * Uses theme tokens so marble light reads as ink-on-cream and the dark
+ * themes keep their warm tinted glow. */
+.ws-pinned-box{margin:14px 22px 0;padding:12px 14px;background:linear-gradient(135deg,var(--tint-6),var(--brand-glow-soft));border:1px solid var(--tint-7);border-radius:12px;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden;min-height:64px;width:auto;flex-shrink:0;color:var(--t1);box-shadow:0 0 10px var(--tint-4)}
 
 .ws-pin-icon{width:32px;height:32px;border-radius:9px;background:rgba(240,244,255,0.12);color:#f0f4ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(240,244,255,0.25);text-shadow:0 0 6px rgba(240,244,255,0.4)}
 
 .ws-pin-info{flex:1;min-width:0}
 
-.ws-pin-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:#f0f4ff;letter-spacing:1.5px;margin-bottom:4px;display:flex;align-items:center;gap:5px;text-shadow:0 0 6px rgba(240,244,255,0.4)}
+.ws-pin-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t2);letter-spacing:1.5px;margin-bottom:4px;display:flex;align-items:center;gap:5px;font-weight:700}
 
 .ws-pin-text{font-size:0.78rem;color:var(--t1);line-height:1.45}
 
@@ -2401,24 +2413,19 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 /* PROFILE — simplified */
 
-/* The cover banner sits flush against the modal's outer rounded corners
- * — no inner padding. The modal's own 14px border-radius defines the
- * curve; .smodal already clips overflow so the cover image follows the
- * same shape. The cover fades to transparency at the bottom (lower
- * ~60% of its height) so whatever sits below blends through naturally
- * without a black smear. */
+/* Cover sits inside the modal with a small gap on three sides so the
+ * modal's outer border still reads. Top corners are rounded to match
+ * the modal's 14px curve (minus the 6px gap = 8px). Bottom fades to
+ * transparency via mask-image so what sits below shows through naturally. */
 .profile-banner{
   position:relative;
   height:78px;
-  margin:0;
-  border-radius:0;
+  margin:6px 6px 0;
+  border-radius:8px 8px 0 0;
   background:radial-gradient(ellipse at 50% 0%,rgba(185,28,74,0.32),transparent 70%),linear-gradient(180deg,var(--tint-3),transparent);
   background-size:cover;
   background-position:center;
   overflow:hidden;
-  /* Soft mask: the cover stays opaque at the top and fades to 0 alpha
-   * at the bottom edge. We use mask-image (matched in -webkit) so the
-   * underlying image is what loses opacity, not a black overlay. */
   -webkit-mask-image:linear-gradient(180deg,#000 35%,transparent 100%);
           mask-image:linear-gradient(180deg,#000 35%,transparent 100%);
 }
@@ -2589,6 +2596,18 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 .sm-tab.active{color:var(--t1);background:linear-gradient(135deg,rgba(185,28,74,0.25),rgba(190,18,60,0.18))}
 
 .sm-style-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:4px}
+
+/* Radio toggle row used in modal forms (e.g. server visibility public/private). */
+.sm-toggle-row{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.sm-radio{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--tint-3);background:var(--tint-1);border-radius:10px;cursor:pointer;transition:background 0.15s,border-color 0.15s}
+.sm-radio:hover{background:var(--tint-2);border-color:var(--tint-4)}
+.sm-radio input{position:absolute;opacity:0;pointer-events:none}
+.sm-radio-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--tint-5);flex-shrink:0;margin-top:2px;position:relative;transition:border-color 0.15s,background 0.15s}
+.sm-radio input:checked + .sm-radio-dot{border-color:var(--accent);background:var(--accent);box-shadow:0 0 8px var(--brand-glow)}
+.sm-radio input:checked + .sm-radio-dot::after{content:"";position:absolute;inset:3px;background:var(--bg);border-radius:50%}
+.sm-radio-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.sm-radio-l b{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1.5px;color:var(--t1);font-weight:700}
+.sm-radio-l i{font-style:normal;font-size:0.7rem;color:var(--t3);line-height:1.45}
 
 #ccVoiceStyleGrid{display:flex;align-items:center;gap:8px;padding:8px 4px;margin-top:6px}
 
@@ -2838,6 +2857,17 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 
 .fwd-item.checked .fwd-item-check i{display:block}
 
+/* Server invite panel inside the forward / share modal. Surfaces the
+ * raw token so the user can copy it without picking a recipient. */
+.fwd-invite-panel{padding:10px 14px;border-top:1px solid var(--tint-3);background:var(--tint-1);display:flex;flex-direction:column;gap:6px}
+.fwd-invite-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;letter-spacing:1.6px;color:var(--t3)}
+.fwd-invite-row{display:flex;align-items:center;gap:6px}
+.fwd-invite-row input{flex:1;min-width:0;padding:7px 10px;border:1px solid var(--tint-3);background:var(--tint-2);color:var(--t1);border-radius:8px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.7rem;letter-spacing:1.2px;outline:none}
+.fwd-invite-row input.is-disabled{color:var(--t3);font-style:italic;letter-spacing:0.5px}
+.fwd-invite-copy{width:32px;height:32px;border-radius:8px;background:var(--tint-2);border:1px solid var(--tint-3);color:var(--t1);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.15s,color 0.15s;flex-shrink:0}
+.fwd-invite-copy:hover{background:var(--tint-4);color:var(--accent)}
+.fwd-invite-hint{font-size:0.65rem;color:var(--t3);line-height:1.5}
+
 .fwd-foot{padding:10px 14px;border-top:1px solid var(--tint-3);display:flex;align-items:center;justify-content:space-between;gap:10px}
 
 .fwd-foot-info{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;color:var(--t2);letter-spacing:1px}
@@ -2996,23 +3026,23 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 
 /* Category-level pin */
 
-.ws-cat-pin{margin:0 0 10px;padding:9px 11px;background:linear-gradient(135deg,var(--tint-6),rgba(185,28,74,0.16));border:1px solid rgba(255,255,255,0.28);border-radius:10px;display:flex;gap:9px;align-items:center;position:relative;overflow:hidden;color:#fff}
+.ws-cat-pin{margin:0 0 10px;padding:9px 11px;background:linear-gradient(135deg,var(--tint-6),var(--brand-glow-soft));border:1px solid var(--tint-7);border-radius:10px;display:flex;gap:9px;align-items:center;position:relative;overflow:hidden;color:var(--t1)}
 
 .ws-pin-x{width:22px;height:22px;border-radius:6px;color:#fff;background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s}
 
 .ws-pin-x:hover{background:rgba(239,68,68,0.25);color:#fff}
 
-.ws-cat-pin .ws-cat-pin-i{width:24px;height:24px;border-radius:7px;background:rgba(240,244,255,0.12);color:#f0f4ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(240,244,255,0.25);text-shadow:0 0 6px rgba(240,244,255,0.4)}
+.ws-cat-pin .ws-cat-pin-i{width:24px;height:24px;border-radius:7px;background:var(--tint-3);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--tint-4)}
 
 .ws-cat-pin .ws-cat-pin-info{flex:1;min-width:0}
 
-.ws-cat-pin .ws-cat-pin-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.45rem;color:#f0f4ff;letter-spacing:1.5px;margin-bottom:3px;text-shadow:0 0 5px rgba(240,244,255,0.35)}
+.ws-cat-pin .ws-cat-pin-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.45rem;color:var(--t2);letter-spacing:1.5px;margin-bottom:3px;font-weight:700}
 
 .ws-cat-pin .ws-cat-pin-text{font-size:0.72rem;color:var(--t1);line-height:1.4}
 
-.ws-cat-pin .ws-cat-pin-edit{padding:3px 7px;border-radius:5px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.45rem;letter-spacing:1px;color:#f0f4ff;background:rgba(240,244,255,0.1);border:1px dashed rgba(240,244,255,0.28);align-self:center;flex-shrink:0;display:flex;align-items:center;gap:3px}
+.ws-cat-pin .ws-cat-pin-edit{padding:3px 7px;border-radius:5px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.45rem;letter-spacing:1px;color:var(--t2);background:var(--tint-2);border:1px dashed var(--tint-5);align-self:center;flex-shrink:0;display:flex;align-items:center;gap:3px}
 
-.ws-cat-pin .ws-cat-pin-edit:hover{background:rgba(240,244,255,0.2)}
+.ws-cat-pin .ws-cat-pin-edit:hover{background:var(--tint-4);color:var(--t1)}
 
 .ws-cat-add-pin{width:100%;padding:6px 10px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;letter-spacing:1px;color:#f0f4ff;background:rgba(240,244,255,0.04);border:1px dashed rgba(240,244,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:8px;transition:all 0.15s}
 

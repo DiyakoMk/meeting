@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-t (orb shading unified, banner btns reverted, cover mask-fade)');
+  console.log('[orblood] client build 2026-05-09-u (rail no-grow, create vis radio, share invite link, pin theme tokens, dm grad, cover gap+curve)');
 
   // ============== STARS ==============
 
@@ -11041,6 +11041,40 @@
 
     updateFwdFoot();
 
+    // Server-card forward (i.e. share-server flow): expose the invite
+
+    // code with a copy button so the user can grab the raw token when
+
+    // they don't want to pick a recipient.
+
+    const invitePanel = document.getElementById('fwdInvitePanel');
+
+    if (source && source.type === 'serverCard' && source.serverInvite && !source.serverPrivate){
+
+      invitePanel.style.display = '';
+
+      const inp = document.getElementById('fwdInviteInput');
+
+      inp.value = source.serverInvite;
+
+    } else if (source && source.type === 'serverCard' && source.serverPrivate){
+
+      // Private servers: show a placeholder message instead of the invite.
+
+      invitePanel.style.display = '';
+
+      const inp = document.getElementById('fwdInviteInput');
+
+      inp.value = 'PRIVATE — invite link disabled';
+
+      inp.classList.add('is-disabled');
+
+    } else {
+
+      invitePanel.style.display = 'none';
+
+    }
+
     document.getElementById('forwardBackdrop').classList.add('show');
 
   }
@@ -11721,7 +11755,13 @@
 
     csActiveTab = 'create';
 
-    csSelectedColor = 'indigo';
+    // Pick a random palette key for this server. We deliberately do not
+
+    // expose the palette to the user — too many decisions for a one-off.
+
+    const keys = Object.keys(serverColorPalette);
+
+    csSelectedColor = keys[Math.floor(Math.random() * keys.length)];
 
     document.querySelectorAll('[data-cs-tab]').forEach(t => t.classList.toggle('active', t.dataset.csTab === csActiveTab));
 
@@ -11735,25 +11775,13 @@
 
     document.getElementById('csJoinInput').value = '';
 
-    renderCsColors();
+    // Reset visibility radio to public.
+
+    const pubRadio = document.querySelector('input[name="csVisibility"][value="public"]');
+
+    if (pubRadio) pubRadio.checked = true;
 
     document.getElementById('createServerBackdrop').classList.add('show');
-
-  }
-
-  function renderCsColors(){
-
-    const g = document.getElementById('csColorGrid');
-
-    g.innerHTML = Object.keys(serverColorPalette).map(c => {
-
-      const p = serverColorPalette[c];
-
-      const sel = csSelectedColor===c;
-
-      return '<div class="sm-style-btn'+(sel?' selected':'')+'" data-cs-color="'+c+'" style="background:'+p.grad+';box-shadow:0 0 6px '+p.glow.replace(/0\.\d+\)/,'0.3)')+',inset 0 0 4px rgba(255,255,255,0.18)" title="'+c+'"></div>';
-
-    }).join('');
 
   }
 
@@ -11777,13 +11805,17 @@
 
       if (backend.isConfigured()){
 
+        const visRadio = document.querySelector('input[name="csVisibility"]:checked');
+
+        const isPrivate = !!(visRadio && visRadio.value === 'private');
+
         const r = await backend.servers.create({
 
           name, desc, baseColor,
 
           grad: p.grad, glow: p.glow,
 
-          isPrivate: false
+          isPrivate
 
         });
 
@@ -11827,7 +11859,11 @@
 
         textChannels:[], voiceChannels:[], categories:[],
 
-        pinned:null, isPrivate:false
+        pinned:null,
+
+        isPrivate: !!(document.querySelector('input[name="csVisibility"]:checked')||{}).value &&
+
+                   document.querySelector('input[name="csVisibility"]:checked').value === 'private'
 
       };
 
@@ -17658,6 +17694,22 @@
   document.getElementById('fwdFilter').addEventListener('input', renderFwdList);
 
   document.getElementById('fwdSendBtn').addEventListener('click', e => { e.stopPropagation(); executeForward(); });
+
+  // Copy invite token from the share-server flow.
+
+  document.getElementById('fwdInviteCopy').addEventListener('click', async e => {
+
+    e.stopPropagation();
+
+    const inp = document.getElementById('fwdInviteInput');
+
+    if (!inp.value || inp.classList.contains('is-disabled')) return;
+
+    const ok = await copyToClipboardSafe(inp.value);
+
+    showToast(ok ? 'Invite copied' : 'Could not copy invite', ok ? 'success' : 'warn');
+
+  });
 
   document.getElementById('forwardBackdrop').addEventListener('mousedown', e => { if (e.target.id === 'forwardBackdrop') closeForwardModal(); });
 
