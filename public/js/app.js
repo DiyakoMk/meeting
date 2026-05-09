@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ak (rainbow v2: full surface coverage; cover/emblem packs; identity moved into customize)');
+  console.log('[orblood] client build 2026-05-09-aj (customization packs: rainbow + customize modal + right-click style picker)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
