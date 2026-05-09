@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-an (aurora text glow; category-style decoupled from pin; identity pack-toggle replaces lock notice)');
+  console.log('[orblood] client build 2026-05-09-ao (default channels on server create; flowing names; aurora cover/emblem visible)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
