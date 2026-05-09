@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-l (marked private hidden, greeting + auth lock fixes)');
+  console.log('[orblood] client build 2026-05-09-m (last server, keyboard nav, minimal profile modal)');
 
   // ============== STARS ==============
 
@@ -5268,6 +5268,12 @@
       return;
 
     }
+
+    // Persist the last opened server so reload lands here again, not on
+
+    // the empty "create or join" state.
+
+    try { localStorage.setItem('orblood:lastServer', sid); } catch(_){}
 
     // Make sure roles + perms are materialised before render so admin-only buttons appear.
 
@@ -12815,9 +12821,23 @@
 
     if (pageId === 'pageWorld' && !currentServer){
 
-      // Default to the first server's MAIN page (not the world feed) so we feel "inside" a server
+      // Default to the most recently opened server so reload lands the
 
-      if (myServers.length){ selectServer(myServers[0]); }
+      // user back where they were. Falls back to the first pinned server
+
+      // if the saved one is gone (left, deleted, or membership lost) —
+
+      // and finally to the empty "create / join" state.
+
+      let lastSid = null;
+
+      try { lastSid = localStorage.getItem('orblood:lastServer'); } catch(_){}
+
+      if (lastSid && servers[lastSid]) selectServer(lastSid);
+
+      else if (myServers.length) selectServer(myServers[0]);
+
+      else if (Object.keys(servers).length) selectServer(Object.keys(servers)[0]);
 
       else { setServerView('feed'); }
 
@@ -17611,9 +17631,35 @@
 
   });
 
-  // Global ESC + Cmd/Ctrl+K
+  // Global ESC + Cmd/Ctrl+K + Enter on auth fields.
 
   document.addEventListener('keydown', e => {
+
+    // Enter on the auth modal — same effect as clicking SIGN IN /
+
+    // CREATE ACCOUNT. Without this the user has to mouse over to the
+
+    // submit button after typing the password.
+
+    if (e.key === 'Enter' && document.getElementById('authBackdrop').classList.contains('show')){
+
+      const target = e.target;
+
+      const isAuthInput = target && (target.id === 'authEmail' || target.id === 'authPassword'
+
+        || target.id === 'authName' || target.id === 'authHandle');
+
+      if (isAuthInput){
+
+        e.preventDefault();
+
+        document.getElementById('authSubmit').click();
+
+      }
+
+      return;
+
+    }
 
     if (e.key === 'Escape'){
 
@@ -17638,6 +17684,48 @@
           if (m.id !== 'authBackdrop') m.classList.remove('show');
 
         });
+
+      }
+
+      // Esc inside an open text channel: step out to the server main page.
+
+      // From server main, step out to home. From DM thread, step out to
+
+      // the DM list. Each press unwinds one nav level the way browser
+
+      // back would, but stays inside the SPA.
+
+      else if (document.getElementById('pageWorld').classList.contains('active') && currentTextChannel){
+
+        goToServerMain();
+
+      }
+
+      else if (document.getElementById('pageWorld').classList.contains('active') && currentServer){
+
+        currentServer = null;
+
+        currentTextChannel = null;
+
+        try { localStorage.removeItem('orblood:lastServer'); } catch(_){}
+
+        setPage('pageHome');
+
+      }
+
+      else if (document.getElementById('pageMessages').classList.contains('active') && currentConversation){
+
+        currentConversation = null;
+
+        document.getElementById('dmEmpty').style.display = 'flex';
+
+        document.getElementById('dmHead').style.display = 'none';
+
+        document.getElementById('dmMsgs').style.display = 'none';
+
+        document.getElementById('dmInputWrap').style.display = 'none';
+
+        renderDmList();
 
       }
 
