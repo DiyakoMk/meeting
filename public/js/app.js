@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ab (server rail collapses toward orb, no rightward shoot)');
+  console.log('[orblood] client build 2026-05-09-ac (profile modal avatar: explicit bg-size cover)');
 
   // ============== STARS ==============
 
@@ -9991,11 +9991,29 @@
 
       core.textContent = '';
 
-      core.style.background = 'transparent url('+data.avImage+') center/cover no-repeat';
+      // Use individual background properties so background-size:cover
+
+      // sticks. The shorthand form was getting clobbered in some
+
+      // browsers when the image dimensions weren't square, leaving the
+
+      // raw rectangular image visible inside the round orb.
+
+      core.style.backgroundImage    = 'url('+data.avImage+')';
+
+      core.style.backgroundSize     = 'cover';
+
+      core.style.backgroundPosition = 'center';
+
+      core.style.backgroundRepeat   = 'no-repeat';
+
+      core.style.backgroundColor    = 'transparent';
 
     } else {
 
       core.textContent = data.initial;
+
+      core.style.backgroundImage = '';
 
       core.style.background = data.orbGrad || data.avColor;
 
