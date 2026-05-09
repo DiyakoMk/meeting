@@ -505,26 +505,47 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 /* PURPLE ORB + SERVER RAIL (in page header / left of title) */
 
-/* Purple-orb in the page header (the click-target that opens the
- * server rail). Highlight comes from the orb's own brand colour, not
- * the generic --tint-strong white wash that read as muddy grey. We
- * use a soft pink hot-spot at top-left fading through the brand pink
- * to the deep-violet base, with the inset shadow tinted brand-red so
- * it ties into the rest of the chrome instead of looking like a flat
- * lit-from-above ball. */
+/* Header orb (click-target that opens the server rail). Faded-red ball
+ * with a soft warm hot-spot at top-left, a faded-red core, and a
+ * brand-red base. The same shading recipe is mirrored on the default
+ * avatar, voice orbs, marked orbits, etc. via class .orb-shaded. */
 .ph-purple-orb{
   width:34px;height:34px;border-radius:50%;
   background:
-    radial-gradient(circle at 32% 28%, rgba(255,210,230,0.55), transparent 35%),
-    radial-gradient(circle at 50% 50%, #ec4899 0%, #be185d 55%, #3b0764 100%);
+    radial-gradient(circle at 32% 28%, rgba(255,200,200,0.45), transparent 38%),
+    radial-gradient(circle at 50% 50%, #c2384a 0%, var(--accent) 50%, var(--accent-2) 100%);
   box-shadow:
-    0 0 20px rgba(190,18,60,0.6),
+    0 0 20px var(--brand-glow),
     inset 0 -2px 6px rgba(0,0,0,0.45),
-    inset 0 1px 2px rgba(255,210,230,0.35);
+    inset 0 1px 2px rgba(255,200,200,0.3);
   position:relative;cursor:pointer;flex-shrink:0;transition:transform 0.2s;
 }
 
 .ph-purple-orb::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:1px dashed rgba(190,18,60,0.4);animation:hospin 8s linear infinite;pointer-events:none}
+
+/* Shared depth pseudo-overlay: each shaded orb gets a `::after` ring
+ * with inset shadows that simulate sphere depth (dark rim at the
+ * bottom, tiny warm highlight at the top). Using ::after means we
+ * don't have to rewrite each class's existing box-shadow chain. The
+ * orbs we tag with .orb-shaded show a uniform sphere look across the
+ * app: header orb, default avatars, voice orbs, marked orbits, the
+ * profile modal core, world hero, etc. */
+.modal-orb-core::before,
+.profile-orb-core::before,
+.ws-emblem::before,
+.ws-vc-orb::before,
+.world-hero-emblem::before,
+.world-empty-core::before,
+.dm-empty-orb-core::before,
+.dm-head-av::before,
+.mark-orb-card .mo-orb::before{
+  content:"";
+  position:absolute;inset:0;border-radius:50%;
+  pointer-events:none;
+  box-shadow:
+    inset 0 -3px 8px rgba(0,0,0,0.4),
+    inset 0 1px 2px rgba(255,200,200,0.25);
+}
 
 .ph-purple-orb:hover{transform:scale(1.06)}
 
@@ -672,7 +693,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .mark-orb-card:hover{transform:translateY(-2px);background:radial-gradient(ellipse at 50% 0%,var(--card-glow-hover,rgba(190,18,60,0.24)),transparent 65%),var(--tint-2);border-color:var(--card-color,rgba(190,18,60,0.4))}
 
-.mark-orb-card .mo-orb{width:54px;height:54px;border-radius:50%;background:var(--card-grad,radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#a855f7 55%,#3b0764));box-shadow:0 0 22px var(--card-orb-glow,rgba(190,18,60,0.4)),inset 0 0 12px var(--tint-7);position:relative;margin-bottom:10px}
+.mark-orb-card .mo-orb{width:54px;height:54px;border-radius:50%;background:var(--card-grad,radial-gradient(circle at 35% 30%,rgba(255,200,200,0.5),#a855f7 55%,#3b0764));box-shadow:0 0 22px var(--card-orb-glow,rgba(190,18,60,0.4)),inset 0 0 12px var(--tint-7);position:relative;margin-bottom:10px}
 
 .mark-orb-card .mo-orb::after{content:'';position:absolute;inset:-7px;border-radius:50%;border:1px dashed var(--card-color,rgba(190,18,60,0.5));animation:hospin 14s linear infinite}
 
@@ -1442,7 +1463,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .world-hero{padding:18px 22px 14px;background:radial-gradient(ellipse at 80% 0%,rgba(185,28,74,0.16),transparent 60%),radial-gradient(ellipse at 10% 100%,rgba(190,18,60,0.1),transparent 60%);border-bottom:1px solid var(--tint-2);display:flex;align-items:center;gap:16px;flex-shrink:0;position:relative;overflow:hidden}
 
-.world-hero-emblem{width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--tint-strong),#6366f1 50%,#1e1b4b);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;box-shadow:0 0 30px rgba(185,28,74,0.5),inset 0 0 18px var(--tint-7)}
+.world-hero-emblem{width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,200,200,0.5),#6366f1 50%,#1e1b4b);display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;box-shadow:0 0 30px rgba(185,28,74,0.5),inset 0 0 18px var(--tint-7)}
 
 .world-hero-emblem::after{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px dashed var(--brand-glow);animation:hospin 18s linear infinite}
 
@@ -1498,7 +1519,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .world-empty-orb{width:140px;height:140px;position:relative;display:flex;align-items:center;justify-content:center}
 
-.world-empty-core{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),var(--accent) 60%,#1e1b4b);box-shadow:0 0 30px var(--brand-glow-strong),inset 0 0 18px var(--tint-7);display:flex;align-items:center;justify-content:center;color:#fff;animation:oglow 3.5s ease-in-out infinite;position:relative;z-index:2}
+.world-empty-core{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,200,200,0.5),var(--accent) 60%,#1e1b4b);box-shadow:0 0 30px var(--brand-glow-strong),inset 0 0 18px var(--tint-7);display:flex;align-items:center;justify-content:center;color:#fff;animation:oglow 3.5s ease-in-out infinite;position:relative;z-index:2}
 
 .world-empty-ring{position:absolute;border-radius:50%;border:1.5px dashed rgba(185,28,74,0.3);animation:hospin 18s linear infinite}
 
@@ -1610,7 +1631,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ws-emblem-wrap{position:relative;flex-shrink:0;width:96px;height:96px}
 
-.ws-emblem{width:96px;height:96px;border-radius:50%;background:var(--srv-grad,radial-gradient(circle at 35% 30%,var(--tint-strong),#6366f1 50%,#1e1b4b));display:flex;align-items:center;justify-content:center;font-family:'Space Mono','Vazirmatn',monospace;font-weight:700;font-size:2rem;color:white;flex-shrink:0;position:relative;box-shadow:0 0 36px var(--srv-glow,rgba(185,28,74,0.5)),inset 0 0 22px var(--tint-7);overflow:hidden}
+.ws-emblem{width:96px;height:96px;border-radius:50%;background:var(--srv-grad,radial-gradient(circle at 35% 30%,rgba(255,200,200,0.5),#6366f1 50%,#1e1b4b));display:flex;align-items:center;justify-content:center;font-family:'Space Mono','Vazirmatn',monospace;font-weight:700;font-size:2rem;color:white;flex-shrink:0;position:relative;box-shadow:0 0 36px var(--srv-glow,rgba(185,28,74,0.5)),inset 0 0 22px var(--tint-7);overflow:hidden}
 
 .ws-emblem.has-image{font-size:0;background:var(--panel)}
 
@@ -1710,7 +1731,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ws-vc:hover{transform:translateY(-2px);background:var(--tint-2);border-color:var(--vc-c,rgba(185,28,74,0.3))}
 
-.ws-vc-orb{width:48px;height:48px;border-radius:50%;background:var(--vc-grad,radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#6366f1 55%,#1e1b4b));box-shadow:0 0 20px var(--vc-glow,var(--brand-glow)),inset 0 0 10px var(--tint-7);position:relative;margin-bottom:10px}
+.ws-vc-orb{width:48px;height:48px;border-radius:50%;background:var(--vc-grad,radial-gradient(circle at 35% 30%,rgba(255,200,200,0.5),#6366f1 55%,#1e1b4b));box-shadow:0 0 20px var(--vc-glow,var(--brand-glow)),inset 0 0 10px var(--tint-7);position:relative;margin-bottom:10px}
 
 .ws-vc-orb::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1px dashed var(--vc-c,rgba(185,28,74,0.5));animation:hospin 14s linear infinite}
 
@@ -1828,37 +1849,17 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ws-banner-actions{position:absolute;top:14px;right:14px;display:flex;gap:6px;z-index:5}
 
-/* Banner action buttons (settings, share): a frosted-glass surface
- * with a faint brand-red glow underneath — like marble with blood
- * veining. Light tint base + brand-glow radial inside, brand-tinted
- * border. Hover brightens the glow and shifts text to the brand red. */
-.ws-banner-menu-btn,
-.ws-banner-share-btn{
-  width:32px;height:32px;border-radius:8px;
-  background:radial-gradient(ellipse at 50% 0%,var(--brand-glow-soft),transparent 70%),var(--tint-3);
-  backdrop-filter:blur(10px);
-  border:1px solid var(--ag);
-  color:var(--t1);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:inset 0 1px 0 var(--tint-4);
-  transition:background 0.15s, box-shadow 0.15s, color 0.15s;
-}
-.ws-banner-menu-btn:hover,
-.ws-banner-share-btn:hover{
-  background:radial-gradient(ellipse at 50% 0%,var(--brand-glow),transparent 70%),var(--tint-4);
-  color:var(--accent);
-  box-shadow:inset 0 1px 0 var(--tint-5),0 0 12px var(--brand-glow-soft);
-}
-.ws-banner-leave-btn{
-  width:32px;height:32px;border-radius:8px;
-  background:var(--tint-2);
-  backdrop-filter:blur(10px);
-  border:1px solid var(--tint-4);
-  color:var(--t2);
-  display:flex;align-items:center;justify-content:center;
-  transition:all 0.15s;
-}
-.ws-banner-leave-btn:hover{background:rgba(239,68,68,0.18);border-color:rgba(239,68,68,0.4);color:var(--danger)}
+.ws-banner-menu-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+
+.ws-banner-leave-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+
+.ws-banner-leave-btn:hover{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.4);color:#fff}
+
+.ws-banner-share-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+
+.ws-banner-share-btn:hover{background:rgba(185,28,74,0.25);border-color:var(--brand-glow);color:#fff}
+
+.ws-banner-menu-btn:hover{background:rgba(185,28,74,0.25);border-color:var(--brand-glow)}
 
 .ws-banner-menu-pop{display:none}
 
@@ -2290,7 +2291,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .auth-splash-orb > span:nth-child(3){animation-delay:0.8s}
 
-.auth-splash-orb::before{content:'';position:absolute;left:50%;top:50%;width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--tint-strong),var(--accent) 55%,var(--accent-2));transform:translate(-50%,-50%);box-shadow:0 0 28px var(--ag)}
+.auth-splash-orb::before{content:'';position:absolute;left:50%;top:50%;width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,200,200,0.5),var(--accent) 55%,var(--accent-2));transform:translate(-50%,-50%);box-shadow:0 0 28px var(--ag)}
 
 .auth-splash-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.62rem;letter-spacing:3px;color:var(--t1)}
 
@@ -2400,33 +2401,34 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 /* PROFILE — simplified */
 
-/* The cover banner sits flush at the top of the modal. Inner padding
- * pushes the cover image away from the modal's outer border by ~3px so
- * the curved corners read as the modal's border, not the cover edge.
- * No bottom hairline — the cover bottom fades into the body via an
- * ::after gradient (kept in JS so the user-supplied image still shows). */
+/* The cover banner sits flush against the modal's outer rounded corners
+ * — no inner padding. The modal's own 14px border-radius defines the
+ * curve; .smodal already clips overflow so the cover image follows the
+ * same shape. The cover fades to transparency at the bottom (lower
+ * ~60% of its height) so whatever sits below blends through naturally
+ * without a black smear. */
 .profile-banner{
   position:relative;
-  height:90px;
-  margin:3px 3px 0;
-  border-radius:11px 11px 0 0;
+  height:78px;
+  margin:0;
+  border-radius:0;
   background:radial-gradient(ellipse at 50% 0%,rgba(185,28,74,0.32),transparent 70%),linear-gradient(180deg,var(--tint-3),transparent);
   background-size:cover;
   background-position:center;
   overflow:hidden;
-}
-/* Bottom fade — the lower ~50% of the cover blends into the panel
- * surface so there's no visible seam between cover and content. The
- * gradient is the same colour as --panel so it matches the modal body
- * regardless of theme. */
-.profile-banner::after{
-  content:"";
-  position:absolute;left:0;right:0;bottom:0;height:55%;
-  background:linear-gradient(180deg,transparent,var(--panel) 95%);
-  pointer-events:none;
+  /* Soft mask: the cover stays opaque at the top and fades to 0 alpha
+   * at the bottom edge. We use mask-image (matched in -webkit) so the
+   * underlying image is what loses opacity, not a black overlay. */
+  -webkit-mask-image:linear-gradient(180deg,#000 35%,transparent 100%);
+          mask-image:linear-gradient(180deg,#000 35%,transparent 100%);
 }
 
-.profile-head{display:flex;align-items:flex-end;gap:12px;padding:0 18px;margin-top:-44px}
+/* Avatar overlaps the cover by ~28px while the name+handle column sits
+ * fully below the cover edge. We use align-items:flex-end so the column
+ * baseline aligns with the bottom of the avatar, then push profile-head
+ * down with a small positive margin so the name never crashes into the
+ * cover image. */
+.profile-head{display:flex;align-items:flex-end;gap:12px;padding:6px 18px 0;margin-top:-28px;position:relative;z-index:2}
 
 .profile-head-info{flex:1;min-width:0;padding-bottom:4px}
 

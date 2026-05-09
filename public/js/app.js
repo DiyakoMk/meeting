@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-s (banner glass btns, profile cover curve+fade, dm input/empty, header orb)');
+  console.log('[orblood] client build 2026-05-09-t (orb shading unified, banner btns reverted, cover mask-fade)');
 
   // ============== STARS ==============
 
