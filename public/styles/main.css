@@ -483,7 +483,11 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .page.active{display:flex}
 
-.page-header{padding:14px 18px;border-bottom:1px solid var(--tint-2);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
+/* Fixed-height page header so opening / closing the server rail (which
+ * inserts a row of 36px orbs) doesn't push the header taller. The rail
+ * sits inside .ph-left at min-height 0 so its 36px orbs fit cleanly
+ * within the 60px header without shifting siblings. */
+.page-header{padding:14px 18px;border-bottom:1px solid var(--tint-2);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;min-height:60px;height:60px;box-sizing:border-box}
 
 .ph-left{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
 
@@ -551,15 +555,31 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ph-purple-orb.active{box-shadow:0 0 28px rgba(190,18,60,0.85),inset 0 0 12px var(--tint-9)}
 
-/* Server rail starts hidden but at full width — opening it just toggles
- * display + opacity so there's no width-grow animation that makes the
- * header look like it's resizing. The user clicks the orb and the orb
- * row appears at its final size right away. */
-.ph-server-rail{display:none;align-items:center;gap:8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;flex:1;padding:4px 0;opacity:0;transition:opacity 0.18s}
+/* Server rail expands horizontally with a quick, subtle fade. The
+ * vertical size of the header is fixed by .page-header (height:60px)
+ * so the rail itself never makes the header grow — only the orb row
+ * fades and slides in from the left. We use display:flex always with
+ * a max-width / opacity / translate transition so the row can be
+ * animated; max-width also clips overflow so the row doesn't push
+ * the right-side controls when collapsed. */
+.ph-server-rail{
+  display:flex;align-items:center;gap:8px;
+  overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+  flex:1;padding:4px 0;
+  max-width:0;opacity:0;
+  transform:translateX(-6px);
+  pointer-events:none;
+  transition:max-width 0.22s ease, opacity 0.18s ease, transform 0.22s ease;
+}
 
 .ph-server-rail::-webkit-scrollbar{display:none}
 
-.ph-server-rail.open{display:flex;opacity:1}
+.ph-server-rail.open{
+  max-width:600px;
+  opacity:1;
+  transform:translateX(0);
+  pointer-events:auto;
+}
 
 .srv-orb{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono','Vazirmatn',monospace;font-weight:700;font-size:0.75rem;color:white;cursor:pointer;flex-shrink:0;border:2px solid transparent;transition:all 0.2s;position:relative;background:var(--srv-grad,linear-gradient(135deg,#6366f1,#1e1b4b));overflow:hidden}
 

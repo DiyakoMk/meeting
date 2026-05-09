@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-w (marble dm bars, legendary marble, voice grace, non-friend banner)');
+  console.log('[orblood] client build 2026-05-09-x (rail subtle fade-slide, header fixed height)');
 
   // ============== STARS ==============
 
