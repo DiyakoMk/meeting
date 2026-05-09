@@ -130,6 +130,20 @@
 
     </aside>
 
+    <!-- Mobile-only floating button to open the orb-col drawer. Hidden
+
+         on desktop via CSS — it never appears for laptop users. -->
+
+    <button class="orb-col-fab" id="orbColFab" type="button" aria-label="Open orbits panel">
+
+      <i data-lucide="orbit" style="width:18px;height:18px"></i>
+
+    </button>
+
+    <!-- Mobile-only scrim that closes the drawer when tapped. -->
+
+    <div class="orb-col-scrim" id="orbColScrim"></div>
+
     <!-- Orb Column -->
 
     <aside class="orb-col disconnected" id="orbCol">

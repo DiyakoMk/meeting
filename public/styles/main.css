@@ -3239,6 +3239,17 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 
 }
 
+/* Mobile-only orbits drawer.
+ *
+ * On desktop the orb-col is a fixed sidebar; the FAB and scrim are
+ * hidden. Below 560px we promote orb-col to a slide-in drawer over the
+ * main content so chat / world have the full width. The user opens it
+ * via the FAB (bottom-left) and dismisses by tapping the scrim,
+ * tapping the FAB again, or hitting Esc. The marked-channels list
+ * stays inside the drawer (we no longer hide it on mobile). */
+.orb-col-fab,
+.orb-col-scrim{display:none}
+
 @media (max-width:560px){
 
   .device-frame{width:100vw;height:100vh}
@@ -3249,9 +3260,35 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 
   .voice-users-sidebar.open{width:100%;height:auto;flex-direction:row}
 
-  .orb-col{width:100%;min-width:0;padding:8px 12px}
+  /* orb-col becomes a left-edge drawer that slides in from the side.
 
-  .marked-channels{display:none}
+   * It overlays content rather than taking flex space. The scrim sits
+
+   * behind it and dims the page. */
+
+  .orb-col{position:fixed;left:0;top:0;bottom:0;width:280px;min-width:0;padding:14px 12px;background:var(--panel);border-right:1px solid var(--tint-3);z-index:120;transform:translateX(-100%);transition:transform 0.24s cubic-bezier(0.4,0,0.2,1);box-shadow:0 0 40px rgba(0,0,0,0.4);overflow-y:auto}
+
+  .orb-col.open{transform:translateX(0)}
+
+  .orb-col-scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:115;opacity:0;pointer-events:none;transition:opacity 0.18s}
+
+  .orb-col-scrim.show{opacity:1;pointer-events:auto}
+
+  /* Floating action button to open the drawer. Fixed bottom-left,
+
+   * above the taskbar's left edge. brand-glow circular button. */
+
+  .orb-col-fab{display:flex;position:fixed;left:14px;bottom:74px;z-index:110;width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;align-items:center;justify-content:center;box-shadow:0 6px 18px var(--brand-glow-strong);cursor:pointer;border:none;transition:transform 0.15s}
+
+  .orb-col-fab:active{transform:scale(0.94)}
+
+  .orb-col.open ~ .orb-col-fab,
+
+  .orb-col-fab.is-hidden{opacity:0;pointer-events:none}
+
+  /* Re-enable marked-channels in the drawer (we used to hide it). */
+
+  .marked-channels{display:flex}
 
   .dm-pane{grid-template-columns:1fr}
 

@@ -13,7 +13,61 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ah (PWA: manifest + service worker + ios meta tags + permission helpers)');
+  console.log('[orblood] client build 2026-05-09-ai (mobile orb-col drawer with FAB)');
+
+  // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
+
+  // Desktop is unaffected because the FAB and scrim are display:none
+
+  // outside the 560px media query.
+
+  (function setupOrbDrawer(){
+
+    const fab    = document.getElementById('orbColFab');
+
+    const scrim  = document.getElementById('orbColScrim');
+
+    const orbCol = document.getElementById('orbCol');
+
+    if (!fab || !scrim || !orbCol) return;
+
+    function openDrawer(){
+
+      orbCol.classList.add('open');
+
+      scrim.classList.add('show');
+
+      fab.classList.add('is-hidden');
+
+    }
+
+    function closeDrawer(){
+
+      orbCol.classList.remove('open');
+
+      scrim.classList.remove('show');
+
+      fab.classList.remove('is-hidden');
+
+    }
+
+    fab.addEventListener('click', e => {
+
+      e.preventDefault();
+
+      if (orbCol.classList.contains('open')) closeDrawer(); else openDrawer();
+
+    });
+
+    scrim.addEventListener('click', closeDrawer);
+
+    document.addEventListener('keydown', e => {
+
+      if (e.key === 'Escape' && orbCol.classList.contains('open')) closeDrawer();
+
+    });
+
+  })();
 
   // PWA: register the service worker so the shell works offline and the
 
