@@ -505,7 +505,24 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 /* PURPLE ORB + SERVER RAIL (in page header / left of title) */
 
-.ph-purple-orb{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--tint-strong),#ec4899 50%,#3b0764);box-shadow:0 0 20px rgba(190,18,60,0.6),inset 0 0 10px var(--tint-9);position:relative;cursor:pointer;flex-shrink:0;transition:transform 0.2s}
+/* Purple-orb in the page header (the click-target that opens the
+ * server rail). Highlight comes from the orb's own brand colour, not
+ * the generic --tint-strong white wash that read as muddy grey. We
+ * use a soft pink hot-spot at top-left fading through the brand pink
+ * to the deep-violet base, with the inset shadow tinted brand-red so
+ * it ties into the rest of the chrome instead of looking like a flat
+ * lit-from-above ball. */
+.ph-purple-orb{
+  width:34px;height:34px;border-radius:50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255,210,230,0.55), transparent 35%),
+    radial-gradient(circle at 50% 50%, #ec4899 0%, #be185d 55%, #3b0764 100%);
+  box-shadow:
+    0 0 20px rgba(190,18,60,0.6),
+    inset 0 -2px 6px rgba(0,0,0,0.45),
+    inset 0 1px 2px rgba(255,210,230,0.35);
+  position:relative;cursor:pointer;flex-shrink:0;transition:transform 0.2s;
+}
 
 .ph-purple-orb::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:1px dashed rgba(190,18,60,0.4);animation:hospin 8s linear infinite;pointer-events:none}
 
@@ -1302,6 +1319,11 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .dm-loading{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px}
 .dm-loading-spin{width:22px;height:22px;border:2px solid var(--tint-3);border-top-color:var(--accent);border-radius:50%;animation:dmSpin 0.7s linear infinite}
 @keyframes dmSpin{to{transform:rotate(360deg)}}
+/* Empty conversation placeholder. Shown both before history loads and
+ * after history confirms the thread is empty. */
+.dm-empty-thread{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:100%;min-height:160px;padding:24px;text-align:center}
+.dm-empty-thread-eyebrow{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;letter-spacing:1.8px;color:var(--accent);opacity:0.7}
+.dm-empty-thread-text{font-size:0.78rem;color:var(--t2);max-width:260px;line-height:1.6}
 .cs-overrides{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding:10px;background:var(--tint-1);border:1px solid var(--gb);border-radius:10px;max-height:280px;overflow-y:auto}
 .cs-ovr-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 8px;background:var(--tint-2);border-radius:8px}
 .cs-ovr-label{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1px;color:var(--t1);display:flex;align-items:center;gap:6px}
@@ -1346,7 +1368,11 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .dm-typing-row .dm-typing-dots span{background:var(--t3)}
 
-.dm-input-wrap{padding:10px 14px 12px;border-top:1px solid var(--tint-2);background:rgba(0,0,0,0.2);flex-shrink:0}
+/* Input bar mirrors .dm-head: same brand-glow wash, same hairline.
+ * Previously it was rgba(0,0,0,0.2) which read as a dim grey strip
+ * disconnected from the rest of the chat. */
+.dm-input-wrap{padding:10px 14px 12px;flex-shrink:0;background:linear-gradient(0deg,rgba(185,28,74,0.05),transparent);position:relative}
+.dm-input-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(185,28,74,0.3),transparent)}
 
 .dm-ibox-label{display:flex;align-items:center;gap:6px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--accent);letter-spacing:2px;margin-bottom:6px;padding:0 4px}
 
@@ -1802,17 +1828,37 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ws-banner-actions{position:absolute;top:14px;right:14px;display:flex;gap:6px;z-index:5}
 
-.ws-banner-menu-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
-
-.ws-banner-leave-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
-
-.ws-banner-leave-btn:hover{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.4);color:#fff}
-
-.ws-banner-share-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
-
-.ws-banner-share-btn:hover{background:rgba(185,28,74,0.25);border-color:var(--brand-glow);color:#fff}
-
-.ws-banner-menu-btn:hover{background:rgba(185,28,74,0.25);border-color:var(--brand-glow)}
+/* Banner action buttons (settings, share): a frosted-glass surface
+ * with a faint brand-red glow underneath — like marble with blood
+ * veining. Light tint base + brand-glow radial inside, brand-tinted
+ * border. Hover brightens the glow and shifts text to the brand red. */
+.ws-banner-menu-btn,
+.ws-banner-share-btn{
+  width:32px;height:32px;border-radius:8px;
+  background:radial-gradient(ellipse at 50% 0%,var(--brand-glow-soft),transparent 70%),var(--tint-3);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--ag);
+  color:var(--t1);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 1px 0 var(--tint-4);
+  transition:background 0.15s, box-shadow 0.15s, color 0.15s;
+}
+.ws-banner-menu-btn:hover,
+.ws-banner-share-btn:hover{
+  background:radial-gradient(ellipse at 50% 0%,var(--brand-glow),transparent 70%),var(--tint-4);
+  color:var(--accent);
+  box-shadow:inset 0 1px 0 var(--tint-5),0 0 12px var(--brand-glow-soft);
+}
+.ws-banner-leave-btn{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--tint-2);
+  backdrop-filter:blur(10px);
+  border:1px solid var(--tint-4);
+  color:var(--t2);
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.15s;
+}
+.ws-banner-leave-btn:hover{background:rgba(239,68,68,0.18);border-color:rgba(239,68,68,0.4);color:var(--danger)}
 
 .ws-banner-menu-pop{display:none}
 
@@ -2354,7 +2400,31 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 /* PROFILE — simplified */
 
-.profile-banner{height:78px;background:radial-gradient(ellipse at 50% 0%,rgba(185,28,74,0.32),transparent 70%),linear-gradient(180deg,var(--tint-3),transparent);background-size:cover;background-position:center;border-bottom:1px solid var(--gb)}
+/* The cover banner sits flush at the top of the modal. Inner padding
+ * pushes the cover image away from the modal's outer border by ~3px so
+ * the curved corners read as the modal's border, not the cover edge.
+ * No bottom hairline — the cover bottom fades into the body via an
+ * ::after gradient (kept in JS so the user-supplied image still shows). */
+.profile-banner{
+  position:relative;
+  height:90px;
+  margin:3px 3px 0;
+  border-radius:11px 11px 0 0;
+  background:radial-gradient(ellipse at 50% 0%,rgba(185,28,74,0.32),transparent 70%),linear-gradient(180deg,var(--tint-3),transparent);
+  background-size:cover;
+  background-position:center;
+  overflow:hidden;
+}
+/* Bottom fade — the lower ~50% of the cover blends into the panel
+ * surface so there's no visible seam between cover and content. The
+ * gradient is the same colour as --panel so it matches the modal body
+ * regardless of theme. */
+.profile-banner::after{
+  content:"";
+  position:absolute;left:0;right:0;bottom:0;height:55%;
+  background:linear-gradient(180deg,transparent,var(--panel) 95%);
+  pointer-events:none;
+}
 
 .profile-head{display:flex;align-items:flex-end;gap:12px;padding:0 18px;margin-top:-44px}
 

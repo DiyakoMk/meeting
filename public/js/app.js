@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-s (banner btns reverted; marble: white+red border)');
+  console.log('[orblood] client build 2026-05-09-s (banner glass btns, profile cover curve+fade, dm input/empty, header orb)');
 
   // ============== STARS ==============
 
@@ -1927,13 +1927,27 @@
 
     const _msgsEl = document.getElementById('dmMsgs');
 
+    // Empty-state placeholder while we wait for /api/dms/<peer> on a
+
+    // fresh open. We always paint this immediately so the user never
+
+    // sees a spinner over a brand new conversation that turns out to be
+
+    // empty. If history actually exists, the merge handler below
+
+    // re-renders with the real bubbles a moment later. We keep showing
+
+    // the empty placeholder if the server returns zero messages.
+
     if (!conv._historyFetched && backend.isConfigured() && key && key !== 'saved'){
 
-      _msgsEl.innerHTML = '<div class="dm-loading"><div class="dm-loading-spin"></div></div>';
+      _msgsEl.innerHTML = '<div class="dm-empty-thread">'
 
-      // Forget any cached id list — the loading placeholder is not a real
+        + '<div class="dm-empty-thread-eyebrow">// NEW TRANSMISSION</div>'
 
-      // bubble, and the next render must rebuild from scratch.
+        + '<div class="dm-empty-thread-text">No messages yet — be the first to ping ' + escapeHtml(conv.name||'them') + '.</div>'
+
+        + '</div>';
 
       invalidateDmCache(key);
 
@@ -2726,6 +2740,30 @@
         html += '<div class="dm-pinned-banner" data-jump-to="'+pinId+'"><i data-lucide="pin" style="width:11px;height:11px"></i><div class="dm-pinned-info"><div class="dm-pinned-l">PINNED</div><div class="dm-pinned-text">'+escapeHtml(txt)+'</div></div><button class="dm-pinned-x" data-msg-action="pin" data-msg-id="'+pinId+'" title="Unpin"><i data-lucide="x" style="width:11px;height:11px"></i></button></div>';
 
       }
+
+    }
+
+    // Empty thread — render the same eyebrow + line that the loading
+
+    // placeholder shows so first-open / no-history both feel the same.
+
+    if (!list.length){
+
+      const conv = conversations[currentConversation];
+
+      msgsEl.innerHTML = '<div class="dm-empty-thread">'
+
+        + '<div class="dm-empty-thread-eyebrow">// NEW TRANSMISSION</div>'
+
+        + '<div class="dm-empty-thread-text">No messages yet — be the first to ping ' + escapeHtml((conv && conv.name)||'them') + '.</div>'
+
+        + '</div>';
+
+      _dmRenderedIds[currentConversation] = [];
+
+      refreshIcons();
+
+      return;
 
     }
 
