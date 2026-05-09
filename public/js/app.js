@@ -1909,7 +1909,35 @@
 
     cancelReply(); cancelEdit(); clearDmAttach();
 
-    renderConversation();
+    // First time we open a conversation in this session we don't have its
+
+    // full history yet — only whatever stale subset survived in messages[].
+
+    // Painting that subset and then re-painting the merged history a
+
+    // moment later was the "two messages, then ten messages" flash. If
+
+    // history hasn't been fetched, draw a tiny loading placeholder and
+
+    // hold off on the real render until backend.dms.list resolves.
+
+    const _msgsEl = document.getElementById('dmMsgs');
+
+    if (!conv._historyFetched && backend.isConfigured() && key && key !== 'saved'){
+
+      _msgsEl.innerHTML = '<div class="dm-loading"><div class="dm-loading-spin"></div></div>';
+
+      // Forget any cached id list — the loading placeholder is not a real
+
+      // bubble, and the next render must rebuild from scratch.
+
+      invalidateDmCache(key);
+
+    } else {
+
+      renderConversation();
+
+    }
 
     renderDmList();
 
@@ -1997,9 +2025,63 @@
 
         messages[key] = merged;
 
-        if (currentConversation === key) renderConversation();
+        // History is now authoritative for this conversation. Mark the
 
-      }).catch(()=>{});
+        // flag so future opens skip the loading placeholder + render the
+
+        // existing array straight away.
+
+        if (conversations[key]) conversations[key]._historyFetched = true;
+
+        if (currentConversation === key){
+
+          // Throw away whatever placeholder / partial render is in the DOM
+
+          // and rebuild fresh from the merged list. invalidateDmCache makes
+
+          // sure the prefix-check doesn't try to reuse stale ids.
+
+          invalidateDmCache(key);
+
+          renderConversation();
+
+        }
+
+      }).catch(()=>{
+
+        // Even on failure we mark fetched so a transient error doesn't trap
+
+        // the user on the spinner forever; they'll see whatever subset
+
+        // messages[k] holds and a real retry will come from the next WS
+
+        // event or the next selectConversation call.
+
+        if (conversations[key]) conversations[key]._historyFetched = true;
+
+        if (currentConversation === key){
+
+          invalidateDmCache(key);
+
+          renderConversation();
+
+        }
+
+      });
+
+    } else if (conv._historyFetched) {
+
+      // History already fetched in this session; the synchronous render
+
+      // above used the cached messages[k]. Nothing else to do.
+
+    } else {
+
+      // Backend not configured (offline / dev). Just render whatever we have.
+
+      renderConversation();
+
+      if (conv) conv._historyFetched = true;
 
     }
 
@@ -4439,9 +4521,25 @@
 
     html += '<button class="srv-orb gray" data-srv-action="create" title="Create or Join Server"><i data-lucide="plus" style="width:16px;height:16px"></i><span class="srv-orb-tip">Create / Join</span></button>';
 
-    // Render every pinned server, plus the currently-open one even if it isn't pinned to home.
+    // The rail / sidebar shows every server the user is a member of,
+
+    // regardless of pin state. Pinning is a "show on home" preference
+
+    // only — unpinning a server keeps it accessible from the orb rail.
+
+    // Order: pinned servers first (in the user's chosen order), then any
+
+    // membership that isn't pinned, then the currently-open server if
+
+    // it slipped through both lists.
 
     const ids = myServers.slice();
+
+    Object.keys(servers).forEach(sid => {
+
+      if (!ids.includes(sid)) ids.push(sid);
+
+    });
 
     if (currentServer && servers[currentServer] && !ids.includes(currentServer)) ids.push(currentServer);
 
@@ -16421,7 +16519,11 @@
 
       else if (tType === 'voice') r = await backend.servers.patchVoiceChannel(currentServer, ent.id, patch);
 
-      else if (tType === 'cat')   r = await backend.servers.patchCategory(currentServer, ent.id, patch);
+      // Category targets come in as type:'category' from the context menu;
+
+      // accept the legacy 'cat' alias too in case anything still emits it.
+
+      else if (tType === 'category' || tType === 'cat') r = await backend.servers.patchCategory(currentServer, ent.id, patch);
 
       if (r && r.error){ showToast('Could not save: '+r.error,'warn'); return; }
 

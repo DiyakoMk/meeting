@@ -1296,6 +1296,12 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .cs-role-chip::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--role-c,var(--t2))}
 
 .cs-role-chip.on{color:#fff;background:var(--brand-glow-soft);border-color:var(--role-c,var(--accent))}
+/* Tiny spinner shown inside #dmMsgs while we wait for /api/dms/<peer> on
+ * a fresh open. Without it the chat would briefly flash whatever stale
+ * subset survived in messages[] and then redraw the merged history. */
+.dm-loading{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px}
+.dm-loading-spin{width:22px;height:22px;border:2px solid var(--tint-3);border-top-color:var(--accent);border-radius:50%;animation:dmSpin 0.7s linear infinite}
+@keyframes dmSpin{to{transform:rotate(360deg)}}
 .cs-overrides{display:flex;flex-direction:column;gap:6px;margin-top:8px;padding:10px;background:var(--tint-1);border:1px solid var(--gb);border-radius:10px;max-height:280px;overflow-y:auto}
 .cs-ovr-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 8px;background:var(--tint-2);border-radius:8px}
 .cs-ovr-label{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1px;color:var(--t1);display:flex;align-items:center;gap:6px}
@@ -1713,8 +1719,12 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 .ws-cat{margin:24px 22px 0;position:relative}
 
 .ws-cat-h{position:relative;padding:6px 0 14px;display:flex;align-items:center;justify-content:center;text-align:center;gap:6px}
-.ws-cat-toggle{width:22px;height:22px;border-radius:6px;background:transparent;color:var(--t3);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s,color 0.15s,transform 0.2s}
-.ws-cat-toggle:hover{background:var(--tint-3);color:var(--t1)}
+/* Chevron sits absolutely on the left so it doesn't get covered by the
+ * decorative ::before line that the cat-h-name draws. The line is part of
+ * the title; the chevron is the click target. z-index keeps it above the
+ * flowing line. */
+.ws-cat-toggle{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:6px;background:var(--tint-2);border:1px solid var(--tint-3);color:var(--t2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s,color 0.15s;cursor:pointer;z-index:2}
+.ws-cat-toggle:hover{background:var(--tint-4);color:var(--t1);border-color:var(--tint-5)}
 .ws-cat.is-collapsed .ws-cat-h{padding-bottom:6px}
 .ws-cat.is-collapsed{padding-bottom:8px}
 
