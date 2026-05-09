@@ -1,9 +1,10 @@
 /* Aurora customization pack — pink + amber + cream flow.
  *
- * Same warm-rose palette the orbit halo uses, but tightened so labels
- * read as glowing pearls instead of flat colour swaps. The white peak
- * in the middle gives the gradient a highlight; double drop-shadow
- * carries the halo glow onto the surrounding panel. */
+ * Saturated pink/peach/cream gradient applied across every styled
+ * surface (server name, category, channel, pin, cover, emblem halo,
+ * voice / orbit orb). The white peak in the middle of the gradient
+ * gives labels a moving pearl effect; cover/orb layers use the same
+ * palette so the customisation reads as one family across the app. */
 
 @keyframes cz-aurora-flow {
   0%   { background-position:   0% 50%; }
@@ -22,10 +23,8 @@
 }
 
 /* Text recipe — used on every label-style surface (server name,
- * category title, channel names, pin text). The 9-stop gradient holds
- * a bright white island at 50% so the flow reads as a moving pearl
- * rather than a flat colour shift. Drop-shadow stack adds the same
- * halo glow you see around the orb itself. */
+ * category title, channel names, pin text). 9-stop gradient with a
+ * white island at 50% so the flow reads as a moving pearl. */
 .cz-aurora-text,
 .cz-aurora-name,
 .cz-aurora-category .ws-cat-h-name,
@@ -38,15 +37,8 @@
 .cz-aurora-pin .ws-cat-pin-l,
 .cz-aurora-pin .dm-pinned-text {
   background: linear-gradient(90deg,
-    #ff5fa2 0%,
-    #ff7eb6 12%,
-    #ffb88c 28%,
-    #ffeac0 42%,
-    #ffffff 50%,
-    #ffeac0 58%,
-    #ffb88c 72%,
-    #ffb6e6 88%,
-    #ff5fa2 100%) !important;
+    #ff5fa2 0%, #ff7eb6 12%, #ffb88c 28%, #ffeac0 42%,
+    #ffffff 50%, #ffeac0 58%, #ffb88c 72%, #ffb6e6 88%, #ff5fa2 100%) !important;
   background-size: 300% 100% !important;
   -webkit-background-clip: text !important;
           background-clip: text !important;
@@ -59,9 +51,7 @@
     drop-shadow(0 0 10px rgba(255,196,140,0.35));
 }
 
-/* Pin banner background — translucent pink/amber/white wash. Independent
- * of the text recipe above so a category style (which only colours the
- * category title) doesn't accidentally bleed into its category pin. */
+/* Pin banner background — translucent pink/amber/white wash. */
 .cz-aurora-pin {
   background:
     linear-gradient(90deg,
@@ -75,50 +65,37 @@
   animation: cz-aurora-flow 4s linear infinite;
 }
 
-/* Cover banner — pink/amber/white wash painted on the cover layer
- * itself so the banner content (emblem + name) stays above. The fade-
- * to-transparent mask the host already applies to .ws-banner-cover is
- * preserved, blending the bottom of the cover into the panel. */
+/* Cover banner. The renderer always emits a .ws-banner-cover host
+ * when this pack is active (even with no uploaded image) so the wash
+ * sits on the host element and inherits its existing fade-to-bottom
+ * mask. Vivid full-saturation gradient — no white peak — so the cover
+ * dominates the banner and is unmistakable. */
 .cz-aurora-cover .ws-banner-cover {
   background-image: linear-gradient(90deg,
-    #ffffff, #fff0f8 12%, #ffd6e8 28%, #ffc4a0 50%, #fff0d6 72%, #ffe1d6 88%, #ffffff) !important;
-  background-size: 400% 100% !important;
+    #ff5fa2, #ff7eb6 18%, #ffb88c 38%, #fff0a8 55%,
+    #ffb6e6 75%, #ff7eb6 90%, #ff5fa2) !important;
+  background-size: 300% 100% !important;
   background-position: 0% 50% !important;
-  animation: cz-aurora-flow 6s linear infinite;
-  opacity: 0.9 !important;
-}
-.cz-aurora-cover {
-  position: relative;
-}
-.cz-aurora-cover:not(:has(.ws-banner-cover))::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg,
-    #ffffff, #fff0f8 12%, #ffd6e8 28%, #ffc4a0 50%, #fff0d6 72%, #ffe1d6 88%, #ffffff);
-  background-size: 400% 100%;
-  animation: cz-aurora-flow 6s linear infinite;
-  opacity: 0.55;
-  pointer-events: none;
-  z-index: 0;
-  -webkit-mask-image: linear-gradient(180deg,#000 0%,#000 35%,rgba(0,0,0,0.4) 75%,transparent 100%);
-          mask-image: linear-gradient(180deg,#000 0%,#000 35%,rgba(0,0,0,0.4) 75%,transparent 100%);
+  animation: cz-aurora-flow 5s linear infinite;
+  opacity: 1 !important;
 }
 
-/* Emblem halo — pink/amber ring spinning around the avatar. */
+/* Emblem halo — pink/amber/white ring spinning around the avatar.
+ * Slightly thicker + brighter so the halo reads even on small emblems. */
 .cz-aurora-emblem { position: relative; }
 .cz-aurora-emblem::before {
   content: "";
   position: absolute;
-  inset: -10px;
+  inset: -12px;
   border-radius: 50%;
   background: conic-gradient(
-    #ff7eb6, #ffb88c, #fff0a8, #ffffff, #ffb6e6, #ff7eb6);
-  -webkit-mask: radial-gradient(circle, transparent 64%, #000 66%);
-          mask: radial-gradient(circle, transparent 64%, #000 66%);
+    #ff5fa2, #ff7eb6, #ffb88c, #fff0a8, #ffffff, #ffb6e6, #ff5fa2);
+  -webkit-mask: radial-gradient(circle, transparent 60%, #000 64%);
+          mask: radial-gradient(circle, transparent 60%, #000 64%);
   animation: cz-aurora-spin 4s linear infinite;
   pointer-events: none;
   z-index: 1;
+  filter: drop-shadow(0 0 12px rgba(255,160,210,0.6));
 }
 .cz-aurora-emblem > * { position: relative; z-index: 2; }
 

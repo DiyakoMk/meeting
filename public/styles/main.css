@@ -379,7 +379,44 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .vlabel{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.7rem;letter-spacing:2px;color:var(--t1);text-align:center;margin-top:10px;font-weight:700}
 
-.orb-slide.legendary .vlabel{background:linear-gradient(90deg,#fef3c7,#f59e0b,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+/* Flowing gradient that drifts colour across the text. Used by the
+ * legendary tier label AND by every server/category/channel name in
+ * the world view, so the whole hierarchy reads as one branded family. */
+@keyframes vlabelFlow{
+  0%   { background-position:   0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.orb-slide.legendary .vlabel{
+  background:linear-gradient(90deg,#fef3c7,#f59e0b,#ec4899,#a78bfa,#fef3c7);
+  background-size:200% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:vlabelFlow 7s linear infinite;
+}
+
+/* Apply the same flow to every world-view name surface. */
+.ws-banner-title,
+.ws-cat-h-name,
+.ws-cat-tc-n,
+.ws-cat-vc-n,
+.ws-channel-head .ws-channel-h-name,
+.ws-channel-head h1,
+.ws-channel-head .ws-channel-name{
+  background:linear-gradient(90deg,#fef3c7,#f59e0b,#ec4899,#a78bfa,#fef3c7);
+  background-size:200% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:vlabelFlow 7s linear infinite;
+}
+/* Connected / unread states keep their semantic colour cue. */
+.ws-cat-vc.connected .ws-cat-vc-n,
+.ws-cat-tc.has-unread .ws-cat-tc-n{
+  background:none;
+  -webkit-text-fill-color:initial;
+  color:var(--t1);
+  animation:none;
+}
 
 .orb-slide.skin-ice .planet{box-shadow:0 0 80px rgba(125,211,252,0.55),0 0 160px rgba(125,211,252,0.3),inset 0 0 40px rgba(224,242,254,0.5)!important;animation:legPulse 4s ease-in-out infinite}
 

@@ -145,6 +145,23 @@ serversRouter.post('/', async (req, res, next) => {
         'INSERT INTO server_members (server_id, user_id, is_admin) VALUES (?, ?, 1)',
         [sid, req.user.id]
       );
+      // Scaffold a sensible default structure: one category, two text
+      // channels (general + announcements), and one voice channel.
+      // Without this every fresh server boots empty and the owner has
+      // to make four manual creates before anyone can talk.
+      const catId = uid();
+      await conn.execute(
+        'INSERT INTO server_categories (id, server_id, name, position) VALUES (?, ?, ?, ?)',
+        [catId, sid, 'GENERAL', 0]);
+      await conn.execute(
+        'INSERT INTO text_channels (id, server_id, category_id, name, style, position) VALUES (?, ?, ?, ?, ?, ?)',
+        [uid(), sid, catId, 'general',       'glow', 0]);
+      await conn.execute(
+        'INSERT INTO text_channels (id, server_id, category_id, name, style, position) VALUES (?, ?, ?, ?, ?, ?)',
+        [uid(), sid, catId, 'announcements', 'glow', 1]);
+      await conn.execute(
+        'INSERT INTO voice_channels (id, server_id, category_id, name, style, position) VALUES (?, ?, ?, ?, ?, ?)',
+        ['custom-' + uid(), sid, catId, 'LOUNGE', 'indigo', 0]);
       // Auto-pin the freshly-created server to the creator's home rail
       // so it shows up immediately. Snapshot only surfaces explicitly
       // pinned rows, so this is what makes "create server -> see it

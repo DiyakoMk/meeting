@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-an (aurora text glow; category-style decoupled from pin; identity pack-toggle replaces lock notice)');
+  console.log('[orblood] client build 2026-05-09-ao (default channels on server create; flowing names; aurora cover/emblem visible)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -5957,7 +5957,19 @@
 
     html += '<div class="ws-banner'+_coverPackCls+'" style="--srv-banner-c1:'+s.bannerC1+';--srv-banner-c2:'+s.bannerC2+'">';
 
-    if (s.cover) html += '<div class="ws-banner-cover" style="background-image:url('+s.cover+')"></div>';
+    // Render a cover layer when there's an image OR when a cover pack
+
+    // is active (the pack needs a host element to paint on).
+
+    if (s.cover) {
+
+      html += '<div class="ws-banner-cover" style="background-image:url('+s.cover+')"></div>';
+
+    } else if (s.styleCover){
+
+      html += '<div class="ws-banner-cover ws-banner-cover-empty"></div>';
+
+    }
 
     const emblemSrc = s.emblemImage || null;
 
