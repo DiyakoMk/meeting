@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-j (server_roles primary key fixed — multi-server roles work)');
+  console.log('[orblood] client build 2026-05-09-k (voice orb cascade visibility)');
 
   // ============== STARS ==============
 
