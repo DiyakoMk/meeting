@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-08-c (day-key normaliser, in-place patch, lock chips)');
+  console.log('[orblood] client build 2026-05-09-d (rail keeps memberships, category save fixed, DM spinner, collapse chevron)');
 
   // ============== STARS ==============
 
