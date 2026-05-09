@@ -53,7 +53,7 @@ const schemaPath = path.resolve(here, '..', 'schema.sql');
   // own a `style` column for the orb skin (glow/indigo/fire/etc).
   await ensureCol('users',             'unlocked_packs', "JSON NULL");
   await ensureCol('servers',           'style_name',     "VARCHAR(40) NULL");
-  await ensureCol('servers',           'style_pin',      "VARCHAR(40) NULL");
+  await ensureCol('servers',           'style_pin',      "VARCHAR(40) NULL"); await ensureCol('servers', 'style_cover', "VARCHAR(40) NULL"); await ensureCol('servers', 'style_emblem', "VARCHAR(40) NULL");
   await ensureCol('server_categories', 'custom_style',   "VARCHAR(40) NULL");
   await ensureCol('text_channels',     'custom_style',   "VARCHAR(40) NULL");
   await ensureCol('voice_channels',    'custom_style',   "VARCHAR(40) NULL");

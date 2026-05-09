@@ -214,7 +214,7 @@ meRouter.get('/snapshot', async (req, res, next) => {
           // server row itself; per-category and per-channel styles live
           // on those rows. NULL means the stock look.
           styleName: row.style_name || null,
-          stylePin:  row.style_pin  || null,
+          stylePin:  row.style_pin  || null, styleCover: row.style_cover || null, styleEmblem: row.style_emblem || null,
           members: sm.map(x => x.name),
           memberDetails: sm.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin, avImage: x.av_image || null, baseColor: x.base_color || null })),
           admins: sm.filter(x => x.is_admin).map(x => x.name),

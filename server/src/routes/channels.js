@@ -451,7 +451,7 @@ async function __buildServerPayload(sid) {
     emblemImage: s.emblem_image || null, inviteKey: s.invite_key || null,
     isPrivate: !!s.is_private,
     styleName: s.style_name || null,
-    stylePin:  s.style_pin  || null,
+    stylePin:  s.style_pin  || null, styleCover: s.style_cover || null, styleEmblem: s.style_emblem || null,
     members: members.map(x => x.name),
     memberDetails: members.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin, avImage: x.av_image || null, baseColor: x.base_color || null })),
     admins:  members.filter(x => x.is_admin).map(x => x.name),

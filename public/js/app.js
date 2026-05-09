@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-aj (customization packs: rainbow + customize modal + right-click style picker)');
+  console.log('[orblood] client build 2026-05-09-ak (rainbow v2: full surface coverage; cover/emblem packs; identity moved into customize)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -5949,7 +5949,11 @@
 
     // BANNER (with optional cover image, faded at bottom — no neon border)
 
-    html += '<div class="ws-banner" style="--srv-banner-c1:'+s.bannerC1+';--srv-banner-c2:'+s.bannerC2+'">';
+    const _coverPackCls = s.styleCover ? ' ' + packClassFor(s.styleCover, 'serverCover') : '';
+
+    const _emblemPackCls = s.styleEmblem ? ' ' + packClassFor(s.styleEmblem, 'serverEmblem') : '';
+
+    html += '<div class="ws-banner'+_coverPackCls+'" style="--srv-banner-c1:'+s.bannerC1+';--srv-banner-c2:'+s.bannerC2+'">';
 
     if (s.cover) html += '<div class="ws-banner-cover" style="background-image:url('+s.cover+')"></div>';
 
@@ -5959,7 +5963,7 @@
 
     const emblemContent = emblemSrc ? emblemImg : s.initial;
 
-    const emblemCls = 'ws-emblem'+(emblemSrc?' has-image':'');
+    const emblemCls = 'ws-emblem'+(emblemSrc?' has-image':'')+_emblemPackCls;
 
     html += '<div class="ws-emblem-wrap"><div class="'+emblemCls+'" style="--srv-grad:'+s.grad+';--srv-glow:'+s.glow+'">'+emblemContent+'</div>'+
 
@@ -6127,15 +6131,19 @@
 
         if (collapsed) { html += '</div>'; return; }
 
-        // Category-level pin
+        // Category-level pin — pack class lands on the wrapper so the
+
+        // background + text both pick up the rainbow wash.
 
         if (cat.pinned){
 
-          html += '<div class="ws-cat-pin">'+
+          const _catPinPackCls = cat.customStyle ? ' '+packClassFor(cat.customStyle,'serverPin')+' '+packClassFor(cat.customStyle,'category') : '';
+
+          html += '<div class="ws-cat-pin'+_catPinPackCls+'" data-cat-pin-id="'+cat.id+'">'+
 
             '<div class="ws-cat-pin-i"><i data-lucide="pin" style="width:11px;height:11px"></i></div>'+
 
-            '<div class="ws-cat-pin-info"><div class="ws-cat-pin-l">CATEGORY PIN</div><div class="ws-cat-pin-text'+(cat.customStyle?' '+packClassFor(cat.customStyle,'category'):'')+'">'+escapeHtml(cat.pinned.text)+'</div></div>'+
+            '<div class="ws-cat-pin-info"><div class="ws-cat-pin-l">CATEGORY PIN</div><div class="ws-cat-pin-text">'+escapeHtml(cat.pinned.text)+'</div></div>'+
 
             (memberHasPerm(s,selfProfile.name,'managePins') ? '<button class="ws-cat-pin-edit" data-cat-pin-edit="'+cat.id+'"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
 
@@ -11125,6 +11133,46 @@
 
     renderRow('serverPin');
 
+    renderRow('serverCover');
+
+    renderRow('serverEmblem');
+
+    // Sync identity previews from the current server.
+
+    const emblemPrev = document.getElementById('czEmblemPrev');
+
+    const coverPrev  = document.getElementById('czCoverPrev');
+
+    if (emblemPrev){
+
+      if (s.emblemImage){
+
+        emblemPrev.style.backgroundImage = 'url('+s.emblemImage+')';
+
+      } else {
+
+        emblemPrev.style.backgroundImage = '';
+
+        emblemPrev.style.background = s.grad || '';
+
+      }
+
+    }
+
+    if (coverPrev){
+
+      if (s.cover){
+
+        coverPrev.style.backgroundImage = 'url('+s.cover+')';
+
+      } else {
+
+        coverPrev.style.backgroundImage = '';
+
+      }
+
+    }
+
     // Shop tab.
 
     const shopList = document.getElementById('czShopList');
@@ -11165,7 +11213,19 @@
 
     const s = servers[currentServer]; if (!s) return;
 
-    const field = target === 'serverName' ? 'styleName' : 'stylePin';
+    const fieldMap = {
+
+      serverName:   'styleName',
+
+      serverPin:    'stylePin',
+
+      serverCover:  'styleCover',
+
+      serverEmblem: 'styleEmblem'
+
+    };
+
+    const field = fieldMap[target]; if (!field) return;
 
     const body = {}; body[field] = packId || null;
 
@@ -11187,19 +11247,19 @@
 
   }
 
-  // Open a small picker rooted at the screen centre (mouse is too far
+  // Open a style picker anchored to a screen point. The caller passes
 
-  // gone by the time we know we want it). Lists every owned pack that
+  // the click coordinates so the menu appears next to where the user
 
-  // supports the given surface plus a "Default" option to clear.
+  // actually clicked, like a Windows submenu, instead of jumping to
 
-  async function openStylePicker(target, id, current){
+  // the centre of the page.
+
+  async function openStylePicker(target, id, current, coords){
 
     await loadPacksCatalog();
 
     const owned = ownedPackIds();
-
-    // Map ctx target type → catalog surface key.
 
     const surface = target === 'text'    ? 'textChannel'
 
@@ -11237,11 +11297,9 @@
 
     }
 
-    // Position roughly centre — same coordinates the right-click ctx
+    const cx = (coords && coords.x) != null ? coords.x : window.innerWidth/2;
 
-    // menu uses when the source event isn't reachable.
-
-    const cx = window.innerWidth/2, cy = window.innerHeight/2;
+    const cy = (coords && coords.y) != null ? coords.y : window.innerHeight/2;
 
     showCtxMenu(cx, cy, items, 'STYLE');
 
@@ -11997,6 +12055,38 @@
 
   let ccActiveTab = 'text';
 
+  let ccSelectedCustomStyle = null;
+
+  async function _renderCcCustomStyleRow(){
+
+    await loadPacksCatalog();
+
+    const owned = ownedPackIds();
+
+    const wrap = document.getElementById('ccCustomStyleRow'); if (!wrap) return;
+
+    const chips = [];
+
+    chips.push('<button class="cz-pack-chip'+(!ccSelectedCustomStyle?' active':'')+'" data-cc-custom="" type="button">DEFAULT</button>');
+
+    (_packsCatalog||[]).filter(p => owned.has(p.id) && packSupports(p, 'voiceChannel')).forEach(p => {
+
+      chips.push(
+
+        '<button class="cz-pack-chip'+(ccSelectedCustomStyle===p.id?' active':'')+'" data-cc-custom="'+p.id+'" type="button">'
+
+          +escapeHtml(p.name.toUpperCase())+
+
+        '</button>'
+
+      );
+
+    });
+
+    wrap.innerHTML = chips.join('');
+
+  }
+
   let ccSelectedStyle = 'glow';
 
   let ccTargetCategory = null;
@@ -12006,6 +12096,8 @@
     ccActiveTab = forceTab || 'text';
 
     ccSelectedStyle = ccActiveTab==='voice' ? 'indigo' : 'glow';
+
+    ccSelectedCustomStyle = null;
 
     ccTargetCategory = targetCatId || null;
 
@@ -12068,6 +12160,14 @@
     // TEXT/VOICE tabs require a category, so keep the select visible.
 
     const vf = document.getElementById('ccVoiceStyleField'); if (vf) vf.style.display = ccActiveTab==='voice'?'flex':'none';
+
+    // Custom style pack picker — only meaningful for voice channels.
+
+    const customField = document.getElementById('ccCustomStyleField');
+
+    if (customField) customField.style.display = ccActiveTab==='voice'?'flex':'none';
+
+    if (ccActiveTab==='voice') _renderCcCustomStyleRow();
 
     const cf = document.getElementById('ccCategoryField'); if (cf) cf.style.display = ccActiveTab==='category'?'none':'flex';
 
@@ -12259,11 +12359,25 @@
 
         newId = r.channel.id;
 
+        // Apply the selected customStyle pack via PATCH after creation.
+
+        // The create endpoint doesn't accept it directly, but the patch
+
+        // route does and the realtime emit re-renders the orb correctly.
+
+        if (ccSelectedCustomStyle){
+
+          try { await _apiRequest('PATCH', '/channels/voice/'+currentServer+'/'+newId, { customStyle: ccSelectedCustomStyle }); }
+
+          catch(_){ /* fall back to local-only style below */ }
+
+        }
+
       }
 
       if (!s.voiceChannels.find(v => v.id === newId)){
 
-        s.voiceChannels.push({ id:newId, name: name.toUpperCase(), style: ccSelectedStyle });
+        s.voiceChannels.push({ id:newId, name: name.toUpperCase(), style: ccSelectedStyle, customStyle: ccSelectedCustomStyle || null });
 
       }
 
@@ -12871,7 +12985,11 @@
 
     if (canCreate && (isOwner || can('manageServer') || can('managePins'))) items.push({ sep:true });
 
-    if (isOwner || can('manageServer')) items.push({ action:'cover', icon:'image', label:'Server identity' });
+    // 'Server identity' was moved into the Customize modal — the cover
+
+    // image, emblem upload and banner tint now live there alongside the
+
+    // pack pickers. Leaving the entry out keeps the banner menu lean.
 
     if (can('managePins'))              items.push({ action:'addpin', icon:'pin',  label:'Edit server pin' });
 
@@ -15109,6 +15227,76 @@
 
   });
 
+  // Customize modal — emblem + cover upload (replaces the legacy Server
+
+  // Identity flow). Both fields persist via PATCH /api/servers/:id and
+
+  // the modal previews refresh on success.
+
+  async function _saveServerImage(field, value){
+
+    if (!currentServer) return;
+
+    const s = servers[currentServer]; if (!s) return;
+
+    const dbField = field === 'emblem' ? 'emblemImage' : 'cover';
+
+    s[dbField] = value;
+
+    if (backend.isConfigured()){
+
+      try {
+
+        const body = {}; body[dbField] = value;
+
+        await _apiRequest('PATCH', '/servers/'+s.id, body);
+
+      } catch(_){ showToast('Could not save '+field,'warn'); return; }
+
+    }
+
+    renderServerOverview && renderServerOverview();
+
+    _renderCustomizeModal();
+
+  }
+
+  document.getElementById('czEmblemPick').addEventListener('click', () => document.getElementById('czEmblemFile').click());
+
+  document.getElementById('czEmblemClear').addEventListener('click', () => _saveServerImage('emblem', null));
+
+  document.getElementById('czEmblemFile').addEventListener('change', async e => {
+
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+
+    if (!f.type.startsWith('image/')){ showToast('Pick an image file','warn'); return; }
+
+    const url = await _uploadImageOrDataUrl(f);
+
+    if (!url){ showToast('Could not upload emblem','warn'); return; }
+
+    _saveServerImage('emblem', url);
+
+  });
+
+  document.getElementById('czCoverPick').addEventListener('click', () => document.getElementById('czCoverFile').click());
+
+  document.getElementById('czCoverClear').addEventListener('click', () => _saveServerImage('cover', null));
+
+  document.getElementById('czCoverFile').addEventListener('change', async e => {
+
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+
+    if (!f.type.startsWith('image/')){ showToast('Pick an image file','warn'); return; }
+
+    const url = await _uploadImageOrDataUrl(f);
+
+    if (!url){ showToast('Could not upload cover','warn'); return; }
+
+    _saveServerImage('cover', url);
+
+  });
+
   // Color grid removed — colour is randomised at openCreateServer time.
 
   document.getElementById('csSubmit').addEventListener('click', submitCreateServer);
@@ -15206,6 +15394,22 @@
     ccSelectedStyle = b.dataset.ccVoiceStyle;
 
     document.querySelectorAll('#ccOrbTrack .cc-orb-card').forEach(el => el.classList.toggle('selected', el.dataset.ccVoiceStyle === ccSelectedStyle));
+
+  });
+
+  // Custom-style chip clicks inside the create-channel modal.
+
+  document.getElementById('createChannelBackdrop').addEventListener('click', e => {
+
+    const chip = e.target.closest('[data-cc-custom]');
+
+    if (!chip) return;
+
+    e.stopPropagation();
+
+    ccSelectedCustomStyle = chip.dataset.ccCustom || null;
+
+    _renderCcCustomStyleRow();
 
   });
 
@@ -15663,6 +15867,12 @@
 
     e.preventDefault();
 
+    // Capture click coords for any submenu action that wants to anchor
+
+    // a picker next to the cursor (e.g. Style submenu).
+
+    const _ctxAt = { x: e.clientX, y: e.clientY };
+
     const s = servers[currentServer]; if (!s) return;
 
     const canManageRoles = memberHasPerm(s,selfProfile.name,'manageRoles');
@@ -15689,7 +15899,7 @@
 
         items.push({ sep:true });
 
-        items.push({ icon:'palette', label:'Style…', action:()=>{ openStylePicker('text', tcId, tc.customStyle); } });
+        items.push({ icon:'palette', label:'Style…', action:()=>{ openStylePicker('text', tcId, tc.customStyle, _ctxAt); } });
 
         items.push({ icon:'settings', label:'Channel settings', action:()=>{ openChanSettings({type:'text', id:tcId}); } });
 
@@ -15719,8 +15929,6 @@
 
         items.push({ sep:true });
 
-        items.push({ icon:'palette', label:'Style…', action:()=>{ openStylePicker('voice', vcId, vc.customStyle); } });
-
         items.push({ icon:'settings', label:'Voice orb settings', action:()=>{ openChanSettings({type:'voice', id:vcId}); } });
 
       }
@@ -15741,7 +15949,7 @@
 
       if (memberHasPerm(s,selfProfile.name,'manageCategory') || canManageRoles){
 
-        items.push({ icon:'palette', label:'Style…', action:()=>{ openStylePicker('category', catId, cat.customStyle); } });
+        items.push({ icon:'palette', label:'Style…', action:()=>{ openStylePicker('category', catId, cat.customStyle, _ctxAt); } });
 
         items.push({ icon:'settings', label:'Category settings', action:()=>{ openChanSettings({type:'category', id:catId}); } });
 

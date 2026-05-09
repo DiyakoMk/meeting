@@ -1,14 +1,8 @@
-/* Rainbow customization pack.
- *
- * Each surface gets a `.cz-rainbow-<surface>` class added by the
- * renderer when the user selects this pack. We use animated linear
- * gradients clipped to text for the labels, and a slow rotating
- * conic-gradient ring for the orbs. All colours are hard-coded so the
- * effect is identical across every theme. */
+/* Rainbow customization pack — saturated, fast, full-surface. */
 
 @keyframes cz-rainbow-flow {
   0%   { background-position:   0% 50%; }
-  100% { background-position: 200% 50%; }
+  100% { background-position: 400% 50%; }
 }
 
 @keyframes cz-rainbow-spin {
@@ -16,91 +10,133 @@
   to   { transform: rotate(360deg); }
 }
 
-/* Shared text recipe — applied to server name, category title, text
- * channel name, voice channel name, and pin text. We clip the
- * gradient to the text and animate the background-position so the
- * rainbow flows. */
-.cz-rainbow-text {
+@keyframes cz-rainbow-wave {
+  0%   { transform: rotate(0deg)   scale(1); }
+  50%  { transform: rotate(180deg) scale(1.06); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* Saturated rainbow used everywhere. Lower stop count = bolder colour
+ * blocks; the 400% size + fast flow keeps motion clearly visible. */
+.cz-rainbow-text,
+.cz-rainbow-name,
+.cz-rainbow-category .ws-cat-h-name,
+.cz-rainbow-textchannel .ws-cat-tc-n,
+.cz-rainbow-voicechannel .ws-cat-vc-n,
+.cz-rainbow-pin .ws-pin-text,
+.cz-rainbow-pin .ws-cat-pin-text,
+.cz-rainbow-pin .ws-pin-l,
+.cz-rainbow-pin .ws-cat-pin-l,
+.cz-rainbow-pin .dm-pinned-text {
   background: linear-gradient(90deg,
-    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d) !important;
-  background-size: 200% 200% !important;
+    #ff0066, #ff8800, #ffe600, #00d65e, #00b4ff, #7a3bff, #ff00d4, #ff0066) !important;
+  background-size: 400% 100% !important;
   -webkit-background-clip: text !important;
           background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
-  animation: cz-rainbow-flow 6s linear infinite;
+  animation: cz-rainbow-flow 2.4s linear infinite !important;
   text-shadow: none !important;
-  filter: drop-shadow(0 0 8px rgba(255,180,255,0.35));
+  filter: drop-shadow(0 0 6px rgba(255,120,255,0.45));
 }
 
-/* Server name in the world-hero header. */
-.cz-rainbow-name { /* intentionally same as cz-rainbow-text — JS adds both. */ }
-
-/* Pin banner — keeps its surface but the inner text and the i icon
- * pick up the rainbow. */
-.cz-rainbow-pin .ws-pin-text,
-.cz-rainbow-pin .ws-cat-pin-text,
-.cz-rainbow-pin .dm-pinned-text {
-  background: linear-gradient(90deg,
-    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d);
-  background-size: 200% 200%;
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-  animation: cz-rainbow-flow 6s linear infinite;
-}
+/* Pin banner — full background gets a rainbow wash, not just the text. */
 .cz-rainbow-pin {
-  border-color: rgba(255,180,255,0.45) !important;
-  box-shadow: 0 0 14px rgba(255,180,255,0.18), inset 0 0 12px rgba(255,180,255,0.10) !important;
+  background:
+    linear-gradient(90deg,
+      rgba(255,0,102,0.22), rgba(255,136,0,0.22), rgba(255,230,0,0.22),
+      rgba(0,214,94,0.22), rgba(0,180,255,0.22), rgba(122,59,255,0.22),
+      rgba(255,0,212,0.22), rgba(255,0,102,0.22)) !important;
+  background-size: 400% 100% !important;
+  border-color: transparent !important;
+  box-shadow:
+    0 0 18px rgba(255,120,255,0.4),
+    inset 0 0 0 1px rgba(255,255,255,0.12) !important;
+  animation: cz-rainbow-flow 2.4s linear infinite;
 }
 
-/* Category title row. */
-.cz-rainbow-category .ws-cat-h-name,
-.cz-rainbow-category .ws-cat-name { /* picked up regardless of the host markup */
+/* Cover banner — animated rainbow wash on top of the server cover.
+ * `position: relative` is already set on the host element. */
+.cz-rainbow-cover {
+  position: relative;
+  overflow: hidden;
+}
+.cz-rainbow-cover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: linear-gradient(90deg,
-    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d);
-  background-size: 200% 200%;
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-  animation: cz-rainbow-flow 6s linear infinite;
+    #ff0066, #ff8800, #ffe600, #00d65e, #00b4ff, #7a3bff, #ff00d4, #ff0066);
+  background-size: 400% 100%;
+  animation: cz-rainbow-flow 4s linear infinite;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 1;
 }
 
-/* Text channel name. */
-.cz-rainbow-textchannel .ws-cat-tc-n,
-.cz-rainbow-textchannel .ws-cat-tc-name {
-  background: linear-gradient(90deg,
-    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d);
-  background-size: 200% 200%;
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-  animation: cz-rainbow-flow 6s linear infinite;
+/* Emblem halo — ring around the server emblem. */
+.cz-rainbow-emblem {
+  position: relative;
+}
+.cz-rainbow-emblem::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #ff0066, #ff8800, #ffe600, #00d65e, #00b4ff, #7a3bff, #ff00d4, #ff0066);
+  -webkit-mask: radial-gradient(circle, transparent 64%, #000 66%);
+          mask: radial-gradient(circle, transparent 64%, #000 66%);
+  animation: cz-rainbow-spin 4s linear infinite;
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* Voice channel name. */
-.cz-rainbow-voicechannel .ws-cat-vc-n {
-  background: linear-gradient(90deg,
-    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d);
-  background-size: 200% 200%;
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-  animation: cz-rainbow-flow 6s linear infinite;
-}
-
-/* Voice / orbit orb gets a slow rainbow rim. The orb keeps its own
- * inner gradient (planet look) but a conic-gradient ring underneath
- * supplies the rainbow accent. */
+/* Voice / orbit orb — white core + rainbow halo + outer wave. */
 .cz-rainbow-orb {
   position: relative;
+  background: radial-gradient(circle at 35% 30%,
+    #ffffff, #f8f0ff 50%, #ece6ff 100%) !important;
+  box-shadow:
+    0 0 24px rgba(255,120,255,0.55),
+    0 0 60px rgba(122,59,255,0.35),
+    inset 0 -3px 10px rgba(180,80,255,0.15),
+    inset 0 1px 4px rgba(255,255,255,0.9) !important;
+}
+.cz-rainbow-orb::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #ff0066, #ff8800, #ffe600, #00d65e, #00b4ff, #7a3bff, #ff00d4, #ff0066);
+  -webkit-mask: radial-gradient(circle, transparent 60%, #000 64%);
+          mask: radial-gradient(circle, transparent 60%, #000 64%);
+  animation: cz-rainbow-spin 4s linear infinite;
+  pointer-events: none;
+  z-index: -1;
 }
 .cz-rainbow-orb::after {
   content: "";
   position: absolute;
-  inset: -3px;
+  inset: -22px;
   border-radius: 50%;
   background: conic-gradient(
-    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d);
-  -webkit-mask: radial-gradient(circle, transparent 65%, #000 67%);
-          mask: radial-gradient(circle, transparent 65%, #000 67%);
-  animation: cz-rainbow-spin 8s linear infinite;
+    rgba(255,0,102,0.5), rgba(255,136,0,0.5), rgba(255,230,0,0.5),
+    rgba(0,214,94,0.5), rgba(0,180,255,0.5), rgba(122,59,255,0.5),
+    rgba(255,0,212,0.5), rgba(255,0,102,0.5));
+  -webkit-mask: radial-gradient(circle, transparent 56%, #000 60%, transparent 75%);
+          mask: radial-gradient(circle, transparent 56%, #000 60%, transparent 75%);
+  animation: cz-rainbow-wave 6s linear infinite reverse;
   pointer-events: none;
   z-index: -1;
+  filter: blur(2px);
+}
+
+/* When rainbow orb is also a planet (orb-slide centre), force the
+ * white core so the original orb gradient doesn't bleed through. */
+.cz-rainbow-orb.planet,
+.orb-slide.cz-rainbow-orb .planet {
+  background: radial-gradient(circle at 35% 30%,
+    #ffffff, #f8f0ff 50%, #ece6ff 100%) !important;
 }

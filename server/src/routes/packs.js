@@ -21,7 +21,7 @@ const CATALOG = [
     name: 'Rainbow',
     desc: 'Animated rainbow gradient on names, pins, channels, categories and orbs.',
     price: 0,           // free pack to seed the system
-    surfaces: ['serverName','serverPin','category','textChannel','voiceChannel','orbit'],
+    surfaces: ['serverName','serverPin','serverCover','serverEmblem','category','textChannel','voiceChannel','orbit'],
     cssClass: 'cz-rainbow'
   }
 ];

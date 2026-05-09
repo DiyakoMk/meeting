@@ -24,7 +24,7 @@ const createServerSchema = z.object({
 const patchServerSchema = createServerSchema.partial().extend({
   pinnedText: z.string().max(2000).nullable().optional(),
   // Pack ids are short strings; null clears back to the stock look.
-  styleName:  z.string().max(40).nullable().optional(),
+  styleName:  z.string().max(40).nullable().optional(), styleCover: z.string().max(40).nullable().optional(), styleEmblem: z.string().max(40).nullable().optional(),
   stylePin:   z.string().max(40).nullable().optional()
 });
 
@@ -90,7 +90,7 @@ async function buildServerPayload(sid) {
     inviteKey: s.invite_key || null,
     isPrivate: !!s.is_private,
     styleName: s.style_name || null,
-    stylePin:  s.style_pin  || null,
+    stylePin:  s.style_pin  || null, styleCover: s.style_cover || null, styleEmblem: s.style_emblem || null,
     members: members.map(x => x.name),
     memberDetails: members.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin, avImage: x.av_image || null, baseColor: x.base_color || null })),
     admins:  members.filter(x => x.is_admin).map(x => x.name),
@@ -212,7 +212,7 @@ serversRouter.patch('/:id', async (req, res, next) => {
       emblemImage: 'emblem_image', isPrivate: 'is_private', pinnedText: 'pinned_text',
       // Pack-driven custom styles per surface. Either a pack id like
       // 'rainbow' or null to revert to the stock look.
-      styleName: 'style_name', stylePin: 'style_pin'
+      styleName: 'style_name', stylePin: 'style_pin', styleCover: 'style_cover', styleEmblem: 'style_emblem'
     };
     const sets = []; const args = [];
     for (const [k, col] of Object.entries(map)) {

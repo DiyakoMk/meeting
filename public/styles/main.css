@@ -2728,6 +2728,11 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 .cz-shop-name{font-size:0.95rem;font-weight:600;color:var(--t1);margin-bottom:4px}
 .cz-shop-desc{font-size:0.75rem;color:var(--t2);line-height:1.5}
 .cz-shop-price{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1.5px;color:var(--accent);margin-top:4px}
+.cz-uploader-row{display:flex;align-items:center;gap:14px}
+.cz-uploader-preview{width:64px;height:64px;border-radius:50%;background:var(--tint-3);border:1px solid var(--tint-4);background-size:cover;background-position:center;flex-shrink:0;position:relative;overflow:hidden}
+.cz-cover-preview{width:140px;height:64px;border-radius:10px;background:var(--tint-3);border:1px solid var(--tint-4);background-size:cover;background-position:center;flex-shrink:0;position:relative;overflow:hidden}
+.cz-uploader-actions{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.cz-uploader-actions .sm-btn{width:fit-content;padding:6px 12px;font-size:0.6rem}
 
 /* Radio toggle row used in modal forms (e.g. server visibility public/private). */
 .sm-toggle-row{display:flex;flex-direction:column;gap:6px;margin-top:4px}
