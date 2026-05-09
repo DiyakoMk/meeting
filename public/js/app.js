@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-am (rebrand rainbow→aurora; pack-active lock notice; new Aurora theme; voice-list orb halo only)');
+  console.log('[orblood] client build 2026-05-09-an (aurora text glow; category-style decoupled from pin; identity pack-toggle replaces lock notice)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -6139,7 +6139,7 @@
 
         if (cat.pinned){
 
-          const _catPinPackCls = cat.customStyle ? ' '+packClassFor(cat.customStyle,'serverPin')+' '+packClassFor(cat.customStyle,'category') : '';
+          const _catPinPackCls = '';
 
           html += '<div class="ws-cat-pin'+_catPinPackCls+'" data-cat-pin-id="'+cat.id+'">'+
 
@@ -13285,71 +13285,115 @@
 
     renderCoverPreview();
 
-    // Lock cover/emblem inputs when a pack owns those surfaces — typing
+    // Pack-active toggles for cover + emblem halo. When a pack owns
 
-    // a URL or uploading wouldn't be visible behind the active pack.
+    // either surface, the colour picker for that field is the only
 
-    // We disable the inputs and show a notice with a hint to disable
+    // thing the pack visually overrides; uploads still work. Toggle
 
-    // the pack from Customize first. The fields stay visible so the
+    // unchecked → clear the surface's pack so the colour picker takes
 
-    // user can read what they would normally edit.
+    // effect. Toggle checked → re-apply the previous pack id (we
 
-    const coverLocked  = !!s.styleCover;
+    // remember which one via a data attribute). The notice version
 
-    const emblemLocked = !!s.styleEmblem;
+    // produced too much noise and disabled the upload buttons too.
 
-    const coverInp  = document.getElementById('coverUrlInput');
+    function _wireIdentityPackToggle(field){
 
-    const emblemInp = document.getElementById('emblemUrlInput');
+      const dbField   = field === 'cover' ? 'styleCover' : 'styleEmblem';
 
-    const coverPick = document.getElementById('coverUploadBtn');
+      const wrap      = document.getElementById(field+'PackToggleWrap');
 
-    const emblemPick= document.getElementById('emblemUploadBtn');
+      const cb        = document.getElementById(field+'PackToggle');
 
-    [coverInp, emblemInp, coverPick, emblemPick].forEach(el => {
+      const colorChip = document.getElementById(field === 'cover' ? 'serverBannerColorChip' : 'serverColorChip');
 
-      if (!el) return;
+      const colorInp  = document.getElementById(field === 'cover' ? 'serverBannerColor'   : 'serverColorInput');
 
-      el.disabled = false; el.style.opacity = ''; el.style.pointerEvents = '';
+      if (!wrap || !cb) return;
 
-    });
+      const remembered = wrap.dataset.lastPack || s[dbField] || '';
 
-    let notice = document.getElementById('coverPackLockNotice');
+      const active = !!s[dbField];
 
-    if (!notice){
+      if (s[dbField]) wrap.dataset.lastPack = s[dbField];
 
-      notice = document.createElement('div');
+      if (!active && !remembered){
 
-      notice.id = 'coverPackLockNotice';
+        // No pack has ever been set on this surface — hide the toggle
 
-      notice.className = 'sm-hint';
+        // entirely so the modal stays clean for users who haven't
 
-      notice.style.cssText = 'margin:8px 0;padding:8px 10px;border-radius:8px;background:var(--brand-glow-soft);border:1px solid var(--ag);color:var(--t1);font-size:0.7rem;line-height:1.5';
+        // unlocked any packs.
 
-      const body = document.querySelector('#coverBackdrop .smodal-body');
+        wrap.style.display = 'none';
 
-      if (body) body.insertBefore(notice, body.firstChild);
+        if (colorChip) { colorChip.style.opacity = ''; colorChip.style.pointerEvents = ''; }
+
+        return;
+
+      }
+
+      wrap.style.display = 'flex';
+
+      cb.checked = active;
+
+      // Disable only the colour picker while the pack owns the surface.
+
+      // Uploads keep working — the user might prefer their own image
+
+      // even though the pack is providing the colour wash.
+
+      if (colorChip){
+
+        colorChip.style.opacity = active ? '0.45' : '';
+
+        colorChip.style.pointerEvents = active ? 'none' : '';
+
+      }
+
+      if (colorInp) colorInp.disabled = active;
+
+      cb.onchange = async () => {
+
+        const want = cb.checked ? (wrap.dataset.lastPack || remembered || null) : null;
+
+        s[dbField] = want;
+
+        if (want) wrap.dataset.lastPack = want;
+
+        if (backend.isConfigured()){
+
+          try {
+
+            const body = {}; body[dbField] = want || null;
+
+            await _apiRequest('PATCH', '/servers/'+s.id, body);
+
+          } catch(_){ showToast('Could not save pack toggle','warn'); }
+
+        }
+
+        if (colorChip){
+
+          colorChip.style.opacity = want ? '0.45' : '';
+
+          colorChip.style.pointerEvents = want ? 'none' : '';
+
+        }
+
+        if (colorInp) colorInp.disabled = !!want;
+
+        renderServerOverview && renderServerOverview();
+
+      };
 
     }
 
-    if (coverLocked || emblemLocked){
+    _wireIdentityPackToggle('cover');
 
-      const which = [coverLocked && 'cover', emblemLocked && 'emblem halo'].filter(Boolean).join(' and ');
-
-      notice.style.display = '';
-
-      notice.textContent = 'A customization pack is currently styling the '+which+'. Manual upload is disabled. Disable the pack from Customize → Library to edit '+which+' here.';
-
-      [coverInp, coverPick].forEach(el => { if (el && coverLocked){ el.disabled = true; el.style.opacity = '0.5'; el.style.pointerEvents = 'none'; } });
-
-      [emblemInp, emblemPick].forEach(el => { if (el && emblemLocked){ el.disabled = true; el.style.opacity = '0.5'; el.style.pointerEvents = 'none'; } });
-
-    } else {
-
-      notice.style.display = 'none';
-
-    }
+    _wireIdentityPackToggle('emblem');
 
     document.getElementById('coverBackdrop').classList.add('show');
 

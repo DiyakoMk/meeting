@@ -1,8 +1,13 @@
-/* Aurora customization pack — pink + amber + white flowing gradient — saturated, fast, full-surface. */
+/* Aurora customization pack — pink + amber + cream flow.
+ *
+ * Same warm-rose palette the orbit halo uses, but tightened so labels
+ * read as glowing pearls instead of flat colour swaps. The white peak
+ * in the middle gives the gradient a highlight; double drop-shadow
+ * carries the halo glow onto the surrounding panel. */
 
 @keyframes cz-aurora-flow {
   0%   { background-position:   0% 50%; }
-  100% { background-position: 400% 50%; }
+  100% { background-position: 300% 50%; }
 }
 
 @keyframes cz-aurora-spin {
@@ -16,11 +21,15 @@
   100% { transform: rotate(360deg) scale(1); }
 }
 
-/* Saturated rainbow used everywhere. Lower stop count = bolder colour
- * blocks; the 400% size + fast flow keeps motion clearly visible. */
+/* Text recipe — used on every label-style surface (server name,
+ * category title, channel names, pin text). The 9-stop gradient holds
+ * a bright white island at 50% so the flow reads as a moving pearl
+ * rather than a flat colour shift. Drop-shadow stack adds the same
+ * halo glow you see around the orb itself. */
 .cz-aurora-text,
 .cz-aurora-name,
 .cz-aurora-category .ws-cat-h-name,
+.cz-aurora-category .ws-cat-name,
 .cz-aurora-textchannel .ws-cat-tc-n,
 .cz-aurora-voicechannel .ws-cat-vc-n,
 .cz-aurora-pin .ws-pin-text,
@@ -29,18 +38,30 @@
 .cz-aurora-pin .ws-cat-pin-l,
 .cz-aurora-pin .dm-pinned-text {
   background: linear-gradient(90deg,
-    #ff7eb6, #ffb88c, #fff0a8, #ffffff, #ffb6e6, #ff7eb6) !important;
-  background-size: 400% 100% !important;
+    #ff5fa2 0%,
+    #ff7eb6 12%,
+    #ffb88c 28%,
+    #ffeac0 42%,
+    #ffffff 50%,
+    #ffeac0 58%,
+    #ffb88c 72%,
+    #ffb6e6 88%,
+    #ff5fa2 100%) !important;
+  background-size: 300% 100% !important;
   -webkit-background-clip: text !important;
           background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
-  animation: cz-aurora-flow 3s linear infinite !important;
+  animation: cz-aurora-flow 4s linear infinite !important;
   text-shadow: none !important;
-  filter: drop-shadow(0 0 6px rgba(255,180,210,0.45));
+  filter:
+    drop-shadow(0 0 4px rgba(255,180,210,0.55))
+    drop-shadow(0 0 10px rgba(255,196,140,0.35));
 }
 
-/* Pin banner — pink/amber/white translucent wash. */
+/* Pin banner background — translucent pink/amber/white wash. Independent
+ * of the text recipe above so a category style (which only colours the
+ * category title) doesn't accidentally bleed into its category pin. */
 .cz-aurora-pin {
   background:
     linear-gradient(90deg,
@@ -51,7 +72,7 @@
   box-shadow:
     0 0 18px rgba(255,160,210,0.4),
     inset 0 0 0 1px rgba(255,255,255,0.18) !important;
-  animation: cz-aurora-flow 3s linear infinite;
+  animation: cz-aurora-flow 4s linear infinite;
 }
 
 /* Cover banner — pink/amber/white wash painted on the cover layer
@@ -66,8 +87,6 @@
   animation: cz-aurora-flow 6s linear infinite;
   opacity: 0.9 !important;
 }
-/* If the server has no cover image, .ws-banner-cover doesn't render —
- * draw the wash from a ::before instead, behind any content. */
 .cz-aurora-cover {
   position: relative;
 }
@@ -86,10 +105,8 @@
           mask-image: linear-gradient(180deg,#000 0%,#000 35%,rgba(0,0,0,0.4) 75%,transparent 100%);
 }
 
-/* Emblem halo — pink-to-amber ring spinning around the avatar. */
-.cz-aurora-emblem {
-  position: relative;
-}
+/* Emblem halo — pink/amber ring spinning around the avatar. */
+.cz-aurora-emblem { position: relative; }
 .cz-aurora-emblem::before {
   content: "";
   position: absolute;
@@ -144,9 +161,6 @@
   z-index: -1;
   filter: blur(2px);
 }
-
-/* When the orb is also a planet (orb-slide centre), force the white
- * core so the original orb gradient doesn't bleed through. */
 .cz-aurora-orb.planet,
 .orb-slide.cz-aurora-orb .planet {
   background: radial-gradient(circle at 35% 30%,
