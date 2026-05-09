@@ -2531,7 +2531,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
   flex-shrink:0;position:relative;
   display:flex;align-items:center;justify-content:center;
 }
-#profileModal .modal-orb-core{
+#profileModal .profile-orb-core{
   width:48px;height:48px;
   font-size:1.1rem;font-weight:700;
   border:1px solid var(--tint-3);
