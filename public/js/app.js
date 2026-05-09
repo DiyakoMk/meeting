@@ -13,7 +13,43 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ag (orb-with-image: strip depth overlay + inset shadow + border, keep outer glow)');
+  console.log('[orblood] client build 2026-05-09-ah (PWA: manifest + service worker + ios meta tags + permission helpers)');
+
+  // PWA: register the service worker so the shell works offline and the
+
+  // app is installable on home screens. Wrapped in try/catch and a
+
+  // feature check so older browsers / iframes still load the page.
+
+  if ('serviceWorker' in navigator && window.isSecureContext){
+
+    window.addEventListener('load', () => {
+
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+
+        .catch(err => console.warn('[orblood] sw register failed', err && err.message));
+
+    });
+
+    // When a new SW takes over (after an update), reload once so the
+
+    // user sees the fresh build instead of a stale cached shell.
+
+    let _swReloaded = false;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+
+      if (_swReloaded) return;
+
+      _swReloaded = true;
+
+      // Tiny defer so any pending navigation finishes before the reload.
+
+      setTimeout(() => location.reload(), 50);
+
+    });
+
+  }
 
   // ============== STARS ==============
 

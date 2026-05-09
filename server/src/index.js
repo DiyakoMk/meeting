@@ -92,8 +92,19 @@ function _serveIndexHtml(_req, res) {
 app.get('/', _serveIndexHtml);
 app.use(express.static(publicDir, {
   index: false,
-  setHeaders: (res) => {
+  setHeaders: (res, filePath) => {
     res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    // Service worker must be served from the root scope and as
+    // application/javascript. Some browsers refuse to register an SW
+    // served with text/plain or with a path-restricted Service-Worker-
+    // Allowed header. Setting both explicitly here is harmless.
+    if (filePath.endsWith('/sw.js') || filePath.endsWith('\\sw.js')) {
+      res.setHeader('Service-Worker-Allowed', '/');
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    }
+    if (filePath.endsWith('manifest.webmanifest')) {
+      res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+    }
   }
 }));
 
