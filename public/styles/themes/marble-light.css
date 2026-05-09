@@ -230,6 +230,30 @@
   color: var(--selection-fg);
 }
 
+/* Banner action buttons (server settings, share) — the dark theme uses
+ * a black-glass fill that disappears on the cream marble. On marble we
+ * paint them white with a brand-red border + icon so the buttons read
+ * as crisp punched-out chips on the panel. Leave keeps its danger
+ * hover. */
+:root[data-theme="marble-light"] .ws-banner-menu-btn,
+:root[data-theme="marble-light"] .ws-banner-share-btn,
+:root[data-theme="marble-light"] .ws-banner-leave-btn {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+:root[data-theme="marble-light"] .ws-banner-menu-btn:hover,
+:root[data-theme="marble-light"] .ws-banner-share-btn:hover {
+  background: var(--brand-glow-soft);
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+:root[data-theme="marble-light"] .ws-banner-leave-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.55);
+  color: var(--danger);
+}
+
 /* Bottom taskbar — the dark theme paints it with rgba(0,0,0,0.32) which
  * looks almost black on the cream marble. Swap to a near-white wash with
  * a brand-red glow so the bar reads as part of the marble panel instead

@@ -1802,37 +1802,17 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ws-banner-actions{position:absolute;top:14px;right:14px;display:flex;gap:6px;z-index:5}
 
-/* Banner action buttons (settings, share, leave): use the brand-red
- * gradient as the resting state so they read as branded controls,
- * not generic grey chips. The hover state lifts them to a brighter
- * fill. Leave keeps a danger tint on hover to telegraph what it does. */
-.ws-banner-menu-btn,
-.ws-banner-share-btn{
-  width:32px;height:32px;border-radius:8px;
-  background:linear-gradient(135deg,var(--accent),var(--accent-2));
-  backdrop-filter:blur(10px);
-  border:1px solid var(--ag);
-  color:#fff;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 12px var(--brand-glow-soft);
-  transition:filter 0.15s, box-shadow 0.15s, transform 0.15s;
-}
-.ws-banner-menu-btn:hover,
-.ws-banner-share-btn:hover{
-  filter:brightness(1.12);
-  box-shadow:0 6px 16px var(--brand-glow);
-  transform:translateY(-1px);
-}
-/* Leave is a destructive action — keep it neutral at rest, danger on
- * hover so it doesn't compete with the primary brand buttons. */
-.ws-banner-leave-btn{
-  width:32px;height:32px;border-radius:8px;
-  background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);
-  border:1px solid var(--tint-5);color:var(--t1);
-  display:flex;align-items:center;justify-content:center;
-  transition:all 0.15s;
-}
+.ws-banner-menu-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+
+.ws-banner-leave-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+
 .ws-banner-leave-btn:hover{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.4);color:#fff}
+
+.ws-banner-share-btn{width:32px;height:32px;border-radius:8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(10px);border:1px solid var(--tint-5);color:var(--t1);display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+
+.ws-banner-share-btn:hover{background:rgba(185,28,74,0.25);border-color:var(--brand-glow);color:#fff}
+
+.ws-banner-menu-btn:hover{background:rgba(185,28,74,0.25);border-color:var(--brand-glow)}
 
 .ws-banner-menu-pop{display:none}
 
