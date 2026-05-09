@@ -45,6 +45,19 @@ const schemaPath = path.resolve(here, '..', 'schema.sql');
   await ensureCol('voice_channels', 'permission_allow', 'JSON NULL');
   await ensureCol('voice_channels', 'permission_deny',  'JSON NULL');
 
+  // Customization packs. unlocked_packs is a JSON array of pack ids the
+  // user owns ('rainbow', 'aurora', etc). Server / channel / category
+  // each carry a small string `custom_style` column that names the pack
+  // applied to that surface (NULL = stock look). We use custom_style
+  // instead of style because text_channels and voice_channels already
+  // own a `style` column for the orb skin (glow/indigo/fire/etc).
+  await ensureCol('users',             'unlocked_packs', "JSON NULL");
+  await ensureCol('servers',           'style_name',     "VARCHAR(40) NULL");
+  await ensureCol('servers',           'style_pin',      "VARCHAR(40) NULL");
+  await ensureCol('server_categories', 'custom_style',   "VARCHAR(40) NULL");
+  await ensureCol('text_channels',     'custom_style',   "VARCHAR(40) NULL");
+  await ensureCol('voice_channels',    'custom_style',   "VARCHAR(40) NULL");
+
   // Migrate server_roles primary key from (id) to (server_id, id) so the
   // role id stays unique only within a server. Original schema treated id
   // as globally unique, which broke saveRoles on every server after the

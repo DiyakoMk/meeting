@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ai (mobile orb-col drawer with FAB)');
+  console.log('[orblood] client build 2026-05-09-aj (customization packs: rainbow + customize modal + right-click style picker)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -908,6 +908,24 @@
       if (data.isEmpty) cls += ' empty-state';
 
       if (i === currentSlideIndex) cls += ' default-channel';
+
+      // Pull customStyle from the matching voice channel (if any) so the
+
+      // orb in the orbits column inherits the pack the channel uses.
+
+      let _orbCustom = null;
+
+      Object.values(servers).forEach(_srv => {
+
+        (_srv.voiceChannels||[]).forEach(_vc => {
+
+          if (vcChannelKey(_vc) === ch && _vc.customStyle) _orbCustom = _vc.customStyle;
+
+        });
+
+      });
+
+      if (_orbCustom) cls += ' '+packClassFor(_orbCustom,'orbit');
 
       // Build orbiter avatars (will be updated, NOT replaced, on state changes)
 
@@ -4359,9 +4377,25 @@
 
       avs += '</div>';
 
-      return '<div class="mark-orb-card" data-mark-card="'+ch+'" data-key="'+ch+'" style="'+cssVars+'">'+
+      // Inherit any customStyle pack from the matching voice channel.
 
-        '<div class="mo-orb"></div>'+
+      let _moCustom = null;
+
+      Object.values(servers).forEach(_srv => {
+
+        (_srv.voiceChannels||[]).forEach(_vc => {
+
+          if (vcChannelKey(_vc) === ch && _vc.customStyle) _moCustom = _vc.customStyle;
+
+        });
+
+      });
+
+      const _moCls = _moCustom ? ' '+packClassFor(_moCustom,'orbit') : '';
+
+      return '<div class="mark-orb-card'+_moCls+'" data-mark-card="'+ch+'" data-key="'+ch+'" style="'+cssVars+'">'+
+
+        '<div class="mo-orb'+_moCls+'"></div>'+
 
         '<div class="mo-name">'+data.name+'</div>'+
 
@@ -5931,11 +5965,13 @@
 
     '</div>';
 
+    const _styleNameCls = s.styleName ? ' ' + packClassFor(s.styleName, 'serverName') : '';
+
     html += '<div class="ws-banner-info">'+
 
         '<div class="ws-banner-eyebrow">SERVER · '+s.members.length+' MEMBERS · '+s.admins.length+' ADMINS</div>'+
 
-        '<div class="ws-banner-title">'+escapeHtml(s.name)+'</div>'+
+        '<div class="ws-banner-title'+_styleNameCls+'">'+escapeHtml(s.name)+'</div>'+
 
         '<div class="ws-banner-desc">'+escapeHtml(s.desc)+'</div>'+
 
@@ -5960,6 +5996,16 @@
     html += '<div class="ws-banner-actions">';
 
     html += '<button class="ws-banner-share-btn" data-srv-action="share" title="Share server"><i data-lucide="share-2" style="width:13px;height:13px"></i></button>';
+
+    // Customize: opens the pack library + per-surface picker. Available
+
+    // to anyone who can manage the server identity (owner or manageServer).
+
+    if (isOwnerHere || memberHasPerm(s,selfProfile.name,'manageServer')){
+
+      html += '<button class="ws-banner-share-btn" data-srv-action="customize" title="Customize"><i data-lucide="palette" style="width:13px;height:13px"></i></button>';
+
+    }
 
     if (!isOwnerHere){
 
@@ -5991,9 +6037,11 @@
 
     // PINNED — server-level (separate from channel-level) with neon wave
 
+    const _stylePinCls = s.stylePin ? ' ' + packClassFor(s.stylePin, 'serverPin') : '';
+
     if (s.pinned){
 
-      html += '<div class="ws-pinned-box has-neon">'+
+      html += '<div class="ws-pinned-box has-neon'+_stylePinCls+'">'+
 
         '<div class="neon-border warm"></div>'+
 
@@ -6015,7 +6063,7 @@
 
     } else if (memberHasPerm(s,selfProfile.name,'managePins')){
 
-      html += '<div class="ws-pinned-box" style="opacity:0.7">'+
+      html += '<div class="ws-pinned-box'+_stylePinCls+'" style="opacity:0.7">'+
 
         '<div class="ws-pin-icon"><i data-lucide="pin" style="width:14px;height:14px"></i></div>'+
 
@@ -6065,7 +6113,7 @@
 
           '</button>'+
 
-          '<div class="ws-cat-h-name" data-cat-glow>'+escapeHtml(cat.name)+_privateLockHtml(s, cat)+'</div>'+
+          '<div class="ws-cat-h-name'+(cat.customStyle?' '+packClassFor(cat.customStyle,'category'):'')+'" data-cat-glow>'+escapeHtml(cat.name)+_privateLockHtml(s, cat)+'</div>'+
 
           (memberHasPerm(s,selfProfile.name,'manageCategory') ? '<button class="ws-cat-del" data-cat-delete="'+cat.id+'" title="Delete category"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>' : '')+
 
@@ -6087,7 +6135,7 @@
 
             '<div class="ws-cat-pin-i"><i data-lucide="pin" style="width:11px;height:11px"></i></div>'+
 
-            '<div class="ws-cat-pin-info"><div class="ws-cat-pin-l">CATEGORY PIN</div><div class="ws-cat-pin-text">'+escapeHtml(cat.pinned.text)+'</div></div>'+
+            '<div class="ws-cat-pin-info"><div class="ws-cat-pin-l">CATEGORY PIN</div><div class="ws-cat-pin-text'+(cat.customStyle?' '+packClassFor(cat.customStyle,'category'):'')+'">'+escapeHtml(cat.pinned.text)+'</div></div>'+
 
             (memberHasPerm(s,selfProfile.name,'managePins') ? '<button class="ws-cat-pin-edit" data-cat-pin-edit="'+cat.id+'"><i data-lucide="edit-2" style="width:9px;height:9px"></i>EDIT</button>' : '')+
 
@@ -6125,7 +6173,9 @@
 
             const tcDrag = canManageTc ? ' draggable="true"' : '';
 
-            html += '<div class="ws-cat-tc style-'+tc.style+(tc.unread?' has-unread':'')+'" data-tc-id="'+tc.id+'" data-key="'+tc.id+'"'+tcDrag+' role="button" tabindex="0"><i data-lucide="hash"></i><span class="ws-cat-tc-n">'+escapeHtml(tc.name)+_privateLockHtml(s, tc)+'</span>'+(tc.unread?'<span class="ws-cat-tc-b">'+tc.unread+'</span>':'')+tcDel+'</div>';
+            const _tcCustomCls = tc.customStyle ? ' '+packClassFor(tc.customStyle,'textChannel') : '';
+
+            html += '<div class="ws-cat-tc style-'+tc.style+(tc.unread?' has-unread':'')+_tcCustomCls+'" data-tc-id="'+tc.id+'" data-key="'+tc.id+'"'+tcDrag+' role="button" tabindex="0"><i data-lucide="hash"></i><span class="ws-cat-tc-n">'+escapeHtml(tc.name)+_privateLockHtml(s, tc)+'</span>'+(tc.unread?'<span class="ws-cat-tc-b">'+tc.unread+'</span>':'')+tcDel+'</div>';
 
           });
 
@@ -6193,7 +6243,11 @@
 
             const legendaryCls = style.skin ? ' is-legendary' : '';
 
-            html += '<div class="ws-cat-vc'+(isConn?' connected':'')+legendaryCls+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+_privateLockHtml(s, vc)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
+            const _vcCustomCls = vc.customStyle ? ' '+packClassFor(vc.customStyle,'voiceChannel') : '';
+
+            const _vcOrbCls = vc.customStyle ? packClassFor(vc.customStyle,'orbit') : '';
+
+            html += '<div class="ws-cat-vc'+(isConn?' connected':'')+legendaryCls+_vcCustomCls+'" data-vc-id="'+vc.id+'" data-vc-ch="'+chKey+'" style="'+cssVars+'"><div class="ws-cat-vc-orb '+_vcOrbCls+'"></div><div class="ws-cat-vc-info"><div class="ws-cat-vc-n">'+escapeHtml(vc.name)+_privateLockHtml(s, vc)+'</div><div class="ws-cat-vc-c'+(count>0?' live':'')+'">'+count+' '+(count===1?'MEMBER':'MEMBERS')+'</div></div>'+avsHtml+vcDel+'</div>';
 
           });
 
@@ -10923,6 +10977,360 @@
 
   }
 
+  // ============== CUSTOMIZATION PACKS ==============
+
+  // Catalog mirrors what /api/packs returns. We cache it after the first
+
+  // GET so opening the modal repeatedly doesn't hit the network. The
+
+  // catalog also drives the per-surface picker UI.
+
+  let _packsCatalog = null;
+
+  let _packsLoaded = false;
+
+  // Surfaces a pack can target. Used both to filter the picker rows and
+
+  // to know which class to write into the rendered DOM.
+
+  const PACK_SURFACES = ['serverName','serverPin','category','textChannel','voiceChannel','orbit'];
+
+  // Map a pack id + surface to the css class the renderer should add to
+
+  // the matching dom node. Keep in sync with /styles/packs/*.css.
+
+  function packClassFor(packId, surface){
+
+    if (!packId) return '';
+
+    const map = {
+
+      serverName:   'cz-'+packId+'-text',
+
+      serverPin:    'cz-'+packId+'-pin',
+
+      category:     'cz-'+packId+'-category',
+
+      textChannel:  'cz-'+packId+'-textchannel',
+
+      voiceChannel: 'cz-'+packId+'-voicechannel',
+
+      orbit:        'cz-'+packId+'-orb'
+
+    };
+
+    return map[surface] || '';
+
+  }
+
+  async function loadPacksCatalog(){
+
+    if (_packsLoaded) return _packsCatalog;
+
+    try {
+
+      const r = await _apiRequest('GET', '/packs');
+
+      _packsCatalog = (r && r.packs) || [];
+
+      _packsLoaded = true;
+
+    } catch(_){ _packsCatalog = []; _packsLoaded = true; }
+
+    return _packsCatalog;
+
+  }
+
+  function ownedPackIds(){
+
+    const fromUser = (selfProfile && selfProfile.unlockedPacks) || [];
+
+    const fromCatalog = (_packsCatalog || []).filter(p => p.owned).map(p => p.id);
+
+    return new Set([...fromUser, ...fromCatalog]);
+
+  }
+
+  function packSupports(pack, surface){
+
+    return Array.isArray(pack.surfaces) && pack.surfaces.includes(surface);
+
+  }
+
+  async function openCustomizeModal(){
+
+    if (!currentServer) return;
+
+    await loadPacksCatalog();
+
+    _renderCustomizeModal();
+
+    document.getElementById('customizeBackdrop').classList.add('show');
+
+  }
+
+  function _renderCustomizeModal(){
+
+    const owned = ownedPackIds();
+
+    const s = servers[currentServer]; if (!s) return;
+
+    // Library: render a chip row per surface (currently serverName + serverPin).
+
+    function renderRow(target){
+
+      const wrap = document.querySelector('[data-cz-target="'+target+'"]');
+
+      if (!wrap) return;
+
+      const current = target === 'serverName' ? s.styleName
+
+                    : target === 'serverPin'  ? s.stylePin
+
+                    : null;
+
+      const chips = [];
+
+      // "Default" chip is always available and clears the customization.
+
+      chips.push('<button class="cz-pack-chip'+(!current?' active':'')+'" data-cz-pack="" data-cz-set="'+target+'">DEFAULT</button>');
+
+      (_packsCatalog||[]).filter(p => packSupports(p, target)).forEach(p => {
+
+        const isOwned = owned.has(p.id);
+
+        const isActive = current === p.id;
+
+        chips.push(
+
+          '<button class="cz-pack-chip'+(isActive?' active':'')+(isOwned?'':' locked')+'" '
+
+            + 'data-cz-pack="'+p.id+'" data-cz-set="'+target+'" '
+
+            + (isOwned?'':'title="Unlock from the Shop tab first" disabled')+'>'
+
+            + escapeHtml(p.name.toUpperCase())
+
+          + '</button>'
+
+        );
+
+      });
+
+      wrap.innerHTML = chips.join('');
+
+    }
+
+    renderRow('serverName');
+
+    renderRow('serverPin');
+
+    // Shop tab.
+
+    const shopList = document.getElementById('czShopList');
+
+    shopList.innerHTML = (_packsCatalog||[]).map(p => {
+
+      const isOwned = owned.has(p.id);
+
+      return '<div class="cz-shop-item">'
+
+        + '<div class="cz-shop-info">'
+
+          + '<div class="cz-shop-name">'+escapeHtml(p.name)+'</div>'
+
+          + '<div class="cz-shop-desc">'+escapeHtml(p.desc)+'</div>'
+
+          + '<div class="cz-shop-price">'+(p.price > 0 ? '$'+p.price : 'FREE')+'</div>'
+
+        + '</div>'
+
+        + (isOwned
+
+            ? '<button class="sm-btn cancel" disabled>OWNED</button>'
+
+            : '<button class="sm-btn primary" data-cz-unlock="'+p.id+'">UNLOCK</button>')
+
+      + '</div>';
+
+    }).join('');
+
+    refreshIcons();
+
+  }
+
+  async function _setServerStyle(target, packId){
+
+    if (!currentServer) return;
+
+    const s = servers[currentServer]; if (!s) return;
+
+    const field = target === 'serverName' ? 'styleName' : 'stylePin';
+
+    const body = {}; body[field] = packId || null;
+
+    s[field] = packId || null;
+
+    if (backend.isConfigured()){
+
+      try {
+
+        await _apiRequest('PATCH', '/servers/'+s.id, body);
+
+      } catch(e){ showToast('Could not save style','warn'); }
+
+    }
+
+    renderServerOverview && renderServerOverview();
+
+    _renderCustomizeModal();
+
+  }
+
+  // Open a small picker rooted at the screen centre (mouse is too far
+
+  // gone by the time we know we want it). Lists every owned pack that
+
+  // supports the given surface plus a "Default" option to clear.
+
+  async function openStylePicker(target, id, current){
+
+    await loadPacksCatalog();
+
+    const owned = ownedPackIds();
+
+    // Map ctx target type → catalog surface key.
+
+    const surface = target === 'text'    ? 'textChannel'
+
+                  : target === 'voice'   ? 'voiceChannel'
+
+                  : target === 'category' ? 'category' : null;
+
+    if (!surface) return;
+
+    const items = [
+
+      { icon: current ? 'circle' : 'check', label:'Default', action:()=>{ _saveCustomStyle(target, id, null); } }
+
+    ];
+
+    (_packsCatalog||[]).filter(p => owned.has(p.id) && packSupports(p, surface)).forEach(p => {
+
+      items.push({
+
+        icon: current === p.id ? 'check' : 'circle',
+
+        label: p.name,
+
+        action: () => { _saveCustomStyle(target, id, p.id); }
+
+      });
+
+    });
+
+    if (items.length === 1){
+
+      items.push({ sep:true });
+
+      items.push({ icon:'shopping-bag', label:'Open Customize…', action:()=>{ openCustomizeModal(); } });
+
+    }
+
+    // Position roughly centre — same coordinates the right-click ctx
+
+    // menu uses when the source event isn't reachable.
+
+    const cx = window.innerWidth/2, cy = window.innerHeight/2;
+
+    showCtxMenu(cx, cy, items, 'STYLE');
+
+  }
+
+  async function _saveCustomStyle(target, id, packId){
+
+    if (!currentServer) return;
+
+    const s = servers[currentServer]; if (!s) return;
+
+    let urlPath, localObj;
+
+    if (target === 'text'){
+
+      const tc = (s.textChannels||[]).find(x => x.id === id); if (!tc) return;
+
+      tc.customStyle = packId || null;
+
+      urlPath = '/channels/text/'+s.id+'/'+id;
+
+      localObj = tc;
+
+    } else if (target === 'voice'){
+
+      const vc = (s.voiceChannels||[]).find(x => x.id === id); if (!vc) return;
+
+      vc.customStyle = packId || null;
+
+      urlPath = '/channels/voice/'+s.id+'/'+id;
+
+      localObj = vc;
+
+    } else if (target === 'category'){
+
+      const cat = (s.categories||[]).find(x => x.id === id); if (!cat) return;
+
+      cat.customStyle = packId || null;
+
+      urlPath = '/servers/'+s.id+'/categories/'+id;
+
+      localObj = cat;
+
+    } else return;
+
+    if (backend.isConfigured()){
+
+      try { await _apiRequest('PATCH', urlPath, { customStyle: packId || null }); }
+
+      catch(_){ showToast('Could not save style','warn'); }
+
+    }
+
+    renderServerOverview && renderServerOverview();
+
+    renderHomeMarkedOrbits && renderHomeMarkedOrbits();
+
+    renderOrbSlides && renderOrbSlides();
+
+  }
+
+  async function _unlockPack(packId){
+
+    if (!backend.isConfigured()) { showToast('Sign in to unlock packs','warn'); return; }
+
+    try {
+
+      const r = await _apiRequest('POST', '/packs/'+packId+'/unlock');
+
+      if (r && r.owned){
+
+        if (!selfProfile.unlockedPacks) selfProfile.unlockedPacks = [];
+
+        selfProfile.unlockedPacks = r.owned.slice();
+
+        // Mark in catalog too so the chip flips to OWNED without re-fetch.
+
+        (_packsCatalog||[]).forEach(p => { if (p.id === packId) p.owned = true; });
+
+        showToast('Pack unlocked','success');
+
+        _renderCustomizeModal();
+
+      }
+
+    } catch(_){ showToast('Could not unlock pack','warn'); }
+
+  }
+
   function openShareServerModal(){
 
     if (!currentServer) return;
@@ -14653,6 +15061,54 @@
 
   }));
 
+  // Customize modal — tab switching + chip clicks + unlock button.
+
+  document.querySelectorAll('[data-cz-tab]').forEach(t => t.addEventListener('click', () => {
+
+    document.querySelectorAll('[data-cz-tab]').forEach(x => x.classList.toggle('active', x === t));
+
+    const tab = t.dataset.czTab;
+
+    document.getElementById('czLibraryPane').style.display = tab==='library'?'':'none';
+
+    document.getElementById('czShopPane').style.display    = tab==='shop'?'':'none';
+
+  }));
+
+  document.getElementById('customizeBackdrop').addEventListener('click', e => {
+
+    const chip = e.target.closest('[data-cz-set]');
+
+    if (chip && !chip.classList.contains('locked')){
+
+      e.stopPropagation();
+
+      _setServerStyle(chip.dataset.czSet, chip.dataset.czPack);
+
+      return;
+
+    }
+
+    const unlock = e.target.closest('[data-cz-unlock]');
+
+    if (unlock){
+
+      e.stopPropagation();
+
+      _unlockPack(unlock.dataset.czUnlock);
+
+      return;
+
+    }
+
+    if (e.target.id === 'customizeBackdrop'){
+
+      document.getElementById('customizeBackdrop').classList.remove('show');
+
+    }
+
+  });
+
   // Color grid removed — colour is randomised at openCreateServer time.
 
   document.getElementById('csSubmit').addEventListener('click', submitCreateServer);
@@ -15233,6 +15689,8 @@
 
         items.push({ sep:true });
 
+        items.push({ icon:'palette', label:'Style…', action:()=>{ openStylePicker('text', tcId, tc.customStyle); } });
+
         items.push({ icon:'settings', label:'Channel settings', action:()=>{ openChanSettings({type:'text', id:tcId}); } });
 
       }
@@ -15261,6 +15719,8 @@
 
         items.push({ sep:true });
 
+        items.push({ icon:'palette', label:'Style…', action:()=>{ openStylePicker('voice', vcId, vc.customStyle); } });
+
         items.push({ icon:'settings', label:'Voice orb settings', action:()=>{ openChanSettings({type:'voice', id:vcId}); } });
 
       }
@@ -15280,6 +15740,8 @@
       const items = [];
 
       if (memberHasPerm(s,selfProfile.name,'manageCategory') || canManageRoles){
+
+        items.push({ icon:'palette', label:'Style…', action:()=>{ openStylePicker('category', catId, cat.customStyle); } });
 
         items.push({ icon:'settings', label:'Category settings', action:()=>{ openChanSettings({type:'category', id:catId}); } });
 
@@ -15316,6 +15778,8 @@
     if (e.target.closest('[data-srv-action="addpin"]')){ e.stopPropagation(); openPinModal(); return; }
 
     if (e.target.closest('[data-srv-action="share"]')){ e.stopPropagation(); openShareServerModal(); return; }
+
+    if (e.target.closest('[data-srv-action="customize"]')){ e.stopPropagation(); openCustomizeModal(); return; }
 
     if (e.target.closest('[data-srv-action="leave"]')){
 

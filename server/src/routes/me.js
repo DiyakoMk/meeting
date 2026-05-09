@@ -210,6 +210,11 @@ meRouter.get('/snapshot', async (req, res, next) => {
           emblemImage: row.emblem_image || null,
           inviteKey: row.invite_key || null,
           isPrivate: !!row.is_private,
+          // Pack-driven custom styles. styleName/stylePin live on the
+          // server row itself; per-category and per-channel styles live
+          // on those rows. NULL means the stock look.
+          styleName: row.style_name || null,
+          stylePin:  row.style_pin  || null,
           members: sm.map(x => x.name),
           memberDetails: sm.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin, avImage: x.av_image || null, baseColor: x.base_color || null })),
           admins: sm.filter(x => x.is_admin).map(x => x.name),
@@ -218,11 +223,13 @@ meRouter.get('/snapshot', async (req, res, next) => {
             id: c.id, name: c.name,
             pinned: c.pinned_text ? { text: c.pinned_text, by: null, time: null } : null,
             visibleRoleIds: parseRoleIds(c.visible_role_ids),
+            customStyle: c.custom_style || null,
             textChannels:  tcs.filter(t => t.server_id === sid && t.category_id === c.id).map(t => t.id),
             voiceChannels: vcs.filter(v => v.server_id === sid && v.category_id === c.id).map(v => v.id)
           })),
           textChannels: tcs.filter(t => t.server_id === sid).map(t => ({
             id: t.id, name: t.name, style: t.style || 'glow', unread: 0,
+            customStyle: t.custom_style || null,
             pinnedMsgId: t.pinned_msg_id || null,
             visibleRoleIds:  parseRoleIds(t.visible_role_ids),
             permissionAllow: parseRoleIds(t.permission_allow),
@@ -230,6 +237,7 @@ meRouter.get('/snapshot', async (req, res, next) => {
           })),
           voiceChannels: vcs.filter(v => v.server_id === sid).map(v => ({
             id: v.id, name: v.name, style: v.style || 'indigo',
+            customStyle: v.custom_style || null,
             visibleRoleIds:  parseRoleIds(v.visible_role_ids),
             permissionAllow: parseRoleIds(v.permission_allow),
             permissionDeny:  parseRoleIds(v.permission_deny)

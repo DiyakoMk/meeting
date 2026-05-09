@@ -16,6 +16,7 @@ import { friendsRouter } from './routes/friends.js';
 import { usersRouter } from "./routes/users.js";
 import { uploadsRouter } from "./routes/uploads.js";
 import { voiceConfigRouter } from './routes/voice-config.js';
+import { packsRouter } from './routes/packs.js';
 import { attachWs } from './realtime/ws.js';
 import http from 'node:http';
 
@@ -122,6 +123,7 @@ app.use('/api/dms',      dmsRouter);
 app.use('/api/friends',  friendsRouter);
 app.use('/api/users',    usersRouter);
 app.use('/api/uploads',  uploadsRouter);
+app.use('/api/packs',    packsRouter);
 
 // 404 — JSON for API routes, fallback to SPA index.html for everything else.
 app.use('/api', (_req, res) => res.status(404).json({ error: 'not_found' }));

@@ -68,6 +68,16 @@
 
 <link rel="stylesheet" href="/styles/main.css" />
 
+<!-- Customization packs. Each pack is a self-contained CSS file under
+
+     /styles/packs/<id>.css. The renderer applies matching
+
+     cz-<id>-<surface> classes when a server / channel / category has
+
+     the pack id stored as its custom_style. -->
+
+<link rel="stylesheet" href="/styles/packs/rainbow.css" />
+
 <script>
 
   // Apply the saved theme as early as possible so the user never sees a
@@ -1415,6 +1425,74 @@
           <button class="sm-btn cancel" data-close-smodal="createServerBackdrop">CANCEL</button>
 
           <button class="sm-btn primary" id="csSubmit"><i data-lucide="check" style="width:11px;height:11px"></i>CONFIRM</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Customize Modal — Library / Shop / per-surface picker -->
+
+    <div class="modal-backdrop" id="customizeBackdrop">
+
+      <div class="smodal" style="max-width:560px">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title">// CUSTOMIZE</div>
+
+          <button class="smodal-close" data-close-smodal="customizeBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body">
+
+          <div class="sm-tabs">
+
+            <button class="sm-tab active" data-cz-tab="library">LIBRARY</button>
+
+            <button class="sm-tab" data-cz-tab="shop">SHOP</button>
+
+          </div>
+
+          <!-- Library: per-surface picker for this server -->
+
+          <div id="czLibraryPane">
+
+            <div class="cz-section">
+
+              <div class="cz-section-l">SERVER NAME STYLE</div>
+
+              <div class="cz-pack-row" data-cz-target="serverName"></div>
+
+            </div>
+
+            <div class="cz-section">
+
+              <div class="cz-section-l">SERVER PIN STYLE</div>
+
+              <div class="cz-pack-row" data-cz-target="serverPin"></div>
+
+            </div>
+
+            <div class="cz-hint">For categories and channels, right-click them in the server view to pick a style. New text/voice channels also offer a style picker when created.</div>
+
+          </div>
+
+          <!-- Shop: catalog of all packs with unlock buttons -->
+
+          <div id="czShopPane" style="display:none">
+
+            <div class="cz-shop-list" id="czShopList"></div>
+
+          </div>
+
+        </div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="customizeBackdrop">CLOSE</button>
 
         </div>
 

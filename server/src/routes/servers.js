@@ -21,7 +21,12 @@ const createServerSchema = z.object({
   isPrivate:   z.boolean().optional().default(false)
 });
 
-const patchServerSchema = createServerSchema.partial().extend({ pinnedText: z.string().max(2000).nullable().optional() });
+const patchServerSchema = createServerSchema.partial().extend({
+  pinnedText: z.string().max(2000).nullable().optional(),
+  // Pack ids are short strings; null clears back to the stock look.
+  styleName:  z.string().max(40).nullable().optional(),
+  stylePin:   z.string().max(40).nullable().optional()
+});
 
 const categorySchema = z.object({
   name: z.string().trim().min(1).max(80)
@@ -84,6 +89,8 @@ async function buildServerPayload(sid) {
     emblemImage: s.emblem_image || null,
     inviteKey: s.invite_key || null,
     isPrivate: !!s.is_private,
+    styleName: s.style_name || null,
+    stylePin:  s.style_pin  || null,
     members: members.map(x => x.name),
     memberDetails: members.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin, avImage: x.av_image || null, baseColor: x.base_color || null })),
     admins:  members.filter(x => x.is_admin).map(x => x.name),
@@ -92,11 +99,13 @@ async function buildServerPayload(sid) {
       id: c.id, name: c.name,
       pinned: c.pinned_text ? { text: c.pinned_text, by: null, time: null } : null,
       visibleRoleIds: parseRoleIds(c.visible_role_ids),
+      customStyle: c.custom_style || null,
       textChannels:  tcs.filter(t => t.category_id === c.id).map(t => t.id),
       voiceChannels: vcs.filter(v => v.category_id === c.id).map(v => v.id)
     })),
     textChannels: tcs.map(t => ({
       id: t.id, name: t.name, style: t.style || 'glow', unread: 0,
+      customStyle: t.custom_style || null,
       pinnedMsgId: t.pinned_msg_id || null,
       visibleRoleIds:  parseRoleIds(t.visible_role_ids),
       permissionAllow: parseRoleIds(t.permission_allow),
@@ -104,6 +113,7 @@ async function buildServerPayload(sid) {
     })),
     voiceChannels: vcs.map(v => ({
       id: v.id, name: v.name, style: v.style || 'indigo',
+      customStyle: v.custom_style || null,
       visibleRoleIds:  parseRoleIds(v.visible_role_ids),
       permissionAllow: parseRoleIds(v.permission_allow),
       permissionDeny:  parseRoleIds(v.permission_deny)
@@ -199,7 +209,10 @@ serversRouter.patch('/:id', async (req, res, next) => {
     const map = {
       name: 'name', desc: 'description', baseColor: 'base_color',
       grad: 'grad', glow: 'glow', cover: 'cover',
-      emblemImage: 'emblem_image', isPrivate: 'is_private', pinnedText: 'pinned_text'
+      emblemImage: 'emblem_image', isPrivate: 'is_private', pinnedText: 'pinned_text',
+      // Pack-driven custom styles per surface. Either a pack id like
+      // 'rainbow' or null to revert to the stock look.
+      styleName: 'style_name', stylePin: 'style_pin'
     };
     const sets = []; const args = [];
     for (const [k, col] of Object.entries(map)) {
@@ -354,7 +367,8 @@ serversRouter.post('/:id/transfer-ownership', async (req, res, next) => {
 const categoryPatchSchema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
   pinnedText: z.string().max(2000).nullable().optional(),
-  visibleRoleIds: z.array(z.string().min(1).max(40)).max(50).nullable().optional()
+  visibleRoleIds: z.array(z.string().min(1).max(40)).max(50).nullable().optional(),
+  customStyle: z.string().max(40).nullable().optional()
 });
 
 serversRouter.patch('/:id/categories/:cid', async (req, res, next) => {
@@ -371,6 +385,10 @@ serversRouter.patch('/:id/categories/:cid', async (req, res, next) => {
     if (body.visibleRoleIds !== undefined) {
       sets.push('visible_role_ids = ?');
       args.push(body.visibleRoleIds === null ? null : JSON.stringify(body.visibleRoleIds));
+    }
+    if (body.customStyle !== undefined) {
+      sets.push('custom_style = ?');
+      args.push(body.customStyle || null);
     }
     if (sets.length) {
       args.push(req.params.cid, sid);

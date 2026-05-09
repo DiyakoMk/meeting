@@ -2712,6 +2712,23 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 
 .sm-style-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:4px}
 
+/* ===== CUSTOMIZE MODAL ===== */
+.cz-section{margin-top:14px;padding-top:14px;border-top:1px solid var(--tint-3)}
+.cz-section:first-child{border-top:none;padding-top:0;margin-top:0}
+.cz-section-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.55rem;letter-spacing:1.6px;color:var(--t3);margin-bottom:8px}
+.cz-pack-row{display:flex;flex-wrap:wrap;gap:8px}
+.cz-pack-chip{padding:6px 12px;border-radius:20px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1.4px;font-weight:700;color:var(--t1);background:var(--tint-2);border:1px solid var(--tint-3);cursor:pointer;transition:background 0.15s}
+.cz-pack-chip:hover{background:var(--tint-4)}
+.cz-pack-chip.active{background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent}
+.cz-pack-chip.locked{opacity:0.5;cursor:not-allowed}
+.cz-hint{margin-top:14px;font-size:0.7rem;color:var(--t2);line-height:1.55}
+.cz-shop-list{display:flex;flex-direction:column;gap:10px}
+.cz-shop-item{padding:14px;border:1px solid var(--tint-3);border-radius:12px;background:var(--tint-1);display:flex;align-items:center;gap:14px}
+.cz-shop-info{flex:1;min-width:0}
+.cz-shop-name{font-size:0.95rem;font-weight:600;color:var(--t1);margin-bottom:4px}
+.cz-shop-desc{font-size:0.75rem;color:var(--t2);line-height:1.5}
+.cz-shop-price{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1.5px;color:var(--accent);margin-top:4px}
+
 /* Radio toggle row used in modal forms (e.g. server visibility public/private). */
 .sm-toggle-row{display:flex;flex-direction:column;gap:6px;margin-top:4px}
 .sm-radio{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--tint-3);background:var(--tint-1);border-radius:10px;cursor:pointer;transition:background 0.15s,border-color 0.15s}

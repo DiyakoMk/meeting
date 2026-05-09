@@ -14,7 +14,7 @@ export function publicUser(row) {
     baseColor:    row.base_color || null,
     avImage:      row.av_image || null,
     bannerImage:  row.banner_image || null,
-    friendsOnly:  !!row.friends_only,
+    friendsOnly:  !!row.friends_only, unlockedPacks: (function(){var v=row.unlocked_packs;if(!v)return[];if(Array.isArray(v))return v;try{var a=JSON.parse(v);return Array.isArray(a)?a:[];}catch(_){return[];}})(),
     createdAt:    row.created_at ? new Date(row.created_at).toISOString() : null,
     lastSeenAt:   row.last_seen_at ? new Date(row.last_seen_at).toISOString() : null
   };
@@ -25,6 +25,6 @@ export function foreignUser(row) {
   if (!u) return null;
   delete u.email;
   delete u.phone;
-  delete u.friendsOnly;
+  delete u.friendsOnly; delete u.unlockedPacks;
   return u;
 }

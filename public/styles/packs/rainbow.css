@@ -1,0 +1,106 @@
+/* Rainbow customization pack.
+ *
+ * Each surface gets a `.cz-rainbow-<surface>` class added by the
+ * renderer when the user selects this pack. We use animated linear
+ * gradients clipped to text for the labels, and a slow rotating
+ * conic-gradient ring for the orbs. All colours are hard-coded so the
+ * effect is identical across every theme. */
+
+@keyframes cz-rainbow-flow {
+  0%   { background-position:   0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes cz-rainbow-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Shared text recipe — applied to server name, category title, text
+ * channel name, voice channel name, and pin text. We clip the
+ * gradient to the text and animate the background-position so the
+ * rainbow flows. */
+.cz-rainbow-text {
+  background: linear-gradient(90deg,
+    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d) !important;
+  background-size: 200% 200% !important;
+  -webkit-background-clip: text !important;
+          background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+  animation: cz-rainbow-flow 6s linear infinite;
+  text-shadow: none !important;
+  filter: drop-shadow(0 0 8px rgba(255,180,255,0.35));
+}
+
+/* Server name in the world-hero header. */
+.cz-rainbow-name { /* intentionally same as cz-rainbow-text — JS adds both. */ }
+
+/* Pin banner — keeps its surface but the inner text and the i icon
+ * pick up the rainbow. */
+.cz-rainbow-pin .ws-pin-text,
+.cz-rainbow-pin .ws-cat-pin-text,
+.cz-rainbow-pin .dm-pinned-text {
+  background: linear-gradient(90deg,
+    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d);
+  background-size: 200% 200%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: cz-rainbow-flow 6s linear infinite;
+}
+.cz-rainbow-pin {
+  border-color: rgba(255,180,255,0.45) !important;
+  box-shadow: 0 0 14px rgba(255,180,255,0.18), inset 0 0 12px rgba(255,180,255,0.10) !important;
+}
+
+/* Category title row. */
+.cz-rainbow-category .ws-cat-h-name,
+.cz-rainbow-category .ws-cat-name { /* picked up regardless of the host markup */
+  background: linear-gradient(90deg,
+    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d);
+  background-size: 200% 200%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: cz-rainbow-flow 6s linear infinite;
+}
+
+/* Text channel name. */
+.cz-rainbow-textchannel .ws-cat-tc-n,
+.cz-rainbow-textchannel .ws-cat-tc-name {
+  background: linear-gradient(90deg,
+    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d);
+  background-size: 200% 200%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: cz-rainbow-flow 6s linear infinite;
+}
+
+/* Voice channel name. */
+.cz-rainbow-voicechannel .ws-cat-vc-n {
+  background: linear-gradient(90deg,
+    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d);
+  background-size: 200% 200%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: cz-rainbow-flow 6s linear infinite;
+}
+
+/* Voice / orbit orb gets a slow rainbow rim. The orb keeps its own
+ * inner gradient (planet look) but a conic-gradient ring underneath
+ * supplies the rainbow accent. */
+.cz-rainbow-orb {
+  position: relative;
+}
+.cz-rainbow-orb::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #ff4d6d, #ffb347, #fef27a, #6dd66c, #5ab4ff, #c47bff, #ff4d6d);
+  -webkit-mask: radial-gradient(circle, transparent 65%, #000 67%);
+          mask: radial-gradient(circle, transparent 65%, #000 67%);
+  animation: cz-rainbow-spin 8s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}

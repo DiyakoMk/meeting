@@ -350,6 +350,7 @@ const overrideMapSchema = z.record(
 const channelPatchSchema = z.object({
   name:            z.string().trim().min(1).max(80).optional(),
   style:           z.string().max(40).optional(),
+  customStyle:     z.string().max(40).nullable().optional(),
   // null clears the restriction (visible to everyone). An empty array
   // means "no role can see it", which the client never actually sends
   // but we still store as-is.
@@ -362,6 +363,10 @@ function _buildChannelPatch(body) {
   const sets = [], args = [];
   if (body.name  !== undefined) { sets.push('name = ?');  args.push(body.name); }
   if (body.style !== undefined) { sets.push('style = ?'); args.push(body.style); }
+  if (body.customStyle !== undefined) {
+    sets.push('custom_style = ?');
+    args.push(body.customStyle || null);
+  }
   if (body.visibleRoleIds !== undefined) {
     sets.push('visible_role_ids = ?');
     args.push(body.visibleRoleIds === null ? null : JSON.stringify(body.visibleRoleIds));
@@ -445,6 +450,8 @@ async function __buildServerPayload(sid) {
     grad: s.grad || null, glow: s.glow || null, cover: s.cover || null,
     emblemImage: s.emblem_image || null, inviteKey: s.invite_key || null,
     isPrivate: !!s.is_private,
+    styleName: s.style_name || null,
+    stylePin:  s.style_pin  || null,
     members: members.map(x => x.name),
     memberDetails: members.map(x => ({ id: String(x.user_id), name: x.name, isAdmin: !!x.is_admin, avImage: x.av_image || null, baseColor: x.base_color || null })),
     admins:  members.filter(x => x.is_admin).map(x => x.name),
@@ -453,11 +460,13 @@ async function __buildServerPayload(sid) {
       id: c.id, name: c.name,
       pinned: c.pinned_text ? { text: c.pinned_text, by: null, time: null } : null,
       visibleRoleIds: __parseRoleIds(c.visible_role_ids),
+      customStyle: c.custom_style || null,
       textChannels:  tcs.filter(t => t.category_id === c.id).map(t => t.id),
       voiceChannels: vcs.filter(v => v.category_id === c.id).map(v => v.id)
     })),
     textChannels: tcs.map(t => ({
       id: t.id, name: t.name, style: t.style || 'glow', unread: 0,
+      customStyle: t.custom_style || null,
       pinnedMsgId: t.pinned_msg_id || null,
       visibleRoleIds:  __parseRoleIds(t.visible_role_ids),
       permissionAllow: __parseRoleIds(t.permission_allow),
@@ -465,6 +474,7 @@ async function __buildServerPayload(sid) {
     })),
     voiceChannels: vcs.map(v => ({
       id: v.id, name: v.name, style: v.style || 'indigo',
+      customStyle: v.custom_style || null,
       visibleRoleIds:  __parseRoleIds(v.visible_role_ids),
       permissionAllow: __parseRoleIds(v.permission_allow),
       permissionDeny:  __parseRoleIds(v.permission_deny)
