@@ -1,0 +1,48 @@
+{
+  "name": "orblood-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ORBLOOD desktop wrapper (Electron + embedded backend)",
+  "main": "electron/main.js",
+  "scripts": {
+    "postinstall": "cd server && npm install --omit=dev",
+    "electron":    "electron .",
+    "build:win":   "electron-builder --win --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron":         "^31.3.1",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId":       "io.orblood.desktop",
+    "productName": "ORBLOOD",
+    "asar":        true,
+    "asarUnpack":  ["server/**/*", "public/**/*"],
+    "files": [
+      "electron/**/*",
+      "public/**/*",
+      "server/**/*",
+      "package.json"
+    ],
+    "extraResources": [],
+    "directories": {
+      "output": "dist-electron",
+      "buildResources": "electron/build-resources"
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "artifactName": "ORBLOOD-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick":             false,
+      "perMachine":           false,
+      "allowElevation":       false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName":         "ORBLOOD"
+    }
+  }
+}
