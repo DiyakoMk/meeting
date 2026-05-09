@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ad (universal avatar bg-size cover + overflow hidden)');
+  console.log('[orblood] client build 2026-05-09-ae (drop profile orb status dot, fill orb wrapper)');
 
   // ============== STARS ==============
 

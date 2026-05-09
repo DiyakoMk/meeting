@@ -2535,10 +2535,19 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 #profileModal .profile-actions{padding:12px 18px 16px}
 
 .profile-orb{position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* Make the inner orb fill the wrapper so an avatar image touches the
+ * outer ring of the modal orb instead of leaving a ~5px halo of
+ * background panel around it. The default 78px size is overridden
+ * specifically inside the profile modal. */
+#profileModal .profile-orb-core{width:88px;height:88px}
 
 .profile-orb-core{width:78px;height:78px;border-radius:50%;background:var(--profile-orb-grad,linear-gradient(135deg,#3a3a45,#1a1a22));box-shadow:0 4px 16px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk','Vazirmatn',sans-serif;font-size:1.6rem;font-weight:700;color:#fff;border:1px solid var(--tint-3);background-size:cover;background-position:center;overflow:hidden}
 
-.profile-orb-status{position:absolute;bottom:6px;right:6px;width:14px;height:14px;border-radius:50%;background:var(--success);border:3px solid var(--panel);box-shadow:0 0 6px var(--success)}
+/* Status dot was a green pip clipped onto the profile orb. The product
+ * decision is to drop it entirely — presence is shown elsewhere in the
+ * modal. Hide via display:none rather than removing the element so any
+ * code that toggles its class doesn't blow up. */
+.profile-orb-status{display:none}
 
 .profile-orb-status.offline{background:var(--t3);box-shadow:none}
 
