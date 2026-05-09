@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-af (profile orb: strip border + depth overlay when image set)');
+  console.log('[orblood] client build 2026-05-09-ag (orb-with-image: strip depth overlay + inset shadow + border, keep outer glow)');
 
   // ============== STARS ==============
 

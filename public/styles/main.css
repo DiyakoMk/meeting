@@ -550,6 +550,47 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
     inset 0 -3px 8px rgba(0,0,0,0.4),
     inset 0 1px 2px rgba(255,200,200,0.25);
 }
+/* When JS paints a real avatar/image into the orb (background-image is
+ * set inline), drop the depth pseudo-overlay so the picture reaches
+ * edge-to-edge instead of being framed by a dark rim. Same trick as
+ * the profile modal — applied across every orb class so any avatar
+ * upload looks the same everywhere. */
+.modal-orb-core[style*="url("]::before,
+.profile-orb-core[style*="url("]::before,
+.ws-emblem[style*="url("]::before,
+.ws-vc-orb[style*="url("]::before,
+.world-hero-emblem[style*="url("]::before,
+.world-empty-core[style*="url("]::before,
+.dm-empty-orb-core[style*="url("]::before,
+.dm-head-av[style*="url("]::before,
+.mark-orb-card .mo-orb[style*="url("]::before{
+  display:none;
+}
+/* Same idea for the orb classes' own inset shadows: when an image is
+ * the background, the inner highlight + tint-7 ring frames the picture
+ * inside the circle. Strip the inset portions but keep the outer glow
+ * so the orb still "lights up" without cropping the photo. */
+.modal-orb-core[style*="url("],
+.profile-orb-core[style*="url("],
+.ws-emblem[style*="url("],
+.ws-vc-orb[style*="url("],
+.world-hero-emblem[style*="url("],
+.world-empty-core[style*="url("],
+.dm-empty-orb-core[style*="url("],
+.dm-head-av[style*="url("],
+.mark-orb-card .mo-orb[style*="url("]{
+  border:none;
+}
+/* The orb classes that bake an inset glow into their box-shadow chain
+ * need that inset stripped explicitly when the user supplied a photo.
+ * We keep the outer glow by re-stating only the outer drop shadow. */
+.ws-emblem[style*="url("]      { box-shadow: 0 0 36px var(--srv-glow,rgba(185,28,74,0.5)); }
+.ws-vc-orb[style*="url("]      { box-shadow: 0 0 20px var(--vc-glow,var(--brand-glow)); }
+.world-hero-emblem[style*="url("] { box-shadow: 0 0 30px rgba(185,28,74,0.5); }
+.dm-empty-orb-core[style*="url("] { box-shadow: 0 0 28px rgba(185,28,74,0.5); }
+.modal-orb-core[style*="url("] { box-shadow: 0 0 50px var(--profile-orb-glow,var(--brand-glow-strong)); }
+.mark-orb-card .mo-orb[style*="url("] { box-shadow: 0 0 22px var(--card-orb-glow,rgba(190,18,60,0.4)); }
+.dm-head-av[style*="url("]     { box-shadow: 0 0 18px rgba(185,28,74,0.3); }
 
 .ph-purple-orb:hover{transform:scale(1.06)}
 
