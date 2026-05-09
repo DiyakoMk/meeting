@@ -965,17 +965,17 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .dm-conv{display:flex;flex-direction:column;height:100%;min-height:0;background:radial-gradient(ellipse at 50% 0%,rgba(185,28,74,0.06),transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(190,18,60,0.04),transparent 60%);position:relative}
 
-.dm-pinned-banner{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:8px 14px 10px;background:linear-gradient(135deg,var(--tint-6),rgba(185,28,74,0.16));border:1px solid rgba(255,255,255,0.32);border-radius:10px;cursor:pointer;color:#fff;box-shadow:0 0 10px var(--tint-4)}
+.dm-pinned-banner{display:flex;align-items:center;gap:10px;padding:9px 12px;margin:8px 14px 10px;background:linear-gradient(135deg,var(--tint-6),var(--brand-glow-soft));border:1px solid var(--tint-7);border-radius:10px;cursor:pointer;color:var(--t1);box-shadow:0 0 10px var(--tint-4)}
 
-.dm-pinned-banner:hover{background:linear-gradient(135deg,rgba(255,255,255,0.24),rgba(185,28,74,0.22));border-color:rgba(255,255,255,0.45)}
+.dm-pinned-banner:hover{background:linear-gradient(135deg,var(--tint-7),var(--brand-glow));border-color:var(--tint-9)}
 
-.dm-pinned-banner i{flex-shrink:0;color:#fff}
+.dm-pinned-banner i{flex-shrink:0;color:var(--accent)}
 
 .dm-pinned-info{flex:1;min-width:0}
 
-.dm-pinned-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:#fff;letter-spacing:1.5px;margin-bottom:2px;font-weight:700;opacity:0.85}
+.dm-pinned-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t2);letter-spacing:1.5px;margin-bottom:2px;font-weight:700}
 
-.dm-pinned-text{font-size:0.78rem;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.dm-pinned-text{font-size:0.78rem;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
 
 .dm-pinned-x{width:22px;height:22px;border-radius:6px;color:var(--t3);background:transparent;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s}
 
@@ -1712,7 +1712,11 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .ws-cat{margin:24px 22px 0;position:relative}
 
-.ws-cat-h{position:relative;padding:6px 0 14px;display:flex;align-items:center;justify-content:center;text-align:center}
+.ws-cat-h{position:relative;padding:6px 0 14px;display:flex;align-items:center;justify-content:center;text-align:center;gap:6px}
+.ws-cat-toggle{width:22px;height:22px;border-radius:6px;background:transparent;color:var(--t3);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background 0.15s,color 0.15s,transform 0.2s}
+.ws-cat-toggle:hover{background:var(--tint-3);color:var(--t1)}
+.ws-cat.is-collapsed .ws-cat-h{padding-bottom:6px}
+.ws-cat.is-collapsed{padding-bottom:8px}
 
 .ws-cat-h-name{font-family:'Space Grotesk','Vazirmatn','Space Mono','Vazirmatn',monospace;font-size:0.95rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;background:linear-gradient(90deg,#fff,#c4b5fd 40%,#c4b5fd 60%,#fff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;background-size:200% 100%;animation:catTitleFlow 4s ease-in-out infinite;text-shadow:0 0 22px rgba(185,28,74,0.35);position:relative}
 
@@ -2443,6 +2447,25 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 /* SIMPLE MODAL (Add Friend, Create Server, Create Channel, Pin Add) */
 
 .smodal{background:radial-gradient(ellipse at 50% 0%,var(--brand-glow-soft),transparent 65%),var(--panel);border:1px solid var(--tint-3);border-radius:14px;width:100%;max-width:420px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 100px rgba(0,0,0,0.7),inset 0 1px 0 var(--tint-3);transform:translateY(20px) scale(0.96);transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);position:relative}
+
+/* User profile modal — compact card variant matching the QUICK TRANSMIT
+ * box on the home page. Dropping the banner and pulling the orb up to the
+ * top edge gives it the same single-glow + tight padding feel. */
+#profileModal{max-width:380px}
+#profileModal .profile-banner{display:none}
+#profileModal .profile-view{padding:18px;gap:10px}
+#profileModal .profile-head{margin-top:0;padding:0;gap:14px;align-items:center}
+#profileModal .profile-orb{width:64px;height:64px}
+#profileModal .modal-orb-core{width:64px;height:64px;font-size:1.4rem;box-shadow:0 0 30px var(--profile-orb-glow,var(--brand-glow)),inset 0 0 14px rgba(255,255,255,0.3)}
+#profileModal .modal-orb-ring,
+#profileModal .modal-orb-ring.r2,
+#profileModal .modal-orb-ring.r3{display:none}
+#profileModal .profile-name{font-size:1.05rem;letter-spacing:0.5px}
+#profileModal .profile-handle-row{margin-top:2px}
+#profileModal .profile-tags{padding:0;gap:5px}
+#profileModal .profile-bio{padding:0;margin:0;font-size:0.78rem;line-height:1.55;color:var(--t2)}
+#profileModal .profile-section{padding:10px 0;border-top:1px solid var(--tint-2);margin:0}
+#profileModal .profile-actions{padding:6px 0 0;gap:8px}
 
 .modal-backdrop.show .smodal{transform:translateY(0) scale(1)}
 

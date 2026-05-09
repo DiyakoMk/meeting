@@ -197,38 +197,56 @@ channelsRouter.post('/text/:sid/:cid/messages', async (req, res, next) => {
   try {
     const { sid, cid } = req.params;
     const m = await requireMember(req, res, sid); if (!m) return;
-    // sendMessages defaults to allowed; per-channel deny on the user's role
-    // overrides that. Admins always pass. The deny map is JSON of shape
-    //   { "<role-id>": ["sendMessages", ...] }
+    // Visibility + send gate (channel + parent category cascade). Admins
+    // and the server owner always pass — for everyone else, both the
+    // category visibleRoleIds and the channel visibleRoleIds must be
+    // satisfied, AND the per-channel sendMessages deny must not match.
+    // Without this, a user could share / forward straight into a
+    // private channel by hitting the API directly (the renderer hid
+    // the channel from the picker but the endpoint accepted writes).
     if (!m.is_admin) {
       const ch = await one(
-        'SELECT permission_deny FROM text_channels WHERE id = ? AND server_id = ?',
+        `SELECT t.id, t.category_id, t.visible_role_ids, t.permission_allow, t.permission_deny,
+                c.visible_role_ids AS cat_visible_role_ids
+           FROM text_channels t
+           LEFT JOIN server_categories c ON c.id = t.category_id
+          WHERE t.id = ? AND t.server_id = ?`,
         [cid, sid]);
       if (!ch) return res.status(404).json({ error: 'channel_not_found' });
-      let denyMap = ch.permission_deny;
-      if (typeof denyMap === 'string') {
-        try { denyMap = JSON.parse(denyMap); } catch { denyMap = null; }
-      }
-      if (denyMap && Object.keys(denyMap).length) {
-        const roleRows = await q(
-          `SELECT sr.id FROM server_roles sr
-             JOIN server_role_members srm ON srm.role_id = sr.id
-            WHERE sr.server_id = ? AND srm.user_id = ?`,
-          [sid, req.user.id]);
-        // Check the matching allow override too — an explicit allow on a
-        // role defeats a deny on the same role for the same key.
-        let allowMap = null;
-        const allowRow = await one(
-          'SELECT permission_allow FROM text_channels WHERE id = ? AND server_id = ?',
-          [cid, sid]);
-        if (allowRow && allowRow.permission_allow != null) {
-          allowMap = typeof allowRow.permission_allow === 'string'
-            ? (function(){ try { return JSON.parse(allowRow.permission_allow); } catch { return null; }})()
-            : allowRow.permission_allow;
-        }
-        for (const r of roleRows) {
-          const denied  = Array.isArray(denyMap[r.id])  && denyMap[r.id].includes('sendMessages');
-          const allowed = allowMap && Array.isArray(allowMap[r.id]) && allowMap[r.id].includes('sendMessages');
+      const userRoleIds = (await q(
+        `SELECT sr.id FROM server_roles sr
+           JOIN server_role_members srm ON srm.role_id = sr.id
+          WHERE sr.server_id = ? AND srm.user_id = ?`, [sid, req.user.id]
+      )).map(r => r.id);
+      const _parse = v => {
+        if (v == null) return null;
+        if (typeof v === 'string') { try { return JSON.parse(v); } catch { return null; }}
+        return v;
+      };
+      const tcAllow = _parse(ch.visible_role_ids);
+      const catAllow = _parse(ch.cat_visible_role_ids);
+      const denyMap  = _parse(ch.permission_deny)  || {};
+      const allowMap = _parse(ch.permission_allow) || {};
+      const _hasAny = (allowList) => {
+        if (!Array.isArray(allowList) || !allowList.length) return true; // unrestricted
+        return userRoleIds.some(rid => allowList.includes(rid));
+      };
+      // Also honour an explicit per-channel allow on viewChannel — even if
+      // the channel/category restricts to a role, an allow override gives
+      // a different role read access.
+      const _viewAllowedByOverride = userRoleIds.some(rid =>
+        Array.isArray(allowMap[rid]) && allowMap[rid].includes('viewChannel'));
+      const _viewDeniedByOverride = userRoleIds.some(rid =>
+        Array.isArray(denyMap[rid]) && denyMap[rid].includes('viewChannel'));
+      const canSee = !_viewDeniedByOverride && (
+        _viewAllowedByOverride || (_hasAny(catAllow) && _hasAny(tcAllow))
+      );
+      if (!canSee) return res.status(403).json({ error: 'channel_not_visible' });
+      // sendMessages deny — same allow-beats-deny rule as before.
+      if (Object.keys(denyMap).length) {
+        for (const rid of userRoleIds) {
+          const denied  = Array.isArray(denyMap[rid])  && denyMap[rid].includes('sendMessages');
+          const allowed = Array.isArray(allowMap[rid]) && allowMap[rid].includes('sendMessages');
           if (denied && !allowed) {
             return res.status(403).json({ error: 'channel_send_denied' });
           }

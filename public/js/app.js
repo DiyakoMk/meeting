@@ -2497,7 +2497,27 @@
 
     const cached = _dmRenderedIds[currentConversation];
 
-    if (cached && cached.length && list.length >= cached.length){
+    // Quick sanity check on cache integrity. The DOM also tracks the same
+
+    // id list via data-msg-row; if the two diverge (e.g. the user opened
+
+    // another conversation in between, or a remote dm:cleared wiped DOM
+
+    // rows but missed the cache), we can't reason about prefix safely.
+
+    // Drop into a full rebuild instead of risking dropped bubbles.
+
+    let cacheLooksValid = !!(cached && cached.length);
+
+    if (cacheLooksValid){
+
+      const domIds = msgsEl.querySelectorAll('[data-msg-row]');
+
+      if (domIds.length !== cached.length) cacheLooksValid = false;
+
+    }
+
+    if (cacheLooksValid && list.length >= cached.length){
 
       let prefixOk = true;
 
@@ -4765,6 +4785,58 @@
 
   // Whether the given member can see an entity (category/textChannel/voiceChannel).
 
+  // Per-user collapsed-category state, persisted in localStorage so it
+
+  // survives reloads. Keyed by serverId so collapsing a category in one
+
+  // server doesn't affect another. Admins / non-admins both can collapse
+
+  // — it's purely a personal layout preference, never sent to the server.
+
+  const COLLAPSE_KEY = 'orblood:collapsed-cats:v1';
+
+  function _readCollapsedCats(){
+
+    try { return JSON.parse(localStorage.getItem(COLLAPSE_KEY) || '{}') || {}; }
+
+    catch(_){ return {}; }
+
+  }
+
+  function _writeCollapsedCats(map){
+
+    try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify(map || {})); } catch(_){}
+
+  }
+
+  function isCategoryCollapsed(serverId, catId){
+
+    if (!serverId || !catId) return false;
+
+    const map = _readCollapsedCats();
+
+    const set = map[serverId];
+
+    return !!(set && set[catId]);
+
+  }
+
+  function toggleCategoryCollapsed(serverId, catId){
+
+    if (!serverId || !catId) return;
+
+    const map = _readCollapsedCats();
+
+    map[serverId] = map[serverId] || {};
+
+    map[serverId][catId] = !map[serverId][catId];
+
+    if (!map[serverId][catId]) delete map[serverId][catId];
+
+    _writeCollapsedCats(map);
+
+  }
+
   // entity.visibleRoleIds is null/empty -> visible to everyone. Owner + admins always pass.
 
   function memberCanSee(s, name, entity){
@@ -4786,6 +4858,54 @@
     if (roles.some(r => r.id === 'owner' || r.id === 'admin')) return true;
 
     return roles.some(r => allow.includes(r.id));
+
+  }
+
+  // Find the category that owns this channel, if any. Both text + voice
+
+  // channels live inside `s.categories[].textChannels` / `voiceChannels`
+
+  // arrays of ids; a missing parent means the channel is uncategorised
+
+  // and its visibility is judged purely by its own visibleRoleIds.
+
+  function _findParentCategory(s, channelId){
+
+    if (!s || !channelId) return null;
+
+    return (s.categories || []).find(cat =>
+
+      (cat.textChannels  && cat.textChannels.includes(channelId)) ||
+
+      (cat.voiceChannels && cat.voiceChannels.includes(channelId))
+
+    ) || null;
+
+  }
+
+  // Cascading visibility: a channel inherits its category's restriction.
+
+  // If the parent category limits itself to a role and the user doesn't
+
+  // hold any of those roles, every channel inside the category is hidden
+
+  // — even the unrestricted ones. The channel can still tighten further
+
+  // with its own visibleRoleIds, but it can't loosen what its parent has.
+
+  // Owner / admin always pass.
+
+  function memberCanSeeChannelCascaded(s, name, channel){
+
+    if (!channel) return false;
+
+    if (s && Array.isArray(s.admins) && s.admins.includes(name)) return true;
+
+    const parent = _findParentCategory(s, channel.id);
+
+    if (parent && !memberCanSee(s, name, parent)) return false;
+
+    return memberCanSee(s, name, channel);
 
   }
 
@@ -5141,7 +5261,11 @@
 
     s.textChannels.forEach(tc => {
 
-      if (!memberCanSee(s,selfProfile.name,tc)) return;
+      // Cascade through the parent category — a channel inside a hidden
+
+      // category disappears even if its own visibleRoleIds are open.
+
+      if (!memberCanSeeChannelCascaded(s,selfProfile.name,tc)) return;
 
       const active = tc.id === currentTextChannel;
 
@@ -5649,13 +5773,37 @@
 
         const catDrag = canManageCat ? ' draggable="true"' : '';
 
-        html += '<div class="ws-cat'+spanCls+'" data-cat-id="'+cat.id+'" data-key="'+cat.id+'"'+catDrag+'>';
+        // Per-user collapse — purely a local-storage flag. Each user can
 
-        html += '<div class="ws-cat-h"><div class="ws-cat-h-name" data-cat-glow>'+escapeHtml(cat.name)+_privateLockHtml(s, cat)+'</div>'+
+        // hide categories they don't care about; admins still see them.
+
+        const collapsed = isCategoryCollapsed(currentServer, cat.id);
+
+        const collapsedCls = collapsed ? ' is-collapsed' : '';
+
+        html += '<div class="ws-cat'+spanCls+collapsedCls+'" data-cat-id="'+cat.id+'" data-key="'+cat.id+'"'+catDrag+'>';
+
+        html += '<div class="ws-cat-h">' +
+
+          '<button class="ws-cat-toggle" data-cat-toggle="'+cat.id+'" type="button" title="'+(collapsed?'Expand':'Collapse')+'">'+
+
+            '<i data-lucide="'+(collapsed?'chevron-right':'chevron-down')+'" style="width:11px;height:11px"></i>'+
+
+          '</button>'+
+
+          '<div class="ws-cat-h-name" data-cat-glow>'+escapeHtml(cat.name)+_privateLockHtml(s, cat)+'</div>'+
 
           (memberHasPerm(s,selfProfile.name,'manageCategory') ? '<button class="ws-cat-del" data-cat-delete="'+cat.id+'" title="Delete category"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>' : '')+
 
         '</div>';
+
+        // While collapsed we just close the wrapper — none of the inner
+
+        // pin / channels / orbs blocks render. Avoids both visual noise
+
+        // and the cost of rendering them when they're hidden anyway.
+
+        if (collapsed) { html += '</div>'; return; }
 
         // Category-level pin
 
@@ -5689,7 +5837,15 @@
 
             if (!tc) return;
 
-            if (!memberCanSee(s,selfProfile.name,tc)) return;
+            // Channel-level visibility tightens the category's. Even if the
+
+            // parent category is open, the channel can still restrict to a
+
+            // smaller role set (e.g. category visible to "Member", channel
+
+            // visible only to "Mod").
+
+            if (!memberCanSeeChannelCascaded(s,selfProfile.name,tc)) return;
 
             const tcDel = (memberHasPerm(s,selfProfile.name,'manageTextCh')) ? '<span class="ws-cat-tc-del" data-tc-delete="'+tc.id+'" title="Delete channel"><i data-lucide="x" style="width:10px;height:10px"></i></span>' : '';
 
@@ -5715,7 +5871,7 @@
 
             if (!vc) return;
 
-            if (!memberCanSee(s,selfProfile.name,vc)) return;
+            if (!memberCanSeeChannelCascaded(s,selfProfile.name,vc)) return;
 
             const style = voiceStyles[vc.style] || voiceStyles.indigo;
 
@@ -10729,19 +10885,51 @@
 
     // Build the text-channel list across every server the user is a member of.
 
-    // Voice orbs are NOT valid forward targets. Servers Cooper has left/deleted
+    // Voice orbs are NOT valid forward targets. Servers the user has left
 
-    // are excluded so we never expose channels he can no longer access.
+    // or deleted are excluded so we never expose channels they can no longer
+
+    // access. We also gate by visibility (visibleRoleIds) and the per-channel
+
+    // sendMessages override — sharing into a channel we can't see, or into a
+
+    // read-only announcements channel where our roles are deny-listed, is
+
+    // exactly what triggered the "private channel got messaged anyway" bug.
 
     const tcEntries = [];
 
-    myServers.forEach(sid => {
+    Object.keys(servers).forEach(sid => {
 
       const srv = servers[sid]; if (!srv) return;
+
+      // Skip servers the user isn't actually a member of (defensive — the
+
+      // forwarder UI shouldn't even surface them, but `servers` carries every
+
+      // server we've ever inspected).
+
+      const isMember = !!(srv.members && srv.members.includes(selfProfile.name));
+
+      if (!isMember) return;
 
       (srv.textChannels||[]).forEach(tc => {
 
         if (q && !tc.name.toLowerCase().includes(q) && !srv.name.toLowerCase().includes(q)) return;
+
+        // Visibility gate — admins / owners always pass, everyone else needs
+
+        // a role on the entity's allow list (cascaded down from the parent
+
+        // category if any) and not a deny-on-viewChannel override.
+
+        if (!memberCanSeeChannelCascaded(srv, selfProfile.name, tc)) return;
+
+        // Send gate — owner / admins always pass, otherwise sendMessages
+
+        // must not be denied for any of the user's roles in this channel.
+
+        if (!memberHasPermInChannel(srv, selfProfile.name, 'sendMessages', tc)) return;
 
         tcEntries.push({ srv, tc });
 
@@ -14810,6 +14998,24 @@
       e.stopPropagation();
 
       openCategoryPinModal(pinEdit.dataset.catPinEdit);
+
+      return;
+
+    }
+
+    // Per-user collapse toggle on the chevron next to the category name.
+
+    const catToggle = e.target.closest('[data-cat-toggle]');
+
+    if (catToggle){
+
+      e.stopPropagation();
+
+      e.preventDefault();
+
+      toggleCategoryCollapsed(currentServer, catToggle.dataset.catToggle);
+
+      renderServerOverview();
 
       return;
 
