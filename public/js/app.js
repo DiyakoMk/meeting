@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ac (profile modal avatar: explicit bg-size cover)');
+  console.log('[orblood] client build 2026-05-09-ad (universal avatar bg-size cover + overflow hidden)');
 
   // ============== STARS ==============
 

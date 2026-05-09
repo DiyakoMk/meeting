@@ -1253,7 +1253,31 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .fp-row:hover{background:var(--tint-2)}
 
-.fp-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:600;color:#fff;border:1.5px solid var(--tint-5);flex-shrink:0;background-size:cover;background-position:center;position:relative}
+.fp-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:600;color:#fff;border:1.5px solid var(--tint-5);flex-shrink:0;background-size:cover;background-position:center;background-repeat:no-repeat;overflow:hidden;position:relative}
+
+/* Universal avatar-image fix: any element whose JS sets a raster image
+ * via background should clip to its rounded box and use cover sizing.
+ * This catches every avatar class in one place so non-square uploads
+ * stay round across the app — DM head, friend bubble, voice rosters,
+ * member lists, profile cards, etc. */
+.dm-head-av,
+.friend-bubble-av,
+.ms-av,
+.mo-av,
+.mo-srv-av,
+.ws-cat-vc-av,
+.fwd-item-av,
+.user-av,
+.fwd-item-srv,
+.profile-shared-orb,
+.srv-orb,
+.cs-friend-av,
+.qs-result-av{
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  overflow:hidden;
+}
 
 .fp-av .fp-status{position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:50%;background:var(--success);border:2px solid var(--bg)}
 
@@ -1297,7 +1321,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .sc-row{display:flex;align-items:center;gap:10px}
 
-.sc-emblem{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Space Mono','Vazirmatn',monospace;font-weight:700;font-size:1rem;flex-shrink:0;border:1px solid var(--tint-5)}
+.sc-emblem{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Space Mono','Vazirmatn',monospace;font-weight:700;font-size:1rem;flex-shrink:0;border:1px solid var(--tint-5);background-size:cover;background-position:center;background-repeat:no-repeat;overflow:hidden}
 
 .sc-info{flex:1;min-width:0}
 
