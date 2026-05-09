@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { pingDb } from './db.js';
@@ -55,7 +56,42 @@ app.use(config.uploads.publicBase, express.static(uploadsAbs));
 // is fine for dev / staging. In production the nginx config can override
 // this with a longer max-age for hashed bundles.
 const publicDir = path.resolve(here, '..', '..', 'public');
+
+// Boot stamp shared across this process. We use it to cache-bust the
+// frontend bundle below so a fresh deploy is visible the moment the
+// renderer loads, even if the browser cached the previous index.html.
+const _bootStamp = Date.now().toString(36);
+
+// Inline the build stamp into index.html as a query string on the static
+// asset URLs the SPA references. The HTML itself stays small enough that
+// the cost of reading + rewriting on every load is negligible (<2 ms),
+// and it removes the "the user keeps seeing the cached app.js" failure
+// mode entirely without us needing to teach every CDN about no-cache.
+let _indexHtmlCache = null;
+function _serveIndexHtml(_req, res) {
+  if (!_indexHtmlCache) {
+    try {
+      _indexHtmlCache = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
+    } catch (e) {
+      return res.status(500).type('text/plain').send('index.html missing');
+    }
+  }
+  // Append ?v=<bootStamp> to local script + stylesheet refs so the
+  // browser revalidates them after each redeploy. Only rewrite paths
+  // that look like our own assets (start with / or relative).
+  const stamped = _indexHtmlCache
+    .replace(/(<script\s+[^>]*src=")(\/[^"?]+\.js)(")/g,             '$1$2?v='+_bootStamp+'$3')
+    .replace(/(<link\s+[^>]*href=")(\/[^"?]+\.css)(")/g,             '$1$2?v='+_bootStamp+'$3');
+  res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(stamped);
+}
+
+// Direct hits on / serve the rewritten index.html so the boot stamp lands
+// on the asset references. Everything else falls through to express.static.
+app.get('/', _serveIndexHtml);
 app.use(express.static(publicDir, {
+  index: false,
   setHeaders: (res) => {
     res.setHeader('Cache-Control', 'no-cache, must-revalidate');
   }
@@ -78,7 +114,9 @@ app.use('/api/uploads',  uploadsRouter);
 
 // 404 — JSON for API routes, fallback to SPA index.html for everything else.
 app.use('/api', (_req, res) => res.status(404).json({ error: 'not_found' }));
-app.use((_req, res) => res.sendFile(path.join(publicDir, 'index.html')));
+// Same rewrite for any non-API route so the SPA's deep links also pick
+// up the cache-busted asset URLs.
+app.use(_serveIndexHtml);
 
 // Error handler
 app.use((err, _req, res, _next) => {

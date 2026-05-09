@@ -2275,13 +2275,21 @@
 
     // to a bubble persisted as '2026-05-08' (current code), and vice versa.
 
+    // We pass the previous bubble's normalised key in via prevDay so that
+
+    // a caller using the fast-append path stays in lock-step with the
+
+    // full-rebuild path; either way we only emit the divider when the
+
+    // calendar day truly differs.
+
     const myDay   = _normalizeDayKey(m.day);
 
-    const prevKey = _normalizeDayKey(prevDay);
+    const prevKey = prevDay == null ? null : _normalizeDayKey(prevDay);
 
     if (myDay && myDay !== prevKey){
 
-      html += '<div class="dm-day-divider"><span>'+escapeHtml(_dayLabel(myDay))+'</span></div>';
+      html += '<div class="dm-day-divider" data-day-key="'+escapeHtml(myDay)+'"><span>'+escapeHtml(_dayLabel(myDay))+'</span></div>';
 
     }
 
@@ -2475,13 +2483,25 @@
 
           // Build only the new bubbles, with sender/day stitched from the last
 
-          // cached message so grouping still collapses correctly.
+          // cached message so grouping still collapses correctly. We pull
+
+          // prevDay from whichever divider is currently last in the DOM,
+
+          // not from `list[lastCachedIdx].day` — those two get out of sync
+
+          // when an older message had `day: undefined` (legacy WS push) and
+
+          // would silently re-emit a divider on every subsequent bubble.
 
           const lastCachedIdx = cached.length - 1;
 
           let prevSender = lastCachedIdx >= 0 ? list[lastCachedIdx].sender : null;
 
-          let prevDay    = lastCachedIdx >= 0 ? _normalizeDayKey(list[lastCachedIdx].day) : null;
+          const allDividers = msgsEl.querySelectorAll('.dm-day-divider[data-day-key]');
+
+          const lastDividerInDom = allDividers.length ? allDividers[allDividers.length - 1] : null;
+
+          let prevDay = lastDividerInDom ? lastDividerInDom.getAttribute('data-day-key') : null;
 
           let appendHtml = '';
 
@@ -2491,7 +2511,9 @@
 
             prevSender = list[i].sender;
 
-            if (list[i].day) prevDay = _normalizeDayKey(list[i].day);
+            const k = _normalizeDayKey(list[i].day);
+
+            if (k) prevDay = k;
 
             cached.push(String(list[i].id));
 
@@ -2571,7 +2593,7 @@
 
       if (myDay && myDay !== lastDay){
 
-        html += '<div class="dm-day-divider"><span>'+escapeHtml(_dayLabel(myDay))+'</span></div>';
+        html += '<div class="dm-day-divider" data-day-key="'+escapeHtml(myDay)+'"><span>'+escapeHtml(_dayLabel(myDay))+'</span></div>';
 
         lastDay = myDay;
 
