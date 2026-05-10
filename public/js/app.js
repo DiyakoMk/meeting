@@ -9563,11 +9563,35 @@
 
       audioEl.autoplay = true;
 
+      audioEl.playsInline = true;
+
       audioEl.dataset.voicePeer = peerName;
+
+      // Some browsers ignore autoplay on freshly-created elements that
+
+      // never received a user-gesture in the same stack frame. Joining
+
+      // a voice channel itself is a click, so explicitly calling
+
+      // play() with a catch is the canonical workaround.
 
       document.body.appendChild(audioEl);
 
-      pc.ontrack = ev => { audioEl.srcObject = ev.streams[0]; };
+      pc.ontrack = ev => {
+
+        audioEl.srcObject = ev.streams[0];
+
+        const p = audioEl.play();
+
+        if (p && typeof p.catch === 'function') p.catch(err => {
+
+          console.warn('[voice] audio play blocked:', err && err.message);
+
+          showToast('Browser blocked audio playback. Click anywhere on the page.', 'warn');
+
+        });
+
+      };
 
       pc.onicecandidate = ev => {
 

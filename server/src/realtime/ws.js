@@ -163,14 +163,24 @@ function handleClientMessage(ws, uid, msg) {
       break;
     }
     case 'voice-signal': {
-      // WebRTC signaling relay. { type:'voice-signal', to:'<uid>', signal:{...} }
+      // WebRTC signaling relay. `to` may be either a numeric uid or a
+      // handle (the client sends handle because it doesn't always know
+      // the peer's id). Accept both — resolve handles via the DB.
       if (!msg.to || !msg.signal) return;
-      sendToUser(msg.to, {
+      const envelope = {
         type: 'voice-signal',
         from: uid,
         fromName: ws._userName,
         signal: msg.signal
-      });
+      };
+      const target = String(msg.to);
+      if (/^\d+$/.test(target)){
+        sendToUser(target, envelope);
+      } else {
+        one('SELECT id FROM users WHERE handle = ? LIMIT 1', [target.replace(/^@/, '')])
+          .then(peer => { if (peer) sendToUser(peer.id, envelope); })
+          .catch(() => {});
+      }
       break;
     }
     default: break;
