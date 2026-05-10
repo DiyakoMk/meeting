@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-i (game overlay PiP; modern voice toggles; mute/deafen hotkeys)');
+  console.log('[orblood] client build 2026-05-10-j (split shortcut handlers: recording in capture, dispatch in bubble — no longer interferes with typing)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -17729,41 +17729,21 @@
 
   _bindShortcutButton('vsDeafenKey', 'deafenHotkey', 'vsDeafenClear');
 
-  // Capture keystrokes in the recording phase BEFORE the existing PTT
+  // Recording: capture mode so the chosen combo can include keys that
 
-  // handler runs so the user's chosen combo can include letters that
+  // would otherwise be eaten by an input. Live dispatch: bubble mode +
 
-  // normally bubble up to inputs. We attach in capture mode on window.
+  // skip when typing in input/textarea so normal typing isn't blocked.
 
   window.addEventListener('keydown', e => {
 
-    if (_shortcutRecording){
+    if (!_shortcutRecording) return;
 
-      if (e.key === 'Escape'){
+    if (e.key === 'Escape'){
 
-        e.preventDefault();
-
-        const btn = _shortcutRecording;
-
-        _shortcutRecording = null;
-
-        if (btn._paintShortcut) btn._paintShortcut();
-
-        return;
-
-      }
-
-      const combo = _comboFromEvent(e);
-
-      if (!combo) return;          // wait for a non-modifier key
-
-      e.preventDefault(); e.stopPropagation();
+      e.preventDefault();
 
       const btn = _shortcutRecording;
-
-      const settingKey = btn.id === 'vsMuteKey' ? 'muteHotkey' : 'deafenHotkey';
-
-      voiceSettings[settingKey] = combo;
 
       _shortcutRecording = null;
 
@@ -17773,13 +17753,33 @@
 
     }
 
-    // Live shortcut dispatch — only when the user isn't typing into an
+    const combo = _comboFromEvent(e);
 
-    // input/textarea/contenteditable.
+    if (!combo) return;          // wait for a non-modifier key
+
+    e.preventDefault(); e.stopPropagation();
+
+    const btn = _shortcutRecording;
+
+    const settingKey = btn.id === 'vsMuteKey' ? 'muteHotkey' : 'deafenHotkey';
+
+    voiceSettings[settingKey] = combo;
+
+    _shortcutRecording = null;
+
+    if (btn._paintShortcut) btn._paintShortcut();
+
+  }, true);
+
+  // Live dispatch — runs in bubble phase, never blocks regular typing.
+
+  document.addEventListener('keydown', e => {
+
+    if (_shortcutRecording) return;
 
     const t = e.target;
 
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || (t.isContentEditable))) return;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
 
     if (_matchesCombo(e, voiceSettings.muteHotkey)){
 
@@ -17805,7 +17805,7 @@
 
     }
 
-  }, true);
+  });
 
   document.getElementById('btnMic').addEventListener('click', () => {
 
