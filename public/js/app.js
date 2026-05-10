@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-b (preview modal polish; aurora text white-sweep slow; orb slider drift fix)');
+  console.log('[orblood] client build 2026-05-10-c (server-wide name pack inheritance; orbit + call buttons in preview; cover/emblem class map fix)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -6131,7 +6131,7 @@
 
           '</button>'+
 
-          '<div class="ws-cat-h-name'+(cat.customStyle?' '+packClassFor(cat.customStyle,'category'):'')+'" data-cat-glow>'+escapeHtml(cat.name)+_privateLockHtml(s, cat)+'</div>'+
+          '<div class="ws-cat-h-name'+((cat.customStyle||s.styleName)?' '+packClassFor(cat.customStyle||s.styleName,'category'):'')+'" data-cat-glow>'+escapeHtml(cat.name)+_privateLockHtml(s, cat)+'</div>'+
 
           (memberHasPerm(s,selfProfile.name,'manageCategory') ? '<button class="ws-cat-del" data-cat-delete="'+cat.id+'" title="Delete category"><i data-lucide="trash-2" style="width:11px;height:11px"></i></button>' : '')+
 
@@ -6207,7 +6207,15 @@
 
             const tcDrag = canManageTc ? ' draggable="true"' : '';
 
-            const _tcCustomCls = tc.customStyle ? ' '+packClassFor(tc.customStyle,'textChannel') : '';
+            // Per-row pack first; if none, inherit the server-wide
+
+            // serverName pack so a single Aurora pick on the server
+
+            // name flows through every channel/category/voice label.
+
+            const _tcPack = tc.customStyle || s.styleName || null;
+
+            const _tcCustomCls = _tcPack ? ' '+packClassFor(_tcPack,'textChannel') : '';
 
             html += '<div class="ws-cat-tc style-'+tc.style+(tc.unread?' has-unread':'')+_tcCustomCls+'" data-tc-id="'+tc.id+'" data-key="'+tc.id+'"'+tcDrag+' role="button" tabindex="0"><i data-lucide="hash"></i><span class="ws-cat-tc-n">'+escapeHtml(tc.name)+_privateLockHtml(s, tc)+'</span>'+(tc.unread?'<span class="ws-cat-tc-b">'+tc.unread+'</span>':'')+tcDel+'</div>';
 
@@ -6277,9 +6285,15 @@
 
             const legendaryCls = style.skin ? ' is-legendary' : '';
 
-            const _vcCustomCls = vc.customStyle ? ' '+packClassFor(vc.customStyle,'voiceChannel') : '';
+            // Same inheritance as text channels: per-row pack wins, otherwise
 
-            const _vcOrbCls = vc.customStyle ? packClassFor(vc.customStyle,'orbit') : '';
+            // the server-wide serverName pack styles the row name + orb halo.
+
+            const _vcPack = vc.customStyle || s.styleName || null;
+
+            const _vcCustomCls = _vcPack ? ' '+packClassFor(_vcPack,'voiceChannel') : '';
+
+            const _vcOrbCls = _vcPack ? packClassFor(_vcPack,'orbit') : '';
 
             // The orb skin class (style-rainbow / style-fire / etc.)
 
@@ -11051,6 +11065,10 @@
 
       serverPin:    'cz-'+packId+'-pin',
 
+      serverCover:  'cz-'+packId+'-cover',
+
+      serverEmblem: 'cz-'+packId+'-emblem',
+
       category:     'cz-'+packId+'-category',
 
       textChannel:  'cz-'+packId+'-textchannel',
@@ -11475,13 +11493,19 @@
 
       + '</div>'
 
-      // 3. Category, text channel, voice channel
+      // 3. Category title + text channel + voice channel row. Voice
+
+      // row mirrors world-view: small flat orb + name with the pack
+
+      // sweep, no halo ring (the dramatic ring is the orbit-column
+
+      // treatment shown in section 04).
 
       + '<div class="pp-frame">'
 
         + '<div class="pp-frame-h"><span class="pp-frame-n">03</span> CHANNELS</div>'
 
-        + '<div class="pp-frame-sub">category title · text channel · voice channel</div>'
+        + '<div class="pp-frame-sub">category title · text channel · voice channel row</div>'
 
         + '<div class="pp-rows">'
 
@@ -11495,21 +11519,57 @@
 
             + '<i data-lucide="hash" style="width:14px;height:14px;color:var(--t2);flex-shrink:0"></i>'
 
-            + '<span class="ws-cat-tc-n">general</span>'
+            + '<span class="ws-cat-tc-n">announcements</span>'
 
           + '</div>'
 
-          + '<div class="pp-row pp-row-vc ws-cat-vc '+surfaceCls('voiceChannel')+'">'
+          + '<div class="pp-row pp-row-vc ws-cat-vc style-aurora '+surfaceCls('voiceChannel')+'">'
 
-            + '<div class="ws-cat-vc-orb pp-vc-orb '+surfaceCls('orbit')+'"></div>'
+            + '<div class="ws-cat-vc-orb pp-vc-orb-flat"></div>'
 
             + '<div class="ws-cat-vc-info">'
 
               + '<div class="ws-cat-vc-n">LOUNGE</div>'
 
-              + '<div class="ws-cat-vc-c">0 MEMBERS</div>'
+              + '<div class="ws-cat-vc-c">2 MEMBERS</div>'
 
             + '</div>'
+
+          + '</div>'
+
+        + '</div>'
+
+      + '</div>'
+
+      // 4. Orbit column — the dramatic legendary orb with halo + ring +
+
+      // sweeping name, plus a fake mute/disconnect pair so the user
+
+      // sees the connected look. Mirrors the .orb-slide world view.
+
+      + '<div class="pp-frame">'
+
+        + '<div class="pp-frame-h"><span class="pp-frame-n">04</span> ORBIT</div>'
+
+        + '<div class="pp-frame-sub">how it looks in the orbits column when connected</div>'
+
+        + '<div class="pp-orbit-stage">'
+
+          + '<div class="orb-slide skin-aurora legendary pp-orbit-card">'
+
+            + '<div class="planet"></div>'
+
+            + '<div class="vlabel">LOUNGE</div>'
+
+            + '<div class="vstatus connected">CONNECTED · 02:14</div>'
+
+          + '</div>'
+
+          + '<div class="pp-orbit-actions">'
+
+            + '<button type="button" class="pp-orb-btn" title="Mute"><i data-lucide="mic" style="width:14px;height:14px"></i></button>'
+
+            + '<button type="button" class="pp-orb-btn pp-orb-btn-end" title="Disconnect"><i data-lucide="phone" style="width:14px;height:14px"></i></button>'
 
           + '</div>'
 

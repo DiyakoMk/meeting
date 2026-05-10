@@ -2950,10 +2950,53 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 }
 .pp-row-tc .ws-cat-tc-n{font-size:0.78rem}
 .pp-row-vc .ws-cat-vc-orb,
-.pp-row-vc .pp-vc-orb{width:36px;height:36px;flex-shrink:0}
+.pp-row-vc .pp-vc-orb,
+.pp-row-vc .pp-vc-orb-flat{width:36px;height:36px;flex-shrink:0;border-radius:50%}
+/* Flat voice-row orb. Looks identical to the world-view voice orb:
+ * solid pearl with a soft halo, no spinning ring or wave (the dramatic
+ * ring lives on the orbit-column orb in section 04). */
+.pp-row-vc .pp-vc-orb-flat{
+  background:radial-gradient(circle at 35% 30%,#ffffff,#fff0f8 50%,#ffe1d6 100%);
+  box-shadow:
+    0 0 16px rgba(255,160,210,0.45),
+    0 0 32px rgba(255,196,140,0.25),
+    inset 0 -3px 8px rgba(255,170,200,0.15),
+    inset 0 1px 3px rgba(255,255,255,0.85);
+}
 .pp-row-vc .ws-cat-vc-info{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
 .pp-row-vc .ws-cat-vc-n{font-size:0.75rem;font-weight:600}
 .pp-row-vc .ws-cat-vc-c{font-size:0.55rem;letter-spacing:1.2px;color:var(--t3)}
+
+/* 04 — orbit column preview */
+.pp-orbit-stage{
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  padding:18px 0 6px;
+}
+.pp-orbit-card{
+  position:relative;width:200px;height:240px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
+.pp-orbit-card .planet{
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ffffff,#f8f0ff 50%,#ece6ff 100%);
+}
+.pp-orbit-card .vlabel{
+  margin-top:14px;font-size:0.75rem;letter-spacing:2px;
+}
+.pp-orbit-card .vstatus{
+  margin-top:4px;font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.55rem;letter-spacing:1.2px;color:var(--success);
+}
+.pp-orbit-actions{display:flex;gap:14px}
+.pp-orb-btn{
+  width:42px;height:42px;border-radius:50%;
+  background:var(--tint-3);color:var(--t1);
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--tint-4);transition:transform 0.15s,background 0.15s;
+}
+.pp-orb-btn:hover{background:var(--tint-5);transform:scale(1.05)}
+.pp-orb-btn-end{background:#16a34a;color:#fff;border-color:#22c55e}
+.pp-orb-btn-end:hover{background:#15803d}
 .cz-uploader-row{display:flex;align-items:center;gap:14px}
 .cz-uploader-preview{width:64px;height:64px;border-radius:50%;background:var(--tint-3);border:1px solid var(--tint-4);background-size:cover;background-position:center;flex-shrink:0;position:relative;overflow:hidden}
 .cz-cover-preview{width:140px;height:64px;border-radius:10px;background:var(--tint-3);border:1px solid var(--tint-4);background-size:cover;background-position:center;flex-shrink:0;position:relative;overflow:hidden}

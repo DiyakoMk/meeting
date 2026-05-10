@@ -41,8 +41,10 @@
  * names glow the same way the orb does. */
 .cz-aurora-text,
 .cz-aurora-name,
+.ws-banner-title.cz-aurora-text,
 .cz-aurora-category .ws-cat-h-name,
 .cz-aurora-category .ws-cat-name,
+.cz-aurora-category.ws-cat-h-name,
 .cz-aurora-textchannel .ws-cat-tc-n,
 .cz-aurora-voicechannel .ws-cat-vc-n,
 .cz-aurora-pin .ws-pin-text,
