@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-p (presence event no longer rebuilds DM transcript; aurora+marble themes also drop the wrap chrome)');
+  console.log('[orblood] client build 2026-05-10-q (CORS fix: reflect Origin instead of wildcard when credentials are sent)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 

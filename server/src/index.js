@@ -27,9 +27,20 @@ const app = express();
 // 127.0.0.1 and the auth rate limiter treats all users as one.
 app.set('trust proxy', true);
 
-// CORS — allow the frontend origin only. Adjust PUBLIC_ORIGIN in .env.
+// CORS — when credentials are sent, browsers refuse to honour a
+// wildcard `Access-Control-Allow-Origin: *`. The frontend uses
+// `credentials: 'include'` for the auth cookie, so we always reflect
+// the request Origin instead of returning '*'. Treat PUBLIC_ORIGIN='*'
+// as "trust whatever the request says" (suitable for the demo tunnel),
+// and otherwise restrict to the configured origin.
 app.use(cors({
-  origin: config.publicOrigin,
+  origin: (origin, cb) => {
+    // Same-origin requests (no Origin header) and tools like curl just pass.
+    if (!origin) return cb(null, true);
+    if (config.publicOrigin === '*') return cb(null, origin);
+    if (config.publicOrigin === origin) return cb(null, origin);
+    return cb(null, false);
+  },
   credentials: true
 }));
 
