@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-d (drop COVER STYLE + EMBLEM HALO from customize; preview voice orb mirrors world view)');
+  console.log('[orblood] client build 2026-05-10-h (voice settings: self-monitor mic playback with own volume + live processing toggle test)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -12975,9 +12975,115 @@
 
     mode:'vad', pttKey:'V', sensitivity:-50,
 
-    echo:true, noise:true, agc:false
+    echo:true, noise:true, agc:false,
+
+    // Self-monitor: when enabled, the user's own mic plays back to them
+
+    // through `selfMonAudio` so they can verify input level + processing
+
+    // toggles without joining a call. Volume is independent so they can
+
+    // listen at a low level even with a high input level.
+
+    selfMon:false, selfMonVolume:60
 
   };
+
+  // Live audio chain used by the self-monitor toggle. Built lazily the
+
+  // first time the user turns it on; torn down when toggled off so the
+
+  // mic light goes away.
+
+  let _selfMonStream = null;
+
+  let _selfMonAudio  = null;
+
+  async function startSelfMonitor(){
+
+    if (_selfMonStream) return;
+
+    try {
+
+      _selfMonStream = await navigator.mediaDevices.getUserMedia({
+
+        audio: {
+
+          deviceId: voiceSettings.inputDevice && voiceSettings.inputDevice !== 'default'
+
+            ? { exact: voiceSettings.inputDevice } : undefined,
+
+          echoCancellation:  voiceSettings.echo,
+
+          noiseSuppression:  voiceSettings.noise,
+
+          autoGainControl:   voiceSettings.agc
+
+        }
+
+      });
+
+    } catch(e){
+
+      showToast('Microphone permission denied','warn');
+
+      voiceSettings.selfMon = false;
+
+      const cb = document.getElementById('vsSelfMon'); if (cb) cb.checked = false;
+
+      const ctl = document.getElementById('vsSelfMonControls'); if (ctl) ctl.style.display = 'none';
+
+      return;
+
+    }
+
+    _selfMonAudio = document.createElement('audio');
+
+    _selfMonAudio.autoplay = true;
+
+    _selfMonAudio.dataset.selfMonitor = '1';
+
+    _selfMonAudio.srcObject = _selfMonStream;
+
+    _selfMonAudio.volume = Math.max(0, Math.min(1, voiceSettings.selfMonVolume / 100));
+
+    document.body.appendChild(_selfMonAudio);
+
+  }
+
+  function stopSelfMonitor(){
+
+    if (_selfMonAudio){
+
+      try { _selfMonAudio.pause(); _selfMonAudio.srcObject = null; } catch(_){}
+
+      _selfMonAudio.remove(); _selfMonAudio = null;
+
+    }
+
+    if (_selfMonStream){
+
+      _selfMonStream.getTracks().forEach(t => { try { t.stop(); } catch(_){} });
+
+      _selfMonStream = null;
+
+    }
+
+  }
+
+  // Re-create the self-monitor stream so processing toggles / device
+
+  // selection take effect immediately while the user is testing.
+
+  async function refreshSelfMonitor(){
+
+    if (!voiceSettings.selfMon) return;
+
+    stopSelfMonitor();
+
+    await startSelfMonitor();
+
+  }
 
   async function openVoiceSettings(){
 
@@ -13088,6 +13194,20 @@
     document.getElementById('vsNoise').checked = voiceSettings.noise;
 
     document.getElementById('vsAgc').checked   = voiceSettings.agc;
+
+    // Self-monitor always opens disabled — it streams the mic, so
+
+    // resuming it on every modal open would be a privacy surprise.
+
+    voiceSettings.selfMon = false;
+
+    document.getElementById('vsSelfMon').checked = false;
+
+    document.getElementById('vsSelfMonVol').value = voiceSettings.selfMonVolume;
+
+    document.getElementById('vsSelfMonVolLbl').textContent = voiceSettings.selfMonVolume+'%';
+
+    document.getElementById('vsSelfMonControls').style.display = 'none';
 
   }
 
@@ -17371,13 +17491,89 @@
 
   });
 
-  document.getElementById('vsEcho').addEventListener('change', e => voiceSettings.echo = e.target.checked);
+  // Each processing toggle re-creates the self-monitor stream when
 
-  document.getElementById('vsNoise').addEventListener('change', e => voiceSettings.noise = e.target.checked);
+  // it's active, so the user can hear the difference immediately.
 
-  document.getElementById('vsAgc').addEventListener('change', e => voiceSettings.agc = e.target.checked);
+  document.getElementById('vsEcho').addEventListener('change', async e => {
+
+    voiceSettings.echo = e.target.checked;
+
+    await refreshSelfMonitor();
+
+  });
+
+  document.getElementById('vsNoise').addEventListener('change', async e => {
+
+    voiceSettings.noise = e.target.checked;
+
+    await refreshSelfMonitor();
+
+  });
+
+  document.getElementById('vsAgc').addEventListener('change', async e => {
+
+    voiceSettings.agc = e.target.checked;
+
+    await refreshSelfMonitor();
+
+  });
+
+  // Self-monitor: enable the local mic playback, with a separate volume
+
+  // slider so the user can listen quietly while their actual call
+
+  // volume stays at full.
+
+  document.getElementById('vsSelfMon').addEventListener('change', async e => {
+
+    voiceSettings.selfMon = e.target.checked;
+
+    document.getElementById('vsSelfMonControls').style.display = voiceSettings.selfMon ? '' : 'none';
+
+    if (voiceSettings.selfMon) await startSelfMonitor();
+
+    else stopSelfMonitor();
+
+  });
+
+  document.getElementById('vsSelfMonVol').addEventListener('input', e => {
+
+    voiceSettings.selfMonVolume = parseInt(e.target.value);
+
+    document.getElementById('vsSelfMonVolLbl').textContent = voiceSettings.selfMonVolume+'%';
+
+    if (_selfMonAudio) _selfMonAudio.volume = Math.max(0, Math.min(1, voiceSettings.selfMonVolume / 100));
+
+  });
+
+  // Closing the modal stops self-monitor so the mic light goes away
+
+  // and the user doesn't accidentally leave it on while talking.
+
+  document.querySelector('[data-close-smodal="voiceSettingsBackdrop"]').addEventListener('click', () => {
+
+    voiceSettings.selfMon = false;
+
+    const cb = document.getElementById('vsSelfMon'); if (cb) cb.checked = false;
+
+    const ctl = document.getElementById('vsSelfMonControls'); if (ctl) ctl.style.display = 'none';
+
+    stopSelfMonitor();
+
+  });
 
   document.getElementById('vsSave').addEventListener('click', () => {
+
+    // Save closes the modal too — kill self-monitor for the same reason.
+
+    voiceSettings.selfMon = false;
+
+    const cb = document.getElementById('vsSelfMon'); if (cb) cb.checked = false;
+
+    const ctl = document.getElementById('vsSelfMonControls'); if (ctl) ctl.style.display = 'none';
+
+    stopSelfMonitor();
 
     document.getElementById('voiceSettingsBackdrop').classList.remove('show');
 

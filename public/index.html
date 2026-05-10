@@ -2176,6 +2176,28 @@
 
           </div>
 
+          <div class="sm-field">
+
+            <label class="sm-label">SELF-MONITOR (HEAR YOURSELF)</label>
+
+            <div class="vs-toggle-row" style="margin-bottom:8px">
+
+              <label class="vs-toggle"><input type="checkbox" id="vsSelfMon" /> Play my mic back to me</label>
+
+            </div>
+
+            <div id="vsSelfMonControls" style="display:none">
+
+              <label class="sm-label" style="margin-bottom:6px">SELF-MONITOR VOLUME <span id="vsSelfMonVolLbl" style="color:var(--t2)">60%</span></label>
+
+              <input type="range" min="0" max="100" value="60" id="vsSelfMonVol" class="vs-slider" />
+
+              <div class="sm-hint" style="margin-top:6px">Use this to test mic input, processing toggles, and noise. Disable before joining a call to avoid feedback through speakers (use headphones for safe testing).</div>
+
+            </div>
+
+          </div>
+
         </div>
 
         <div class="smodal-foot">
