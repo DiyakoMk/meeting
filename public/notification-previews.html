@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>// ORBLOOD notifications</title>
+<title>// ORBLOOD notifications · glass</title>
 <link rel="stylesheet" href="/styles/themes/orblood-dark.css">
 <link rel="stylesheet" href="/styles/main.css">
 <style>
-  /* Page wrapper styling — uses the same tokens the rest of the app
-   * exposes via :root[data-theme]. We never override design colours
-   * here; we only lay the preview cards out on the page. */
+  /* Page wash — same red/violet glows the home banner uses, so the
+   * glass toasts read against a real ORBLOOD-style backdrop. */
   body{
     background:
-      radial-gradient(ellipse at 18% 8%, var(--brand-glow-soft), transparent 55%),
-      radial-gradient(ellipse at 88% 92%, var(--brand-glow-faint), transparent 55%),
+      radial-gradient(ellipse at 18% 8%,  var(--brand-glow-soft), transparent 55%),
+      radial-gradient(ellipse at 82% 92%, var(--brand-glow-faint), transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(126,104,245,0.08), transparent 60%),
       var(--bg);
     min-height:100vh;
     padding:36px 18px 60px;
@@ -37,7 +37,6 @@
     border-radius:14px;
     padding:18px;
     display:flex;flex-direction:column;gap:14px;
-    box-shadow:var(--shadow-soft);
   }
   .card-h{
     display:flex;justify-content:space-between;align-items:baseline;
@@ -49,44 +48,50 @@
   .card-h b{color:var(--t1);font-weight:500;letter-spacing:1.2px}
 
   /* ============================================================
-     ORBLOOD NOTIFICATION TOAST — design contract
+     ORBLOOD GLASS TOAST — design contract
      ============================================================
-     Geometry mirrors `.dm-bubble` + `.smodal`:
-       • Panel uses `--panel` background with the soft brand-glow
-         radial that every modal in the app uses (top-centre).
-       • Border uses `--tint-3` (same as `.smodal`).
-       • Spacing follows the existing 12/14px rhythm.
-       • Avatars reuse the `.av-frame` pattern from chat: a tinted
-         circle with the brand glow pulse for online status.
-     Eyebrow / name / body share the same type scale as `.dm-row`
-     so a notification reads as "an inline chat bubble with extra
-     chrome", not a foreign element.
+     Mirrors the QUICK TRANSMIT box (`.nx-box`):
+       •  background = `--tint-1` (translucent) + the soft brand-
+          glow radial we use on every modal / nx-box surface.
+       •  Heavy backdrop-filter blur (28px + 140% saturation) so the
+          window behind the toast bleeds through but stays legible.
+       •  Border at `--tint-3`, just like `.nx-box`.
+       •  Inner highlight (`inset 0 1px 0 --tint-4`) and a strong
+          drop shadow so the glass "lifts" off the desktop.
+     The eyebrow + name + body type scale matches `.dm-row`.
      ============================================================ */
   .nt{
     position:relative;
     background:
-      radial-gradient(ellipse at 50% 0%, var(--brand-glow-soft), transparent 65%),
-      var(--panel);
+      radial-gradient(ellipse at 50% 0%, var(--brand-glow-soft), transparent 70%),
+      var(--tint-1);
+    backdrop-filter: blur(28px) saturate(140%);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
     border:1px solid var(--tint-3);
-    border-radius:12px;
+    border-radius:14px;
     padding:12px 14px;
     display:flex;gap:12px;align-items:flex-start;
-    box-shadow:var(--shadow-strong);
+    box-shadow:
+      inset 0 1px 0 var(--tint-4),
+      0 18px 44px rgba(0,0,0,0.55),
+      0 4px 14px rgba(0,0,0,0.4);
     overflow:hidden;
   }
+  /* Subtle accent strip on the left — same trick that `.dm-pinned-box`
+   * uses to mark "important" rows in the chat. */
   .nt::before{
     content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
     background:var(--accent);
+    opacity:0.85;
   }
   .nt.warn::before     {background:var(--warn)}
   .nt.success::before  {background:var(--success)}
   .nt.danger::before   {background:var(--danger)}
   .nt.legendary::before{background:var(--legendary)}
 
-  /* Avatar — same dimensions and ring treatment as `.dm-row .dm-av`
-   * (40x40 circle, 2px brand-tint border). Each av-* modifier just
-   * swaps the radial gradient palette so the toast can match the
-   * orb skin of the relevant server / DM. */
+  /* Avatar — same look as `.dm-row .dm-av` (40x40 circle with the
+   * brand glow behind it). The `.online` dot reuses the success
+   * accent so the affordance is consistent across the app. */
   .nt-av{
     flex-shrink:0;width:40px;height:40px;border-radius:50%;
     background:var(--av-default-grad);
@@ -101,9 +106,8 @@
     width:11px;height:11px;border-radius:50%;
     background:var(--success);
     border:2px solid var(--panel);
-    box-shadow:0 0 6px rgba(34,197,94,0.8);
+    box-shadow:0 0 6px rgba(34,197,94,0.85);
   }
-  /* Per-skin palettes that match the in-app orb variants exactly. */
   .nt-av.av-violet{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#a78bfa 55%,#3b0764)}
   .nt-av.av-cyan  {background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#22d3ee 55%,#164e63)}
   .nt-av.av-rose  {background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#f472b6 55%,#831843)}
@@ -114,7 +118,8 @@
 
   .nt-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 
-  /* Eyebrow row — same recipe as `.ws-cat-h-name` / category tag. */
+  /* Eyebrow — Space Mono uppercase, same recipe as `.qs-head-hint`
+   * over QUICK TRANSMIT, with a small pulsing dot for active states. */
   .nt-eyebrow{
     display:flex;align-items:center;gap:6px;
     font-family:'Space Mono','Vazirmatn',monospace;
@@ -146,8 +151,6 @@
   .nt-text.muted {color:var(--t2)}
   .nt-text.hidden{color:var(--t3);font-style:italic;-webkit-line-clamp:1}
 
-  /* Pill chip used for "@you" mention markers — mirrors `.cz-tier`
-   * tier badge surface so the chip reads like other in-app chips. */
   .nt-pill{
     background:rgba(239,68,68,0.18);color:#fda4af;
     padding:1px 6px;border-radius:5px;
@@ -156,8 +159,8 @@
     border:1px solid rgba(239,68,68,0.45);
   }
 
-  /* Action buttons — same shape and rhythm as `.sm-btn`. We avoid
-   * the full pill height because the toast row is denser. */
+  /* Action buttons — match `.qs-send` + `.sm-btn` from main.css. The
+   * glass surface keeps `--tint-3` so the button reads on top. */
   .nt-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
   .nt-btn{
     background:var(--tint-3);
@@ -178,7 +181,6 @@
   .nt-btn.success{background:rgba(34,197,94,0.15);color:var(--success);border-color:rgba(34,197,94,0.4)}
   .nt-btn.success:hover{background:rgba(34,197,94,0.25)}
 
-  /* Close (×) — discreet, mirrors `.smodal-close`. */
   .nt-close{
     flex-shrink:0;width:22px;height:22px;border-radius:6px;
     background:transparent;border:none;color:var(--t3);
@@ -188,23 +190,24 @@
   }
   .nt-close:hover{background:var(--tint-3);color:var(--t1)}
 
-  /* Mention variant — adds a soft red glow + ring on the avatar. */
+  /* Variant — server mention. Adds a soft red ring + halo, mirroring
+   * the active-channel glow on the orbits column. */
   .nt.mention{
     border-color:rgba(239,68,68,0.35);
     box-shadow:
-      var(--shadow-strong),
-      0 0 0 1px rgba(239,68,68,0.18),
-      0 12px 32px rgba(239,68,68,0.18);
+      inset 0 1px 0 rgba(239,68,68,0.18),
+      0 18px 44px rgba(239,68,68,0.22),
+      0 4px 14px rgba(0,0,0,0.4);
   }
   .nt.mention .nt-av{box-shadow:0 0 14px rgba(239,68,68,0.45)}
 
-  /* Voice variant — the avatar pulses gold like a connected legendary
-   * orb (legPulse 4s) so the "live voice" affordance reads instantly. */
+  /* Variant — voice. The avatar pulses gold like a connected
+   * legendary orb so the toast reads as "live audio activity". */
   .nt.voice .nt-av{animation:nt-pulse 2.6s ease-in-out infinite}
   @keyframes nt-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}
 
   /* Image attachment preview — uses the brand 4-stop nebula gradient
-   * we already use behind the home banner, with a small pill caption. */
+   * we already use behind the home banner. */
   .nt-image{
     margin-top:8px;width:100%;height:120px;border-radius:8px;
     background:linear-gradient(135deg,#312e81,#7c3aed,var(--accent),#f97316);
@@ -219,21 +222,20 @@
     background:rgba(0,0,0,0.55);
     padding:3px 8px;border-radius:4px;
     backdrop-filter:blur(4px);
-    display:flex;align-items:center;gap:5px;
   }
   @keyframes nt-imgflow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 
-  /* Quick reply input — matches `.sm-input` from main.css. */
+  /* Quick reply input — same shape as `.qs-input` from main.css. */
   .nt-reply{margin-top:8px;display:flex;gap:6px}
   .nt-reply input{
-    flex:1;background:var(--tint-2);
+    flex:1;background:rgba(0,0,0,0.30);
     border:1px solid var(--tint-3);
     color:var(--t1);font:inherit;font-size:0.74rem;
     padding:8px 10px;border-radius:6px;outline:none;
     transition:border-color 0.15s,background 0.15s;
   }
   .nt-reply input::placeholder{color:var(--t3)}
-  .nt-reply input:focus{border-color:var(--accent);background:var(--tint-3)}
+  .nt-reply input:focus{border-color:var(--accent);background:rgba(0,0,0,0.4)}
   .nt-reply button{
     background:linear-gradient(135deg,var(--accent),var(--accent-2));
     border:none;color:#fff;font:inherit;cursor:pointer;
@@ -242,8 +244,7 @@
     font-size:0.62rem;letter-spacing:1.4px;font-weight:700;
   }
 
-  /* Stack — same trick as our DM "X new messages" pile, with a 2-row
-   * preview behind the active toast. */
+  /* Stack — three toasts collapsed under one. */
   .nt-stack{position:relative;padding-bottom:20px}
   .nt-stack .nt + .nt{
     margin-top:-58px;
@@ -266,18 +267,18 @@
 <body>
 
 <header>
-  <h1>// ORBLOOD NOTIFICATIONS</h1>
+  <h1>// ORBLOOD NOTIFICATIONS · glass</h1>
   <p>
-    Eight toast variants drawn on the same design tokens the app already uses (panel surface,
-    brand glow, tint scale, Space Mono labels). They're meant for the future
-    <em>desktop build</em> — the browser version is locked to the OS notification chrome.
-    Pick the numbers you want and we'll wire them in.
+    Eight toast variants drawn on the same surface recipe as the <em>QUICK TRANSMIT</em> box on the
+    home page (translucent panel, brand-glow halo, frosted blur, inner highlight). Geometry and
+    type scale follow the existing chat / modal contract. Pick the numbers you want and we'll
+    wire them into the desktop build.
   </p>
 </header>
 
 <section class="grid">
 
-  <!-- 01 — Bare DM (privacy mode, no body) -->
+  <!-- 01 — Bare DM (privacy) -->
   <article class="card">
     <div class="card-h"><span>01</span><b>BARE DM · NO BODY</b></div>
     <div class="nt">
@@ -391,7 +392,7 @@
     </div>
   </article>
 
-  <!-- 07 — Quick reply input -->
+  <!-- 07 — Quick reply -->
   <article class="card">
     <div class="card-h"><span>07</span><b>QUICK REPLY</b></div>
     <div class="nt">
@@ -446,7 +447,7 @@
 </section>
 
 <footer class="footer">
-  8 of 8 · matches ORBLOOD design tokens · concepts only · pick numbers to ship in the desktop build
+  8 of 8 · glass surface from QUICK TRANSMIT · concepts only · pick numbers to ship in the desktop build
 </footer>
 
 </body>
