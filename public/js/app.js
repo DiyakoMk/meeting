@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-l (notifications: master + categories + per-channel/DM overrides; gated dispatch on dms/mentions/text/friend-req)');
+  console.log('[orblood] client build 2026-05-10-k (remove PiP overlay; settings panel desktop-only note; voice settings reorganized into 6 sections)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
