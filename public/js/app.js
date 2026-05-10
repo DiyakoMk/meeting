@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-q (CORS fix: reflect Origin instead of wildcard when credentials are sent)');
+  console.log('[orblood] client build 2026-05-10-r (voice: signal routing accepts handles, explicit audio.play() with autoplay-blocked warning)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
