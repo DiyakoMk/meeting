@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-n (notification icon = sender avatar; favicon as badge)');
+  console.log('[orblood] client build 2026-05-10-o (DM history preserved across WS reconnect; TRANSMITTING TO eyebrow removed)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -2015,11 +2015,13 @@
 
       : (conv.online ? 'ONLINE · ENCRYPTED CHANNEL' : 'OFFLINE · LAST SEEN '+conv.lastSeen.toUpperCase());
 
-    document.getElementById('dmIboxLabel').textContent = conv.isSaved
+    // The "TRANSMITTING TO ..." eyebrow used to live above the compose
 
-      ? 'NOTE TO YOURSELF'
+    // box. It was redundant with the conversation header and made the
 
-      : 'TRANSMITTING TO '+conv.name.toUpperCase();
+    // bottom feel heavy, so the element was removed and the wrap was
+
+    // flattened to just the compose pill.
 
     cancelReply(); cancelEdit(); clearDmAttach();
 
@@ -7611,17 +7613,75 @@
 
     if (snap.conversations && typeof snap.conversations === 'object'){
 
+      // Preserve session-only flags (like _historyFetched) so the next
+
+      // open of an already-loaded conversation keeps its full history
+
+      // instead of falling back to the snapshot's preview.
+
+      const sessionFlags = {};
+
+      Object.entries(conversations).forEach(([k, c]) => {
+
+        if (c && c._historyFetched) sessionFlags[k] = true;
+
+      });
+
       Object.keys(conversations).forEach(k => { if (k !== 'saved') delete conversations[k]; });
 
       Object.assign(conversations, snap.conversations);
+
+      Object.entries(sessionFlags).forEach(([k, v]) => {
+
+        if (conversations[k]) conversations[k]._historyFetched = v;
+
+      });
 
     }
 
     if (snap.messages && typeof snap.messages === 'object'){
 
-      Object.keys(messages).forEach(k => delete messages[k]);
+      // Snapshot messages are only previews (last 1-2 messages per
 
-      Object.assign(messages, snap.messages);
+      // thread). If we wholesale-replace `messages` here, any thread
+
+      // we've already opened in this session loses its full history
+
+      // and the open conversation reloads to "just the latest
+
+      // message" — exactly the bug users see during WS reconnects.
+
+      // Instead, keep already-fetched threads intact and only seed
+
+      // the previews for threads we don't have history for yet.
+
+      Object.entries(snap.messages).forEach(([k, arr]) => {
+
+        const conv = conversations[k];
+
+        if (conv && conv._historyFetched) return;   // keep our full copy
+
+        messages[k] = Array.isArray(arr) ? arr.slice() : [];
+
+      });
+
+      // Drop entries for conversations the snapshot no longer mentions
+
+      // AND that we haven't opened ourselves — leaves "ghost" threads
+
+      // (e.g. an open DM) untouched.
+
+      Object.keys(messages).forEach(k => {
+
+        if (k === 'saved') return;
+
+        const conv = conversations[k];
+
+        if (conv && conv._historyFetched) return;
+
+        if (!(k in snap.messages)) delete messages[k];
+
+      });
 
       if (!messages.saved) messages.saved = [];
 
