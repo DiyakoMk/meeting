@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-h (voice settings: self-monitor mic playback with own volume + live processing toggle test)');
+  console.log('[orblood] client build 2026-05-10-d (drop COVER STYLE + EMBLEM HALO from customize; preview voice orb mirrors world view)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
