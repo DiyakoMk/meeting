@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Orbit variants v2 — premium concepts</title>
+<title>Orbit variants v3 — base recipe + colour</title>
 <style>
   :root{
     --bg:#020103;
@@ -11,7 +11,6 @@
     --t1:#f5f5f7;
     --t2:rgba(245,245,247,0.6);
     --t3:rgba(245,245,247,0.32);
-    --legendary:#facc15;
     --success:#22c55e;
     --tint:rgba(255,255,255,0.06);
   }
@@ -36,8 +35,8 @@
   .grid{
     position:relative;z-index:1;
     max-width:1480px;margin:0 auto;
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
-    gap:20px;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:18px;
   }
 
   .col{
@@ -46,7 +45,7 @@
     border-radius:14px;
     padding:22px 14px 18px;
     display:flex;flex-direction:column;align-items:center;
-    position:relative;overflow:hidden;
+    position:relative;
   }
   .col-head{
     width:100%;display:flex;justify-content:space-between;align-items:center;
@@ -59,90 +58,68 @@
     vertical-align:middle;
   }
 
-  /* Stage = orbit-slide footprint. Larger so the layered ring system breathes. */
+  /* Stage = same footprint as the orbits column. */
   .stage{
-    position:relative;width:240px;height:240px;
+    position:relative;width:200px;height:200px;
     display:flex;align-items:center;justify-content:center;
     margin:18px auto 22px;
   }
 
-  /* Six-layer composition (back → front):
-   *   .halo       — soft radial atmosphere (largest, blurred)
-   *   .aura       — conic gradient blurred wide, slow opposing spin
-   *   .ring-out   — conic ring at -30px, blurred
-   *   .ring-mid   — conic ring at -16px, sharp
-   *   .ring-in    — thin solid ring at -6px (tight collar)
-   *   .planet     — pearl core with inset highlight + rim shadow
-   *   .sweep      — narrow white-to-transparent line rotating like a clock
-   *   .spark .a/b/c — three sparkle dots floating around the orb
-   *
-   * Geometry stays constant across variants; colours change. */
+  /* Base recipe — exactly like INDIGO/PINK/CYAN/etc.:
+   *   .otrack — dashed outer track (160px)
+   *   .lring  — three pulsing rings expanding outward (staggered)
+   *   .atmo   — radial halo (120px, slow pulse)
+   *   .planet — pearl core (80px) with built-in radial gradient
+   *   .orbiter ×3 — avatar dots circling at the track radius
+   * Geometry, animations, sizes — all identical to the in-app variants.
+   * Each card only swaps the colour values. */
 
-  .halo,.aura,.ring-out,.ring-mid,.ring-in,.sweep{
-    position:absolute;border-radius:50%;pointer-events:none;
+  .otrack{
+    position:absolute;width:160px;height:160px;border-radius:50%;
+    border:1px dashed;
+    z-index:1;
   }
-  .halo{
-    width:240px;height:240px;
-    filter:blur(28px);opacity:0.7;z-index:1;
-    animation:pulse 4s ease-in-out infinite;
+  .lring{
+    position:absolute;width:100%;height:100%;border-radius:50%;
+    border:2px solid;
+    animation:rex 3s ease-out infinite;
+    z-index:2;
   }
-  .aura{
-    width:200px;height:200px;
-    filter:blur(14px);opacity:0.65;z-index:2;
-    animation:spinSlow 14s linear infinite;
-  }
-  .ring-out{
-    width:160px;height:160px;
-    -webkit-mask:radial-gradient(circle,transparent 56%,#000 60%,transparent 78%);
-            mask:radial-gradient(circle,transparent 56%,#000 60%,transparent 78%);
-    filter:blur(2px);
-    animation:spin 7s linear infinite reverse;
+  .lring.r2{animation-delay:1s}
+  .lring.r3{animation-delay:2s}
+  .atmo{
+    position:absolute;width:120px;height:120px;border-radius:50%;
+    animation:apulse 4s ease-in-out infinite;
     z-index:3;
   }
-  .ring-mid{
-    width:128px;height:128px;
-    -webkit-mask:radial-gradient(circle,transparent 60%,#000 64%);
-            mask:radial-gradient(circle,transparent 60%,#000 64%);
-    animation:spin 4s linear infinite;
+  .planet{
+    width:80px;height:80px;border-radius:50%;
+    position:relative;z-index:5;overflow:hidden;
+  }
+  /* Three orbiters circling on the track. The host element rotates;
+   * the inner avatar counter-rotates so the letter stays upright. */
+  .orbiter-host{
+    position:absolute;width:160px;height:160px;
+    animation:orbi 15s linear infinite;
     z-index:4;
   }
-  .ring-in{
-    width:104px;height:104px;
-    -webkit-mask:radial-gradient(circle,transparent 70%,#000 72%);
-            mask:radial-gradient(circle,transparent 70%,#000 72%);
-    animation:spin 9s linear infinite reverse;
-    z-index:5;opacity:0.7;
-  }
-  .planet{
-    width:92px;height:92px;border-radius:50%;
-    position:relative;z-index:7;
-  }
-  .planet::after{
-    content:"";position:absolute;inset:0;border-radius:50%;
-    background:radial-gradient(circle at 30% 25%,rgba(255,255,255,0.55),transparent 40%);
-    pointer-events:none;
-  }
-  .sweep{
-    width:96px;height:1px;border-radius:0;left:50%;top:50%;
-    transform-origin:0 0;
-    z-index:6;opacity:0.85;
-    animation:sweepSpin 4.5s linear infinite;
-  }
-  .spark{
-    position:absolute;width:4px;height:4px;border-radius:50%;
-    z-index:8;animation:sparkFloat 3s ease-in-out infinite;
+  .orbiter-host.h2{animation-delay:-5s}
+  .orbiter-host.h3{animation-delay:-10s}
+  .orbiter{
+    position:absolute;left:50%;top:0;transform:translate(-50%,-50%);
+    width:32px;height:32px;border-radius:50%;
+    background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
+    border:2px solid;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:0.65rem;font-weight:700;
+    animation:corbi 15s linear infinite;
   }
 
   .vlabel{
-    margin-top:8px;
+    margin-top:12px;
     font-family:'Space Mono',ui-monospace,monospace;
-    font-size:0.74rem;letter-spacing:2.6px;font-weight:700;
-    text-align:center;line-height:1.2;
-    background-size:300% 100% !important;
-    -webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;
-    animation:flow 5s ease-in-out infinite;
-    filter:drop-shadow(0 0 6px var(--label-glow,rgba(255,255,255,0.25)));
+    font-size:0.72rem;letter-spacing:2.5px;font-weight:700;
+    color:var(--t1);text-align:center;line-height:1.2;
   }
   .vstatus{
     margin-top:5px;font-family:'Space Mono',ui-monospace,monospace;
@@ -154,175 +131,79 @@
     background:var(--success);box-shadow:0 0 5px var(--success);
   }
   .meta{margin-top:10px;font-size:0.62rem;color:var(--t3);letter-spacing:1px;text-align:center;line-height:1.4}
-  .tier{
-    margin-top:10px;
-    font-family:'Space Mono',ui-monospace,monospace;
-    font-size:0.5rem;letter-spacing:1.4px;font-weight:700;
-    color:var(--legendary);
-    padding:3px 8px;border-radius:5px;
-    background:rgba(245,158,11,0.12);
-    border:1px solid rgba(245,158,11,0.4);
-  }
 
-  @keyframes spin    {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-  @keyframes spinSlow{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
-  @keyframes pulse   {0%,100%{transform:scale(1);opacity:0.55}50%{transform:scale(1.08);opacity:0.8}}
-  @keyframes flow    {0%{background-position:0% 50%}100%{background-position:300% 50%}}
-  @keyframes sweepSpin{0%{transform:rotate(0deg);opacity:0}10%{opacity:0.9}90%{opacity:0.9}100%{transform:rotate(360deg);opacity:0}}
-  @keyframes sparkFloat{0%,100%{transform:translateY(0) scale(1);opacity:0.7}50%{transform:translateY(-8px) scale(1.4);opacity:1}}
-  @keyframes pulseFast {0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
+  @keyframes orbi   {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes corbi  {from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(-360deg)}}
+  @keyframes apulse {0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:0.75;transform:scale(1.05)}}
+  @keyframes rex    {0%{transform:scale(1);opacity:0.65}100%{transform:scale(1.4);opacity:0}}
 
-  /* ═══════════════════ 01 BOREALIS  ═══════════════════ */
-  .c01{--label-glow:rgba(34,211,238,0.4)}
-  .c01 .halo  {background:radial-gradient(circle,rgba(34,211,238,0.55),rgba(52,211,153,0.25),transparent 70%)}
-  .c01 .aura  {background:conic-gradient(#22d3ee,#34d399,#60a5fa,#a78bfa,#22d3ee)}
-  .c01 .ring-out{background:conic-gradient(rgba(34,211,238,0.7),rgba(52,211,153,0.5),rgba(96,165,250,0.6),rgba(167,139,250,0.4),rgba(34,211,238,0.7))}
-  .c01 .ring-mid{background:conic-gradient(#22d3ee,#34d399,#a5f3d8,#60a5fa,#22d3ee)}
-  .c01 .ring-in{background:conic-gradient(#a5f3d8,transparent,#60a5fa,transparent,#a5f3d8)}
-  .c01 .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#e0fff4 45%,#a5f3fc 100%);
-    box-shadow:0 0 14px rgba(255,255,255,0.5),0 0 38px rgba(34,211,238,0.55),0 0 90px rgba(52,211,153,0.35),inset 0 -6px 16px rgba(15,118,110,0.45),inset 0 4px 10px rgba(255,255,255,0.85);
-  }
-  .c01 .sweep{background:linear-gradient(90deg,transparent,#e0fff4,transparent)}
-  .c01 .spark{background:#a5f3d8;box-shadow:0 0 8px #34d399}
-  .c01 .vlabel{background:linear-gradient(90deg,#a5f3d8,#34d399,#22d3ee,#60a5fa,#a5f3d8)}
+  /* ═════ COLOUR-ONLY VARIANTS (base recipe is identical) ═════
+   * Each card exposes:
+   *   --c1   ring + dash + orbiter border colour
+   *   --halo planet box-shadow + atmo gradient core
+   *   --grad planet radial gradient
+   * Everything else inherits from .planet/.atmo/.lring/.otrack/.orbiter. */
 
-  /* ═══════════════════ 02 NEBULA  ═══════════════════ */
-  .c02{--label-glow:rgba(168,85,247,0.4)}
-  .c02 .halo  {background:radial-gradient(circle,rgba(168,85,247,0.5),rgba(236,72,153,0.25),transparent 70%)}
-  .c02 .aura  {background:conic-gradient(#c084fc,#ec4899,#7c3aed,#3b0764,#c084fc);filter:blur(20px)}
-  .c02 .ring-out{background:conic-gradient(rgba(192,132,252,0.6),rgba(236,72,153,0.6),rgba(124,58,237,0.5),rgba(167,139,250,0.5),rgba(192,132,252,0.6))}
-  .c02 .ring-mid{background:conic-gradient(#e9d5ff,#c084fc,#ec4899,#a78bfa,#e9d5ff)}
-  .c02 .ring-in{background:conic-gradient(#fbcfe8,transparent,#c084fc,transparent,#fbcfe8)}
-  .c02 .planet{
-    background:radial-gradient(circle at 30% 25%,#ffffff,#f3e8ff 45%,#e9d5ff 100%);
-    box-shadow:0 0 14px rgba(255,255,255,0.55),0 0 40px rgba(168,85,247,0.55),0 0 100px rgba(236,72,153,0.4),inset 0 -6px 16px rgba(124,58,237,0.4),inset 0 4px 10px rgba(255,255,255,0.85);
+  .col[class*=" c"] .otrack{border-color:var(--c1)}
+  .col[class*=" c"] .lring {border-color:var(--c1)}
+  .col[class*=" c"] .orbiter{border-color:var(--c1)}
+  .col[class*=" c"] .atmo  {background:radial-gradient(circle,var(--halo),transparent 70%)}
+  .col[class*=" c"] .planet{
+    background:var(--grad);
+    box-shadow:0 0 30px var(--halo),0 0 70px var(--halo),inset 0 0 24px rgba(255,255,255,0.18);
   }
-  .c02 .sweep{background:linear-gradient(90deg,transparent,#f3e8ff,#ec4899,transparent)}
-  .c02 .spark{background:#fbcfe8;box-shadow:0 0 8px #c084fc}
-  .c02 .vlabel{background:linear-gradient(90deg,#e9d5ff,#c084fc,#ec4899,#a78bfa,#e9d5ff)}
+  .col[class*=" c"] .vlabel{color:var(--c1)}
 
-  /* ═══════════════════ 03 SOLAR FLARE  ═══════════════════ */
-  .c03{--label-glow:rgba(220,38,38,0.45)}
-  .c03 .halo  {background:radial-gradient(circle,rgba(249,115,22,0.6),rgba(220,38,38,0.25),transparent 70%)}
-  .c03 .aura  {background:conic-gradient(#fbbf24,#f97316,#dc2626,#fbbf24);animation:spinSlow 7s linear infinite}
-  .c03 .ring-out{background:conic-gradient(rgba(251,191,36,0.7),rgba(249,115,22,0.6),rgba(220,38,38,0.55),rgba(251,191,36,0.7));animation:spin 4s linear infinite reverse}
-  .c03 .ring-mid{background:conic-gradient(#fef3c7,#fbbf24,#f97316,#dc2626,#fef3c7);animation:spin 2.4s linear infinite}
-  .c03 .ring-in{background:conic-gradient(#fef3c7,transparent,#fbbf24,transparent,#fef3c7)}
-  .c03 .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#fff7e0 45%,#ffe4c4 100%);
-    box-shadow:0 0 14px rgba(255,255,255,0.55),0 0 50px rgba(249,115,22,0.7),0 0 110px rgba(220,38,38,0.35),inset 0 -6px 18px rgba(124,45,18,0.5),inset 0 4px 10px rgba(255,255,255,0.95);
-    animation:pulseFast 2.8s ease-in-out infinite;
+  .c01{
+    --c1:rgba(34,211,238,0.55);
+    --halo:rgba(34,211,238,0.40);
+    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#22d3ee 55%,#164e63);
   }
-  .c03 .sweep{background:linear-gradient(90deg,transparent,#fef3c7,#dc2626,transparent)}
-  .c03 .spark{background:#fef3c7;box-shadow:0 0 9px #f97316}
-  .c03 .vlabel{background:linear-gradient(90deg,#fef3c7,#fbbf24,#f97316,#dc2626,#fef3c7)}
-
-  /* ═══════════════════ 04 GLACIER  ═══════════════════ */
-  .c04{--label-glow:rgba(125,211,252,0.45)}
-  .c04 .halo  {background:radial-gradient(circle,rgba(125,211,252,0.6),rgba(186,230,253,0.3),transparent 70%)}
-  .c04 .aura  {background:conic-gradient(#e0f2fe,#7dd3fc,#0ea5e9,#bae6fd,#e0f2fe)}
-  .c04 .ring-out{background:conic-gradient(rgba(186,230,253,0.7),rgba(125,211,252,0.7),rgba(14,165,233,0.5),rgba(186,230,253,0.7))}
-  .c04 .ring-mid{background:conic-gradient(#e0f2fe,#7dd3fc,#0ea5e9,#bae6fd,#e0f2fe);animation:spin 5s linear infinite}
-  .c04 .ring-in{background:conic-gradient(#ffffff,transparent,#7dd3fc,transparent,#ffffff)}
-  .c04 .planet{
-    background:radial-gradient(circle at 35% 25%,#ffffff,#f0faff 45%,#e0f2fe 100%);
-    box-shadow:0 0 14px rgba(255,255,255,0.7),0 0 40px rgba(125,211,252,0.65),0 0 100px rgba(186,230,253,0.45),inset 0 -6px 16px rgba(14,165,233,0.3),inset 0 4px 10px rgba(255,255,255,0.95);
+  .c02{
+    --c1:rgba(168,85,247,0.55);
+    --halo:rgba(168,85,247,0.40);
+    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#a855f7 55%,#3b0764);
   }
-  .c04 .sweep{background:linear-gradient(90deg,transparent,#ffffff,transparent)}
-  .c04 .spark{background:#e0f2fe;box-shadow:0 0 9px #7dd3fc}
-  .c04 .vlabel{background:linear-gradient(90deg,#ffffff,#e0f2fe,#7dd3fc,#0ea5e9,#ffffff)}
-
-  /* ═══════════════════ 05 CHERRY BLOSSOM  ═══════════════════ */
-  .c05{--label-glow:rgba(244,114,182,0.4)}
-  .c05 .halo  {background:radial-gradient(circle,rgba(251,207,232,0.6),rgba(244,114,182,0.3),transparent 70%)}
-  .c05 .aura  {background:conic-gradient(#fbcfe8,#f9a8d4,#fdf2f8,#f472b6,#fbcfe8);animation:spinSlow 18s linear infinite}
-  .c05 .ring-out{background:conic-gradient(rgba(251,207,232,0.7),rgba(249,168,212,0.5),rgba(255,255,255,0.5),rgba(251,207,232,0.7))}
-  .c05 .ring-mid{background:conic-gradient(#fdf2f8,#fbcfe8,#f472b6,#fbcfe8,#fdf2f8);animation:spin 5.5s linear infinite}
-  .c05 .ring-in{background:conic-gradient(#ffffff,transparent,#f9a8d4,transparent,#ffffff)}
-  .c05 .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#fff5fa 45%,#fce7f3 100%);
-    box-shadow:0 0 14px rgba(255,255,255,0.65),0 0 40px rgba(251,207,232,0.7),0 0 100px rgba(244,114,182,0.4),inset 0 -6px 16px rgba(157,23,77,0.18),inset 0 4px 10px rgba(255,255,255,0.95);
+  .c03{
+    --c1:rgba(249,115,22,0.55);
+    --halo:rgba(249,115,22,0.40);
+    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#f97316 55%,#7c2d12);
   }
-  .c05 .sweep{background:linear-gradient(90deg,transparent,#fdf2f8,#fbcfe8,transparent)}
-  .c05 .spark{background:#fdf2f8;box-shadow:0 0 9px #f9a8d4}
-  .c05 .vlabel{background:linear-gradient(90deg,#fdf2f8,#fbcfe8,#f472b6,#fbcfe8,#fdf2f8)}
-
-  /* ═══════════════════ 06 FOREST SPIRIT  ═══════════════════ */
-  .c06{--label-glow:rgba(132,204,22,0.4)}
-  .c06 .halo  {background:radial-gradient(circle,rgba(132,204,22,0.55),rgba(250,204,21,0.3),transparent 70%)}
-  .c06 .aura  {background:conic-gradient(#bef264,#84cc16,#facc15,#365314,#bef264)}
-  .c06 .ring-out{background:conic-gradient(rgba(190,242,100,0.6),rgba(132,204,22,0.5),rgba(250,204,21,0.5),rgba(54,83,20,0.4),rgba(190,242,100,0.6))}
-  .c06 .ring-mid{background:conic-gradient(#ecfccb,#bef264,#facc15,#84cc16,#ecfccb);animation:spin 4.5s linear infinite}
-  .c06 .ring-in{background:conic-gradient(#fef08a,transparent,#bef264,transparent,#fef08a)}
-  .c06 .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#f7ffe0 45%,#ecfccb 100%);
-    box-shadow:0 0 14px rgba(255,255,255,0.55),0 0 40px rgba(132,204,22,0.6),0 0 100px rgba(250,204,21,0.4),inset 0 -6px 16px rgba(54,83,20,0.25),inset 0 4px 10px rgba(255,255,255,0.85);
+  .c04{
+    --c1:rgba(125,211,252,0.55);
+    --halo:rgba(125,211,252,0.40);
+    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.6),#7dd3fc 55%,#0c4a6e);
   }
-  .c06 .sweep{background:linear-gradient(90deg,transparent,#fef08a,#bef264,transparent)}
-  .c06 .spark{background:#facc15;box-shadow:0 0 9px #84cc16}
-  .c06 .vlabel{background:linear-gradient(90deg,#ecfccb,#bef264,#facc15,#84cc16,#ecfccb)}
-
-  /* ═══════════════════ 07 COSMIC STORM  ═══════════════════ */
-  .c07{--label-glow:rgba(59,130,246,0.5)}
-  .c07 .halo  {background:radial-gradient(circle,rgba(59,130,246,0.6),rgba(167,139,250,0.3),transparent 70%);animation:pulse 2.5s ease-in-out infinite}
-  .c07 .aura  {background:conic-gradient(#dbeafe,#3b82f6,#a78bfa,#312e81,#dbeafe);animation:spinSlow 6s linear infinite}
-  .c07 .ring-out{background:conic-gradient(rgba(219,234,254,0.7),rgba(59,130,246,0.6),rgba(167,139,250,0.55),rgba(49,46,129,0.4),rgba(219,234,254,0.7));animation:spin 3.5s linear infinite reverse}
-  .c07 .ring-mid{background:conic-gradient(#dbeafe,#60a5fa,#a78bfa,#3b82f6,#dbeafe);animation:spin 2s linear infinite}
-  .c07 .ring-in{background:conic-gradient(#ffffff,transparent,#a78bfa,transparent,#ffffff)}
-  .c07 .planet{
-    background:radial-gradient(circle at 30% 25%,#ffffff,#eef4ff 45%,#dbeafe 100%);
-    box-shadow:0 0 14px rgba(255,255,255,0.55),0 0 50px rgba(59,130,246,0.65),0 0 110px rgba(167,139,250,0.45),inset 0 -6px 18px rgba(49,46,129,0.3),inset 0 4px 10px rgba(255,255,255,0.85);
+  .c05{
+    --c1:rgba(244,114,182,0.55);
+    --halo:rgba(244,114,182,0.40);
+    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.6),#f472b6 55%,#831843);
   }
-  .c07 .sweep{background:linear-gradient(90deg,transparent,#ffffff,#a78bfa,transparent);animation:sweepSpin 2.8s linear infinite}
-  .c07 .spark{background:#dbeafe;box-shadow:0 0 10px #60a5fa}
-  .c07 .vlabel{background:linear-gradient(90deg,#dbeafe,#60a5fa,#a78bfa,#3b82f6,#dbeafe)}
-
-  /* ═══════════════════ 08 MYSTIC ROSE  ═══════════════════ */
-  .c08{--label-glow:rgba(220,38,38,0.4)}
-  .c08 .halo  {background:radial-gradient(circle,rgba(251,191,36,0.55),rgba(220,38,38,0.3),transparent 70%)}
-  .c08 .aura  {background:conic-gradient(#fef9c3,#fbbf24,#dc2626,#7c3aed,#fef9c3);animation:spinSlow 11s linear infinite}
-  .c08 .ring-out{background:conic-gradient(rgba(254,249,195,0.65),rgba(251,191,36,0.6),rgba(220,38,38,0.55),rgba(124,58,237,0.4),rgba(254,249,195,0.65))}
-  .c08 .ring-mid{background:conic-gradient(#fef9c3,#fbbf24,#dc2626,#a78bfa,#fef9c3);animation:spin 4.8s linear infinite}
-  .c08 .ring-in{background:conic-gradient(#fef9c3,transparent,#a78bfa,transparent,#fef9c3)}
-  .c08 .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#fffbe0 45%,#fff7d6 100%);
-    box-shadow:0 0 14px rgba(255,255,255,0.6),0 0 45px rgba(251,191,36,0.65),0 0 110px rgba(220,38,38,0.4),inset 0 -6px 18px rgba(88,28,135,0.3),inset 0 4px 10px rgba(255,255,255,0.95);
+  .c06{
+    --c1:rgba(132,204,22,0.55);
+    --halo:rgba(132,204,22,0.40);
+    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#84cc16 55%,#365314);
   }
-  .c08 .sweep{background:linear-gradient(90deg,transparent,#fef9c3,#fbbf24,transparent)}
-  .c08 .spark{background:#fef9c3;box-shadow:0 0 9px #fbbf24}
-  .c08 .vlabel{background:linear-gradient(90deg,#fef9c3,#fbbf24,#dc2626,#a78bfa,#fef9c3)}
-
-  /* ═══════════════════ 09 MINT FIZZ  ═══════════════════ */
-  .c09{--label-glow:rgba(16,185,129,0.4)}
-  .c09 .halo  {background:radial-gradient(circle,rgba(16,185,129,0.55),rgba(209,250,229,0.3),transparent 70%)}
-  .c09 .aura  {background:conic-gradient(#d1fae5,#34d399,#a7f3d0,#10b981,#d1fae5);animation:spinSlow 16s linear infinite}
-  .c09 .ring-out{background:conic-gradient(rgba(209,250,229,0.65),rgba(52,211,153,0.55),rgba(167,243,208,0.5),rgba(209,250,229,0.65))}
-  .c09 .ring-mid{background:conic-gradient(#d1fae5,#34d399,#a7f3d0,#10b981,#d1fae5);animation:spin 5.5s linear infinite}
-  .c09 .ring-in{background:conic-gradient(#ffffff,transparent,#34d399,transparent,#ffffff)}
-  .c09 .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#f0fff7 45%,#d1fae5 100%);
-    box-shadow:0 0 14px rgba(255,255,255,0.6),0 0 40px rgba(16,185,129,0.6),0 0 100px rgba(209,250,229,0.45),inset 0 -6px 16px rgba(6,78,59,0.25),inset 0 4px 10px rgba(255,255,255,0.95);
+  .c07{
+    --c1:rgba(59,130,246,0.55);
+    --halo:rgba(59,130,246,0.40);
+    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#3b82f6 55%,#1e3a8a);
   }
-  .c09 .sweep{background:linear-gradient(90deg,transparent,#ffffff,#a7f3d0,transparent)}
-  .c09 .spark{background:#d1fae5;box-shadow:0 0 9px #34d399}
-  .c09 .vlabel{background:linear-gradient(90deg,#ffffff,#d1fae5,#34d399,#10b981,#ffffff)}
-
-  /* ═══════════════════ 10 ROYAL GOLD  ═══════════════════ */
-  .c10{--label-glow:rgba(245,158,11,0.45)}
-  .c10 .halo  {background:radial-gradient(circle,rgba(245,158,11,0.6),rgba(254,243,199,0.3),transparent 70%);animation:pulse 5s ease-in-out infinite}
-  .c10 .aura  {background:conic-gradient(#fef3c7,#fbbf24,#f59e0b,#fef3c7);animation:spinSlow 9s linear infinite}
-  .c10 .ring-out{background:conic-gradient(rgba(254,243,199,0.7),rgba(251,191,36,0.6),rgba(245,158,11,0.5),rgba(254,243,199,0.7))}
-  .c10 .ring-mid{background:conic-gradient(#fef3c7,#fbbf24,#f59e0b,#fef3c7);animation:spin 6s linear infinite}
-  .c10 .ring-in{background:conic-gradient(#fef3c7,transparent,#f59e0b,transparent,#fef3c7)}
-  .c10 .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#fff9e0 45%,#fef3c7 100%);
-    box-shadow:0 0 14px rgba(255,255,255,0.65),0 0 50px rgba(245,158,11,0.7),0 0 110px rgba(254,243,199,0.45),inset 0 -6px 18px rgba(120,53,15,0.25),inset 0 4px 10px rgba(255,255,255,0.95);
-    animation:pulseFast 4s ease-in-out infinite;
+  .c08{
+    --c1:rgba(220,38,38,0.55);
+    --halo:rgba(220,38,38,0.40);
+    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#dc2626 55%,#7f1d1d);
   }
-  .c10 .sweep{background:linear-gradient(90deg,transparent,#fef3c7,#fbbf24,transparent)}
-  .c10 .spark{background:#fef3c7;box-shadow:0 0 10px #fbbf24}
-  .c10 .vlabel{background:linear-gradient(90deg,#fef3c7,#fbbf24,#f59e0b,#fef3c7)}
+  .c09{
+    --c1:rgba(16,185,129,0.55);
+    --halo:rgba(16,185,129,0.40);
+    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#10b981 55%,#064e3b);
+  }
+  .c10{
+    --c1:rgba(245,158,11,0.55);
+    --halo:rgba(245,158,11,0.40);
+    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.6),#f59e0b 55%,#78350f);
+  }
 
   .footer{
     max-width:1480px;margin:36px auto 0;padding:18px;
@@ -335,8 +216,8 @@
 <body>
 
 <header class="page-head">
-  <h1>// ORBIT VARIANTS · v2 — premium concepts</h1>
-  <p>Six animated layers per orb: blurred halo, slow conic aura, two stacked spinning rings, a tight collar ring, the pearl planet with inset highlight + rim shadow, plus a rotating sweep beam and floating sparkles. Tell me which numbers to ship.</p>
+  <h1>// ORBIT VARIANTS · v3</h1>
+  <p>Same base recipe as the existing INDIGO / PINK / CYAN / GOLD variants — pearl planet, atmosphere halo, three pulsing rings, dashed outer track, three orbiters. Only colour values change between cards.</p>
 </header>
 
 <section class="grid">
@@ -344,171 +225,167 @@
   <article class="col c01">
     <div class="col-head"><span class="lbl">ORBIT 01</span><span>LIVE · 3 MEMBERS</span></div>
     <div class="stage">
-      <div class="halo"></div>
-      <div class="aura"></div>
-      <div class="ring-out"></div>
-      <div class="ring-mid"></div>
-      <div class="ring-in"></div>
-      <div class="sweep"></div>
+      <div class="otrack"></div>
+      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
+      <div class="atmo"></div>
       <div class="planet"></div>
-      <div class="spark" style="top:18%;left:30%"></div>
-      <div class="spark" style="top:78%;left:72%;animation-delay:-1s"></div>
-      <div class="spark" style="top:48%;left:88%;animation-delay:-2s"></div>
+      <div class="orbiter-host"><div class="orbiter">A</div></div>
+      <div class="orbiter-host h2"><div class="orbiter">M</div></div>
+      <div class="orbiter-host h3"><div class="orbiter">R</div></div>
     </div>
-    <div class="vlabel">BOREALIS</div>
+    <div class="vlabel">CYAN</div>
     <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">teal · cyan · indigo · soft northern aurora</div>
-    <div class="tier">★ LEGENDARY</div>
+    <div class="meta">cyan · teal</div>
   </article>
 
   <article class="col c02">
     <div class="col-head"><span class="lbl">ORBIT 02</span><span>LIVE · 3 MEMBERS</span></div>
     <div class="stage">
-      <div class="halo"></div><div class="aura"></div>
-      <div class="ring-out"></div><div class="ring-mid"></div><div class="ring-in"></div>
-      <div class="sweep"></div><div class="planet"></div>
-      <div class="spark" style="top:22%;left:25%"></div>
-      <div class="spark" style="top:72%;left:78%;animation-delay:-1s"></div>
-      <div class="spark" style="top:50%;left:15%;animation-delay:-2s"></div>
+      <div class="otrack"></div>
+      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
+      <div class="atmo"></div>
+      <div class="planet"></div>
+      <div class="orbiter-host"><div class="orbiter">A</div></div>
+      <div class="orbiter-host h2"><div class="orbiter">M</div></div>
+      <div class="orbiter-host h3"><div class="orbiter">R</div></div>
     </div>
-    <div class="vlabel">NEBULA</div>
+    <div class="vlabel">VIOLET</div>
     <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">violet · magenta · indigo · deep-space drift</div>
-    <div class="tier">★ LEGENDARY</div>
+    <div class="meta">violet · indigo</div>
   </article>
 
   <article class="col c03">
     <div class="col-head"><span class="lbl">ORBIT 03</span><span>LIVE · 3 MEMBERS</span></div>
     <div class="stage">
-      <div class="halo"></div><div class="aura"></div>
-      <div class="ring-out"></div><div class="ring-mid"></div><div class="ring-in"></div>
-      <div class="sweep"></div><div class="planet"></div>
-      <div class="spark" style="top:15%;left:55%"></div>
-      <div class="spark" style="top:65%;left:20%;animation-delay:-1s"></div>
-      <div class="spark" style="top:80%;left:78%;animation-delay:-2s"></div>
+      <div class="otrack"></div>
+      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
+      <div class="atmo"></div>
+      <div class="planet"></div>
+      <div class="orbiter-host"><div class="orbiter">A</div></div>
+      <div class="orbiter-host h2"><div class="orbiter">M</div></div>
+      <div class="orbiter-host h3"><div class="orbiter">R</div></div>
     </div>
-    <div class="vlabel">SOLAR FLARE</div>
+    <div class="vlabel">EMBER</div>
     <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">amber · orange · scarlet · pulsing core</div>
-    <div class="tier">★ LEGENDARY</div>
+    <div class="meta">orange · scarlet</div>
   </article>
 
   <article class="col c04">
     <div class="col-head"><span class="lbl">ORBIT 04</span><span>LIVE · 3 MEMBERS</span></div>
     <div class="stage">
-      <div class="halo"></div><div class="aura"></div>
-      <div class="ring-out"></div><div class="ring-mid"></div><div class="ring-in"></div>
-      <div class="sweep"></div><div class="planet"></div>
-      <div class="spark" style="top:25%;left:78%"></div>
-      <div class="spark" style="top:60%;left:25%;animation-delay:-1s"></div>
-      <div class="spark" style="top:82%;left:50%;animation-delay:-2s"></div>
+      <div class="otrack"></div>
+      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
+      <div class="atmo"></div>
+      <div class="planet"></div>
+      <div class="orbiter-host"><div class="orbiter">A</div></div>
+      <div class="orbiter-host h2"><div class="orbiter">M</div></div>
+      <div class="orbiter-host h3"><div class="orbiter">R</div></div>
     </div>
-    <div class="vlabel">GLACIER</div>
+    <div class="vlabel">FROST</div>
     <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">white-ice · sky · deep blue · crystalline</div>
-    <div class="tier">★ LEGENDARY</div>
+    <div class="meta">sky blue · ice</div>
   </article>
 
   <article class="col c05">
     <div class="col-head"><span class="lbl">ORBIT 05</span><span>LIVE · 3 MEMBERS</span></div>
     <div class="stage">
-      <div class="halo"></div><div class="aura"></div>
-      <div class="ring-out"></div><div class="ring-mid"></div><div class="ring-in"></div>
-      <div class="sweep"></div><div class="planet"></div>
-      <div class="spark" style="top:30%;left:20%"></div>
-      <div class="spark" style="top:75%;left:80%;animation-delay:-1s"></div>
-      <div class="spark" style="top:50%;left:88%;animation-delay:-2s"></div>
+      <div class="otrack"></div>
+      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
+      <div class="atmo"></div>
+      <div class="planet"></div>
+      <div class="orbiter-host"><div class="orbiter">A</div></div>
+      <div class="orbiter-host h2"><div class="orbiter">M</div></div>
+      <div class="orbiter-host h3"><div class="orbiter">R</div></div>
     </div>
-    <div class="vlabel">CHERRY BLOSSOM</div>
+    <div class="vlabel">BLOSSOM</div>
     <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">pastel pink · rose · cream · gentle</div>
-    <div class="tier">★ LEGENDARY</div>
+    <div class="meta">rose · pink</div>
   </article>
 
   <article class="col c06">
     <div class="col-head"><span class="lbl">ORBIT 06</span><span>LIVE · 3 MEMBERS</span></div>
     <div class="stage">
-      <div class="halo"></div><div class="aura"></div>
-      <div class="ring-out"></div><div class="ring-mid"></div><div class="ring-in"></div>
-      <div class="sweep"></div><div class="planet"></div>
-      <div class="spark" style="top:20%;left:70%"></div>
-      <div class="spark" style="top:78%;left:30%;animation-delay:-1s"></div>
-      <div class="spark" style="top:55%;left:15%;animation-delay:-2s"></div>
+      <div class="otrack"></div>
+      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
+      <div class="atmo"></div>
+      <div class="planet"></div>
+      <div class="orbiter-host"><div class="orbiter">A</div></div>
+      <div class="orbiter-host h2"><div class="orbiter">M</div></div>
+      <div class="orbiter-host h3"><div class="orbiter">R</div></div>
     </div>
-    <div class="vlabel">FOREST SPIRIT</div>
+    <div class="vlabel">FERN</div>
     <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">moss · lime · gold · woodland glow</div>
-    <div class="tier">★ LEGENDARY</div>
+    <div class="meta">lime · moss</div>
   </article>
 
   <article class="col c07">
     <div class="col-head"><span class="lbl">ORBIT 07</span><span>LIVE · 3 MEMBERS</span></div>
     <div class="stage">
-      <div class="halo"></div><div class="aura"></div>
-      <div class="ring-out"></div><div class="ring-mid"></div><div class="ring-in"></div>
-      <div class="sweep"></div><div class="planet"></div>
-      <div class="spark" style="top:15%;left:35%"></div>
-      <div class="spark" style="top:65%;left:75%;animation-delay:-1s"></div>
-      <div class="spark" style="top:80%;left:25%;animation-delay:-2s"></div>
+      <div class="otrack"></div>
+      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
+      <div class="atmo"></div>
+      <div class="planet"></div>
+      <div class="orbiter-host"><div class="orbiter">A</div></div>
+      <div class="orbiter-host h2"><div class="orbiter">M</div></div>
+      <div class="orbiter-host h3"><div class="orbiter">R</div></div>
     </div>
-    <div class="vlabel">COSMIC STORM</div>
+    <div class="vlabel">AZURE</div>
     <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">electric blue · violet · ink · fast spin</div>
-    <div class="tier">★ LEGENDARY</div>
+    <div class="meta">electric blue</div>
   </article>
 
   <article class="col c08">
     <div class="col-head"><span class="lbl">ORBIT 08</span><span>LIVE · 3 MEMBERS</span></div>
     <div class="stage">
-      <div class="halo"></div><div class="aura"></div>
-      <div class="ring-out"></div><div class="ring-mid"></div><div class="ring-in"></div>
-      <div class="sweep"></div><div class="planet"></div>
-      <div class="spark" style="top:25%;left:80%"></div>
-      <div class="spark" style="top:75%;left:20%;animation-delay:-1s"></div>
-      <div class="spark" style="top:50%;left:50%;animation-delay:-2s"></div>
+      <div class="otrack"></div>
+      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
+      <div class="atmo"></div>
+      <div class="planet"></div>
+      <div class="orbiter-host"><div class="orbiter">A</div></div>
+      <div class="orbiter-host h2"><div class="orbiter">M</div></div>
+      <div class="orbiter-host h3"><div class="orbiter">R</div></div>
     </div>
-    <div class="vlabel">MYSTIC ROSE</div>
+    <div class="vlabel">RUBY</div>
     <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">cream · gold · crimson · violet</div>
-    <div class="tier">★ LEGENDARY</div>
+    <div class="meta">deep red</div>
   </article>
 
   <article class="col c09">
     <div class="col-head"><span class="lbl">ORBIT 09</span><span>LIVE · 3 MEMBERS</span></div>
     <div class="stage">
-      <div class="halo"></div><div class="aura"></div>
-      <div class="ring-out"></div><div class="ring-mid"></div><div class="ring-in"></div>
-      <div class="sweep"></div><div class="planet"></div>
-      <div class="spark" style="top:18%;left:60%"></div>
-      <div class="spark" style="top:70%;left:25%;animation-delay:-1s"></div>
-      <div class="spark" style="top:80%;left:75%;animation-delay:-2s"></div>
+      <div class="otrack"></div>
+      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
+      <div class="atmo"></div>
+      <div class="planet"></div>
+      <div class="orbiter-host"><div class="orbiter">A</div></div>
+      <div class="orbiter-host h2"><div class="orbiter">M</div></div>
+      <div class="orbiter-host h3"><div class="orbiter">R</div></div>
     </div>
-    <div class="vlabel">MINT FIZZ</div>
+    <div class="vlabel">JADE</div>
     <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">white · mint · emerald · effervescent</div>
-    <div class="tier">★ LEGENDARY</div>
+    <div class="meta">emerald · mint</div>
   </article>
 
   <article class="col c10">
     <div class="col-head"><span class="lbl">ORBIT 10</span><span>LIVE · 3 MEMBERS</span></div>
     <div class="stage">
-      <div class="halo"></div><div class="aura"></div>
-      <div class="ring-out"></div><div class="ring-mid"></div><div class="ring-in"></div>
-      <div class="sweep"></div><div class="planet"></div>
-      <div class="spark" style="top:22%;left:30%"></div>
-      <div class="spark" style="top:78%;left:65%;animation-delay:-1s"></div>
-      <div class="spark" style="top:50%;left:88%;animation-delay:-2s"></div>
+      <div class="otrack"></div>
+      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
+      <div class="atmo"></div>
+      <div class="planet"></div>
+      <div class="orbiter-host"><div class="orbiter">A</div></div>
+      <div class="orbiter-host h2"><div class="orbiter">M</div></div>
+      <div class="orbiter-host h3"><div class="orbiter">R</div></div>
     </div>
-    <div class="vlabel">ROYAL GOLD</div>
+    <div class="vlabel">AMBER</div>
     <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">cream · amber · bronze · warm pulse</div>
-    <div class="tier">★ LEGENDARY</div>
+    <div class="meta">amber · honey</div>
   </article>
 
 </section>
 
 <footer class="footer">
-  10 of 10 · six animated layers per orb · drop-in compatible with the orbits column
+  10 of 10 · same recipe as INDIGO / PINK / CYAN / GOLD · only the colour vars differ
 </footer>
 
 </body>
