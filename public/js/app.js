@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-j (split shortcut handlers: recording in capture, dispatch in bubble — no longer interferes with typing)');
+  console.log('[orblood] client build 2026-05-10-i (game overlay PiP; modern voice toggles; mute/deafen hotkeys)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
