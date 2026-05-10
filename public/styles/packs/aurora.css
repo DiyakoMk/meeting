@@ -35,6 +35,10 @@
 /* Text recipe — used on every label-style surface. Stops are deeper so
  * the text holds contrast on cream surfaces (Aurora theme) without
  * losing pop on dark surfaces (Orblood/Poison). */
+/* Same recipe as the orbit vlabel: pink → peach → yellow → white →
+ * pink, with a slow drift so a bright island sweeps across the text
+ * roughly every 4.5s. Drop-shadows reuse the orb halo colours so
+ * names glow the same way the orb does. */
 .cz-aurora-text,
 .cz-aurora-name,
 .cz-aurora-category .ws-cat-h-name,
@@ -47,18 +51,17 @@
 .cz-aurora-pin .ws-cat-pin-l,
 .cz-aurora-pin .dm-pinned-text {
   background: linear-gradient(90deg,
-    #c44a3a 0%, #e0518a 14%, #ff7eb6 30%, #ff8a4f 50%,
-    #d8458a 70%, #c44a3a 88%, #c44a3a 100%) !important;
-  background-size: 300% 100% !important;
+    #ff7eb6, #ffb88c, #fff0a8, #ffffff, #ffb6e6, #ff7eb6) !important;
+  background-size: 400% 100% !important;
   -webkit-background-clip: text !important;
           background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: transparent !important;
-  animation: cz-aurora-flow 5s linear infinite !important;
+  animation: cz-aurora-flow 4.5s ease-in-out infinite !important;
   text-shadow: none !important;
   filter:
-    drop-shadow(0 0 4px rgba(255,160,180,0.45))
-    drop-shadow(0 0 10px rgba(255,170,120,0.30));
+    drop-shadow(0 0 4px rgba(255,160,210,0.55))
+    drop-shadow(0 0 10px rgba(255,196,140,0.35));
   font-weight: 700;
 }
 

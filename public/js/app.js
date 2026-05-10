@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-a (orb slider stable; pack preview modal)');
+  console.log('[orblood] client build 2026-05-10-b (preview modal polish; aurora text white-sweep slow; orb slider drift fix)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -11395,25 +11395,55 @@
 
     const surfaceCls = (k) => packClassFor(packId, k);
 
+    // Preview body: a header summarising the pack + three labelled
+    // surface frames matching the world-view chrome. Each frame uses
+    // the same DOM/classnames the live renderer uses so the pack CSS
+    // automatically lights it up.
     const html =
 
-      '<div class="cz-preview-stack">'
+      '<div class="pp-head">'
 
-      // Server banner with cover + emblem halo + name
+        + '<div class="pp-head-name">'+escapeHtml(pack.name)+'</div>'
 
-      + '<div class="cz-preview-section '+surfaceCls('serverCover')+' '+surfaceCls('serverEmblem')+'">'
+        + '<div class="pp-head-desc">'+escapeHtml(pack.desc)+'</div>'
 
-        + '<div class="cz-preview-l">SERVER COVER · NAME · EMBLEM</div>'
+        + '<div class="pp-head-meta">'
 
-        + '<div class="cz-preview-banner">'
+          + '<span class="pp-pill">'+(pack.price > 0 ? '$'+pack.price : 'FREE')+'</span>'
 
-          + '<div class="ws-banner-cover" style="background-image:linear-gradient(135deg,#3a3a45,#1a1a22)"></div>'
+          + '<span class="pp-pill">'+(pack.surfaces ? pack.surfaces.length : 0)+' SURFACES</span>'
 
-          + '<div class="cz-preview-banner-row">'
+          + (owned ? '<span class="pp-pill pp-pill-owned">OWNED</span>' : '')
 
-            + '<div class="cz-preview-emblem ws-emblem" style="--srv-grad:linear-gradient(135deg,#ff7eb6,#7a0a14)">A</div>'
+        + '</div>'
 
-            + '<div class="cz-preview-name ws-banner-title '+surfaceCls('serverName')+'">Sample Server</div>'
+      + '</div>'
+
+      + '<div class="pp-stack">'
+
+      // 1. Banner — cover, emblem halo, server name
+
+      + '<div class="pp-frame">'
+
+        + '<div class="pp-frame-h"><span class="pp-frame-n">01</span> SERVER BANNER</div>'
+
+        + '<div class="pp-frame-sub">cover · emblem halo · server name</div>'
+
+        + '<div class="pp-banner '+surfaceCls('serverCover')+' '+surfaceCls('serverEmblem')+'">'
+
+          + '<div class="ws-banner-cover" style="background-image:linear-gradient(135deg,#1f1f28,#0d0d12)"></div>'
+
+          + '<div class="pp-banner-row">'
+
+            + '<div class="pp-emblem ws-emblem" style="--srv-grad:linear-gradient(135deg,#ff7eb6,#7a0a14)">A</div>'
+
+            + '<div class="pp-banner-meta">'
+
+              + '<div class="pp-banner-name ws-banner-title '+surfaceCls('serverName')+'">Sample Server</div>'
+
+              + '<div class="pp-banner-sub">3 channels · 2 members</div>'
+
+            + '</div>'
 
           + '</div>'
 
@@ -11421,13 +11451,15 @@
 
       + '</div>'
 
-      // Server pin
+      // 2. Server pin
 
-      + '<div class="cz-preview-section">'
+      + '<div class="pp-frame">'
 
-        + '<div class="cz-preview-l">SERVER PIN</div>'
+        + '<div class="pp-frame-h"><span class="pp-frame-n">02</span> PINNED MESSAGE</div>'
 
-        + '<div class="ws-pinned-box '+surfaceCls('serverPin')+'" style="margin:0;padding:10px 12px">'
+        + '<div class="pp-frame-sub">server-wide pin banner</div>'
+
+        + '<div class="ws-pinned-box pp-pin '+surfaceCls('serverPin')+'">'
 
           + '<div class="ws-pin-icon"><i data-lucide="pin" style="width:14px;height:14px"></i></div>'
 
@@ -11435,7 +11467,7 @@
 
             + '<div class="ws-pin-l">SERVER PIN</div>'
 
-            + '<div class="ws-pin-text">Welcome — read the rules.</div>'
+            + '<div class="ws-pin-text">Welcome — read the rules in #announcements.</div>'
 
           + '</div>'
 
@@ -11443,35 +11475,41 @@
 
       + '</div>'
 
-      // Category title + text channel + voice channel row
+      // 3. Category, text channel, voice channel
 
-      + '<div class="cz-preview-section">'
+      + '<div class="pp-frame">'
 
-        + '<div class="cz-preview-l">CATEGORY · TEXT · VOICE</div>'
+        + '<div class="pp-frame-h"><span class="pp-frame-n">03</span> CHANNELS</div>'
 
-        + '<div class="cz-preview-cat-h '+surfaceCls('category')+'">'
+        + '<div class="pp-frame-sub">category title · text channel · voice channel</div>'
 
-          + '<div class="ws-cat-h-name">GENERAL</div>'
+        + '<div class="pp-rows">'
 
-        + '</div>'
+          + '<div class="pp-cat-h '+surfaceCls('category')+'">'
 
-        + '<div class="ws-cat-tc style-glow '+surfaceCls('textChannel')+'" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--tint-2);margin-bottom:6px">'
+            + '<div class="ws-cat-h-name">GENERAL</div>'
 
-          + '<i data-lucide="hash" style="width:14px;height:14px"></i>'
+          + '</div>'
 
-          + '<span class="ws-cat-tc-n">general</span>'
+          + '<div class="pp-row pp-row-tc ws-cat-tc style-glow '+surfaceCls('textChannel')+'">'
 
-        + '</div>'
+            + '<i data-lucide="hash" style="width:14px;height:14px;color:var(--t2);flex-shrink:0"></i>'
 
-        + '<div class="ws-cat-vc '+surfaceCls('voiceChannel')+'" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--tint-2)">'
+            + '<span class="ws-cat-tc-n">general</span>'
 
-          + '<div class="ws-cat-vc-orb '+surfaceCls('orbit')+'"></div>'
+          + '</div>'
 
-          + '<div class="ws-cat-vc-info">'
+          + '<div class="pp-row pp-row-vc ws-cat-vc '+surfaceCls('voiceChannel')+'">'
 
-            + '<div class="ws-cat-vc-n">LOUNGE</div>'
+            + '<div class="ws-cat-vc-orb pp-vc-orb '+surfaceCls('orbit')+'"></div>'
 
-            + '<div class="ws-cat-vc-c">0 MEMBERS</div>'
+            + '<div class="ws-cat-vc-info">'
+
+              + '<div class="ws-cat-vc-n">LOUNGE</div>'
+
+              + '<div class="ws-cat-vc-c">0 MEMBERS</div>'
+
+            + '</div>'
 
           + '</div>'
 
@@ -15569,9 +15607,29 @@
 
       ccSelectedStyle = keys[idx];
 
-      renderCcStyles();
+      // Update selected class in-place instead of re-rendering the
 
-      // Only arrows trigger the slide animation.
+      // whole track. A full re-render resets scrollLeft to 0 and the
+
+      // subsequent smooth-scroll fights scroll-snap, which is what
+
+      // made repeated right-arrow clicks "stick" instead of advancing
+
+      // visibly. Keeping the DOM stable lets centerCcOrb pan from the
+
+      // current position to the next card cleanly.
+
+      const track = document.getElementById('ccOrbTrack');
+
+      if (track){
+
+        track.querySelectorAll('.cc-orb-card').forEach(el => {
+
+          el.classList.toggle('selected', el.dataset.ccVoiceStyle === ccSelectedStyle);
+
+        });
+
+      }
 
       requestAnimationFrame(() => centerCcOrb(true));
 

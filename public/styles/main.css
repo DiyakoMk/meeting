@@ -452,7 +452,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
   background-size:400% 100%;
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;
-  animation:cz-aurora-flow-core 2.4s linear infinite;
+  animation:cz-aurora-flow-core 4.5s ease-in-out infinite;
 }
 .orb-slide.skin-aurora .planet{
   background:radial-gradient(circle at 35% 30%,#ffffff,#f8f0ff 50%,#ece6ff 100%) !important;
@@ -510,7 +510,7 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
   background-size:400% 100%;
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;color:transparent;
-  animation:cz-aurora-flow-core 2.4s linear infinite;
+  animation:cz-aurora-flow-core 4.5s ease-in-out infinite;
 }
 
 /* Marked orbit card: the small mo-orb mirrors the same look. */
@@ -2858,21 +2858,102 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 .cz-shop-desc{font-size:0.75rem;color:var(--t2);line-height:1.5}
 .cz-shop-price{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1.5px;color:var(--accent);margin-top:4px}
 
-/* Pack preview modal — miniature server view that lets the user see
- * what a pack will look like applied across all six surfaces before
- * they unlock it. Each block borrows the same classnames the real
- * world view uses so the pack CSS automatically lights everything up. */
-.cz-preview-stack{display:flex;flex-direction:column;gap:14px}
-.cz-preview-section{padding:14px;border:1px solid var(--tint-3);border-radius:12px;background:var(--tint-1)}
-.cz-preview-section + .cz-preview-section{margin-top:0}
-.cz-preview-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;letter-spacing:1.6px;color:var(--t3);margin-bottom:8px}
-.cz-preview-banner{position:relative;height:80px;border-radius:10px;overflow:hidden;margin-bottom:10px;background:var(--tint-3)}
-.cz-preview-banner .ws-banner-cover{position:absolute;inset:0;background-size:cover;background-position:center}
-.cz-preview-banner-row{display:flex;align-items:center;gap:12px;padding:10px 12px;position:relative;z-index:2;height:100%}
-.cz-preview-emblem{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;position:relative}
-.cz-preview-name{font-size:1.1rem;font-weight:600;color:var(--t1)}
-.cz-preview-cat-h{margin-bottom:8px}
-.cz-preview-orb{width:40px;height:40px;border-radius:50%;background:var(--vc-grad,radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#6366f1 55%,#1e1b4b));position:relative;flex-shrink:0}
+/* Pack preview modal. Magazine-feel layout: a header card with the
+ * pack name + meta pills, then three numbered "frames" — one per
+ * surface group — each demonstrating the pack on the same DOM the
+ * world view uses, so the pack CSS just works. */
+.pp-head{
+  background:linear-gradient(135deg,var(--tint-2),var(--tint-1));
+  border:1px solid var(--tint-3);
+  border-radius:14px;
+  padding:14px 16px;
+  margin-bottom:14px;
+}
+.pp-head-name{
+  font-size:1.05rem;font-weight:600;color:var(--t1);
+  letter-spacing:0.5px;line-height:1.2;
+}
+.pp-head-desc{
+  font-size:0.78rem;color:var(--t2);line-height:1.5;
+  margin-top:4px;
+}
+.pp-head-meta{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;
+}
+.pp-pill{
+  font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.55rem;letter-spacing:1.4px;font-weight:700;
+  padding:3px 8px;border-radius:6px;
+  background:var(--tint-3);color:var(--t2);
+  border:1px solid var(--tint-4);
+}
+.pp-pill-owned{
+  background:var(--brand-glow-soft);color:var(--accent);
+  border-color:var(--ag);
+}
+
+.pp-stack{display:flex;flex-direction:column;gap:12px}
+.pp-frame{
+  border:1px solid var(--tint-3);
+  border-radius:12px;
+  padding:14px;
+  background:var(--tint-1);
+}
+.pp-frame-h{
+  display:flex;align-items:baseline;gap:8px;
+  font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.6rem;letter-spacing:1.6px;font-weight:700;
+  color:var(--t1);
+}
+.pp-frame-n{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:6px;
+  background:var(--tint-3);color:var(--t2);
+  font-size:0.55rem;font-weight:700;
+}
+.pp-frame-sub{
+  font-size:0.68rem;color:var(--t3);margin:4px 0 12px;
+  font-style:italic;
+}
+
+/* 01 — banner block */
+.pp-banner{
+  position:relative;height:96px;border-radius:10px;overflow:hidden;
+  background:var(--tint-3);
+}
+.pp-banner .ws-banner-cover{position:absolute;inset:0;background-size:cover;background-position:center}
+.pp-banner-row{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 14px;position:relative;z-index:2;height:100%;
+}
+.pp-emblem{
+  width:54px;height:54px;border-radius:50%;
+  background:var(--srv-grad,linear-gradient(135deg,var(--accent),var(--accent-2)));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:600;font-size:1.2rem;flex-shrink:0;
+  position:relative;
+}
+.pp-banner-meta{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.pp-banner-name{font-size:1.05rem;font-weight:600;line-height:1.2;color:var(--t1)}
+.pp-banner-sub{font-size:0.7rem;color:var(--t3)}
+
+/* 02 — pin */
+.pp-pin{margin:0;padding:10px 12px}
+
+/* 03 — channel rows */
+.pp-rows{display:flex;flex-direction:column;gap:6px}
+.pp-cat-h{margin-bottom:4px}
+.pp-row{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;border-radius:8px;
+  background:var(--tint-2);
+}
+.pp-row-tc .ws-cat-tc-n{font-size:0.78rem}
+.pp-row-vc .ws-cat-vc-orb,
+.pp-row-vc .pp-vc-orb{width:36px;height:36px;flex-shrink:0}
+.pp-row-vc .ws-cat-vc-info{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.pp-row-vc .ws-cat-vc-n{font-size:0.75rem;font-weight:600}
+.pp-row-vc .ws-cat-vc-c{font-size:0.55rem;letter-spacing:1.2px;color:var(--t3)}
 .cz-uploader-row{display:flex;align-items:center;gap:14px}
 .cz-uploader-preview{width:64px;height:64px;border-radius:50%;background:var(--tint-3);border:1px solid var(--tint-4);background-size:cover;background-position:center;flex-shrink:0;position:relative;overflow:hidden}
 .cz-cover-preview{width:140px;height:64px;border-radius:10px;background:var(--tint-3);border:1px solid var(--tint-4);background-size:cover;background-position:center;flex-shrink:0;position:relative;overflow:hidden}
@@ -2903,7 +2984,7 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 
 .cc-orb-arrow:hover{background:var(--brand-glow-soft);color:var(--t1);border-color:rgba(185,28,74,0.3)}
 
-.cc-orb-track{flex:1;display:flex;gap:10px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;padding:8px 4px;scroll-snap-type:x proximity}
+.cc-orb-track{flex:1;display:flex;gap:10px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;padding:8px 4px}
 
 .cc-orb-track::-webkit-scrollbar{display:none}
 
@@ -2916,7 +2997,7 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
  * `flex: 0 0 ...` width keeps three cards visible regardless of state
  * and `contain: layout paint` isolates the legendary glow so its
  * filter changes don't trigger a reflow on the parent track. */
-.cc-orb-card{flex:0 0 calc((100% - 20px)/3);min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:12px;cursor:pointer;border:1px solid transparent;transition:background 0.18s,border-color 0.18s,box-shadow 0.18s;scroll-snap-align:center;position:relative;contain:layout paint}
+.cc-orb-card{flex:0 0 calc((100% - 20px)/3);min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:12px;cursor:pointer;border:1px solid transparent;transition:background 0.18s,border-color 0.18s,box-shadow 0.18s;position:relative;contain:layout paint}
 
 .cc-orb-card:hover{background:var(--tint-2)}
 
