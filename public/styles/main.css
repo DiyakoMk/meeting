@@ -2400,6 +2400,66 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 }
 .vs-shortcut-clear:hover{background:var(--tint-5);color:var(--t1)}
 
+/* "Available in the desktop app" placeholder card. Used by panels
+ * (game overlay, etc.) where the browser build can't deliver the
+ * feature. Two-column layout: a stamped icon on the left + body. */
+.settings-locked-card{
+  display:flex;gap:14px;padding:16px;
+  background:var(--tint-2);border:1px solid var(--tint-3);
+  border-radius:12px;
+}
+.settings-locked-icon{
+  flex-shrink:0;width:42px;height:42px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 18px var(--brand-glow);
+}
+.settings-locked-body{flex:1;min-width:0}
+.settings-locked-title{
+  font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.78rem;letter-spacing:1.4px;font-weight:700;
+  color:var(--t1);margin-bottom:4px;
+}
+.settings-locked-desc{
+  font-size:0.78rem;line-height:1.55;color:var(--t2);
+}
+.settings-locked-list{
+  list-style:none;margin:10px 0 0;padding:0;
+  display:flex;flex-direction:column;gap:5px;
+}
+.settings-locked-list li{
+  display:flex;align-items:center;gap:6px;
+  font-size:0.72rem;color:var(--t1);
+}
+.settings-locked-list li i{color:var(--accent);flex-shrink:0}
+
+/* Voice settings — sectioned layout. Each section is a labelled card
+ * grouping related controls (devices, volume, input mode, processing,
+ * test, shortcuts), so the modal scans like a structured form
+ * instead of a flat dump of controls. */
+.vs-body{
+  display:flex;flex-direction:column;gap:14px;
+  max-height:70vh;overflow-y:auto;padding:14px;
+}
+.vs-section{
+  background:var(--tint-1);
+  border:1px solid var(--tint-3);
+  border-radius:12px;
+  padding:12px 14px 14px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.vs-section-h{
+  display:flex;align-items:center;gap:8px;
+  font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.62rem;letter-spacing:1.6px;font-weight:700;
+  color:var(--t1);text-transform:uppercase;
+  padding-bottom:8px;
+  border-bottom:1px solid var(--tint-3);
+}
+.vs-section-h i{color:var(--accent)}
+.vs-section .sm-field{margin:0}
+.vs-section .sm-field + .sm-field{margin-top:0}
+
 .ec-tab{padding:6px 9px;font-size:1rem;border-radius:8px;cursor:pointer;flex-shrink:0;transition:background 0.15s,opacity 0.15s;opacity:0.55;line-height:1}
 
 .ec-tab[data-active="1"]{opacity:1;background:var(--brand-glow-soft)}

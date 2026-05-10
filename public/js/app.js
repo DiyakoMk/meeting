@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-j (split shortcut handlers: recording in capture, dispatch in bubble — no longer interferes with typing)');
+  console.log('[orblood] client build 2026-05-10-k (remove PiP overlay; settings panel desktop-only note; voice settings reorganized into 6 sections)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -1627,8 +1627,6 @@
 
     document.getElementById('btnEnd').style.display = 'flex';
 
-    document.getElementById('btnOverlay').style.display = 'flex';
-
     setVoiceUsers(true);
 
     updateConnBanner();
@@ -1742,12 +1740,6 @@
     document.getElementById('btnDeafen').style.display = 'none';
 
     document.getElementById('btnEnd').style.display = 'none';
-
-    document.getElementById('btnOverlay').style.display = 'none';
-
-    // Close any open overlay window so the user doesn't see a stale orb.
-
-    if (overlayPipWindow){ try { overlayPipWindow.close(); } catch(_){} overlayPipWindow = null; }
 
     document.getElementById('btnMic').classList.remove('muted-state');
 
@@ -17378,255 +17370,6 @@
   document.getElementById('orbEmptyJoinBtn').addEventListener('click', () => { openCreateServer(); const joinTab = document.querySelector('[data-cs-tab="join"]'); if (joinTab) joinTab.click(); });
 
   document.getElementById('btnEnd').addEventListener('click', endVoiceCall);
-
-
-  // ===== GAME OVERLAY (Document Picture-in-Picture) =====
-
-  // Pops a small always-on-top window with a compact orb + mute/end
-
-  // buttons. The window survives going fullscreen into a game and the
-
-  // OS keeps it floating above other apps. Falls back to a toast on
-
-  // browsers that don't support Document PiP yet.
-
-  let overlayPipWindow = null;
-
-  let overlayUpdateTimer = null;
-
-  function isOverlaySupported(){ return 'documentPictureInPicture' in window; }
-
-  function _overlayChannelData(){
-
-    const ch = connectedChannel;
-
-    return ch && channelData[ch] ? channelData[ch] : null;
-
-  }
-
-  function _overlayUpdate(){
-
-    if (!overlayPipWindow) return;
-
-    const doc = overlayPipWindow.document;
-
-    const data = _overlayChannelData();
-
-    const root = doc.querySelector('.gov-root'); if (!root) return;
-
-    const label = doc.getElementById('govLabel');
-
-    const status = doc.getElementById('govStatus');
-
-    const timer = doc.getElementById('govTimer');
-
-    const micBtn = doc.getElementById('govMic');
-
-    if (data){
-
-      label.textContent  = data.name;
-
-      status.textContent = (data.users.length || 0) + ' MEMBERS';
-
-      timer.textContent  = document.getElementById('orbTimer').textContent;
-
-      root.classList.remove('govDisconnected');
-
-    } else {
-
-      label.textContent  = 'NOT CONNECTED';
-
-      status.textContent = '';
-
-      timer.textContent  = '--:--';
-
-      root.classList.add('govDisconnected');
-
-    }
-
-    if (micBtn){
-
-      micBtn.classList.toggle('muted', !!muted);
-
-      micBtn.innerHTML = muted ? '🚫' : '🎙';
-
-    }
-
-  }
-
-  async function openGameOverlay(){
-
-    if (!isOverlaySupported()){
-
-      showToast('Game overlay needs a recent Chromium browser (Edge / Chrome 116+ / Opera).','warn');
-
-      return;
-
-    }
-
-    if (overlayPipWindow){
-
-      try { overlayPipWindow.focus(); } catch(_){}
-
-      return;
-
-    }
-
-    try {
-
-      overlayPipWindow = await documentPictureInPicture.requestWindow({
-
-        width: 200, height: 220
-
-      });
-
-    } catch (e){
-
-      showToast('Could not open overlay: '+(e.message||e),'warn');
-
-      return;
-
-    }
-
-    const doc = overlayPipWindow.document;
-
-    doc.head.innerHTML =
-
-      '<meta charset="utf-8">'
-
-      + '<style>'
-
-      + '*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}'
-
-      + 'body{margin:0;background:transparent;color:#f5f5f7;font-family:Inter,system-ui,sans-serif;'
-
-      +   'overflow:hidden;height:100vh;width:100vw;display:flex;align-items:center;justify-content:center}'
-
-      + '.gov-root{position:relative;width:200px;height:200px;display:flex;flex-direction:column;'
-
-      +   'align-items:center;justify-content:center;background:rgba(8,8,12,0.85);'
-
-      +   'border:1px solid rgba(255,255,255,0.08);border-radius:14px;backdrop-filter:blur(8px);'
-
-      +   '-webkit-backdrop-filter:blur(8px);padding:14px 10px 10px;transition:opacity 0.3s}'
-
-      + '.gov-root.govDisconnected{opacity:0.55}'
-
-      // Empty-style orb: muted grey radial + slow concentric pulse
-
-      // rings, similar to the main carousel placeholder.
-
-      + '.gov-stage{position:relative;width:120px;height:120px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}'
-
-      + '.gov-planet{width:54px;height:54px;border-radius:50%;'
-
-      +   'background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.18),#2a2a32 55%,#0a0a0f);'
-
-      +   'box-shadow:0 0 18px rgba(255,255,255,0.06),inset 0 0 12px rgba(255,255,255,0.05);position:relative;z-index:5}'
-
-      + '.gov-wave{position:absolute;width:100%;height:100%;border-radius:50%;'
-
-      +   'border:1.5px solid rgba(255,255,255,0.18);animation:govRex 3s ease-out infinite;opacity:0.7}'
-
-      + '.gov-wave.w2{animation-delay:1s}.gov-wave.w3{animation-delay:2s}'
-
-      + '.gov-label{font-family:"Space Mono",ui-monospace,monospace;font-size:0.62rem;letter-spacing:1.6px;'
-
-      +   'font-weight:700;color:rgba(255,255,255,0.85);text-align:center;line-height:1.2;margin-top:4px}'
-
-      + '.gov-status{font-family:"Space Mono",ui-monospace,monospace;font-size:0.5rem;letter-spacing:1.2px;'
-
-      +   'color:rgba(255,255,255,0.45);margin-top:2px;text-align:center}'
-
-      + '.gov-timer{font-family:"Space Mono",ui-monospace,monospace;font-size:0.55rem;'
-
-      +   'color:rgba(34,197,94,0.85);margin-top:1px;text-align:center}'
-
-      + '.gov-actions{display:flex;gap:8px;margin-top:8px}'
-
-      + '.gov-btn{width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,0.12);'
-
-      +   'background:rgba(255,255,255,0.04);color:#f5f5f7;cursor:pointer;display:flex;align-items:center;'
-
-      +   'justify-content:center;font-size:0.85rem;transition:background 0.15s,transform 0.1s;line-height:1;padding:0}'
-
-      + '.gov-btn:hover{background:rgba(255,255,255,0.10)}'
-
-      + '.gov-btn:active{transform:scale(0.92)}'
-
-      + '.gov-btn.muted{background:rgba(245,158,11,0.22);border-color:rgba(245,158,11,0.6)}'
-
-      + '.gov-btn.danger{background:rgba(239,68,68,0.22);border-color:rgba(239,68,68,0.6)}'
-
-      + '.gov-btn.danger:hover{background:rgba(239,68,68,0.4)}'
-
-      + '@keyframes govRex{0%{transform:scale(0.6);opacity:0.6}100%{transform:scale(1.6);opacity:0}}'
-
-      + '</style>';
-
-    doc.body.innerHTML =
-
-      '<div class="gov-root">'
-
-      + '<div class="gov-stage">'
-
-      +   '<div class="gov-wave"></div>'
-
-      +   '<div class="gov-wave w2"></div>'
-
-      +   '<div class="gov-wave w3"></div>'
-
-      +   '<div class="gov-planet"></div>'
-
-      + '</div>'
-
-      + '<div class="gov-label" id="govLabel">--</div>'
-
-      + '<div class="gov-status" id="govStatus">--</div>'
-
-      + '<div class="gov-timer" id="govTimer">--:--</div>'
-
-      + '<div class="gov-actions">'
-
-      +   '<button class="gov-btn" id="govMic" type="button" title="Mute / unmute">🎙</button>'
-
-      +   '<button class="gov-btn danger" id="govEnd" type="button" title="Disconnect">📴</button>'
-
-      + '</div>'
-
-      + '</div>';
-
-    doc.getElementById('govMic').addEventListener('click', () => {
-
-      document.getElementById('btnMic').click();
-
-    });
-
-    doc.getElementById('govEnd').addEventListener('click', () => {
-
-      document.getElementById('btnEnd').click();
-
-    });
-
-    // Refresh content every 500ms — covers timer ticks + remote member
-
-    // join/leave that the main app receives via WS.
-
-    overlayUpdateTimer = setInterval(_overlayUpdate, 500);
-
-    _overlayUpdate();
-
-    overlayPipWindow.addEventListener('pagehide', () => {
-
-      if (overlayUpdateTimer){ clearInterval(overlayUpdateTimer); overlayUpdateTimer = null; }
-
-      overlayPipWindow = null;
-
-    });
-
-  }
-
-  document.getElementById('btnOverlay').addEventListener('click', openGameOverlay);
 
 
   // ===== HOTKEY RECORDING + GLOBAL DISPATCH =====

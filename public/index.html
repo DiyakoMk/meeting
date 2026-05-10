@@ -222,8 +222,6 @@
 
           <button class="ob danger" id="btnEnd" title="Disconnect" style="display:none"><i data-lucide="phone-off" style="width:14px;height:14px"></i></button>
 
-          <button class="ob" id="btnOverlay" title="Game overlay (Picture-in-Picture)" style="display:none"><i data-lucide="picture-in-picture-2" style="width:14px;height:14px"></i></button>
-
         </div>
 
         <div class="orb-empty-actions" id="orbEmptyActions" style="display:none">
@@ -1002,6 +1000,8 @@
 
             <button class="settings-side-item" data-st-action="voice" type="button"><i data-lucide="mic"></i>Voice &amp; audio<i data-lucide="external-link" style="margin-left:auto;width:11px;height:11px;opacity:0.6"></i></button>
 
+            <button class="settings-side-item" data-st-tab="overlay" type="button"><i data-lucide="picture-in-picture-2"></i>Game overlay</button>
+
           </div>
 
           <div class="settings-content">
@@ -1287,6 +1287,48 @@
               <label class="vs-toggle"><input type="checkbox" id="notifVoice" checked /> Voice channel joins</label>
 
               <label class="vs-toggle"><input type="checkbox" id="notifFriends" checked /> Friend requests</label>
+
+            </div>
+
+          </div>
+
+          <div class="settings-pane" data-st-pane="overlay">
+
+            <div class="sm-field">
+
+              <label class="sm-label">GAME OVERLAY</label>
+
+              <div class="settings-locked-card">
+
+                <div class="settings-locked-icon"><i data-lucide="picture-in-picture-2" style="width:18px;height:18px"></i></div>
+
+                <div class="settings-locked-body">
+
+                  <div class="settings-locked-title">Available in the desktop app</div>
+
+                  <div class="settings-locked-desc">
+
+                    A frameless, click-through orb that floats above your game even in fullscreen, plus system-wide hotkeys for mute and deafen.
+
+                    The browser version cannot draw on top of native fullscreen apps, so this feature ships only with the ORBLOOD desktop build.
+
+                  </div>
+
+                  <ul class="settings-locked-list">
+
+                    <li><i data-lucide="check" style="width:10px;height:10px"></i>Transparent always-on-top window</li>
+
+                    <li><i data-lucide="check" style="width:10px;height:10px"></i>Click-through to the game underneath</li>
+
+                    <li><i data-lucide="check" style="width:10px;height:10px"></i>Global mute / deafen hotkeys</li>
+
+                    <li><i data-lucide="check" style="width:10px;height:10px"></i>Move/resize anywhere on any monitor</li>
+
+                  </ul>
+
+                </div>
+
+              </div>
 
             </div>
 
@@ -2088,7 +2130,7 @@
 
     <div class="modal-backdrop" id="voiceSettingsBackdrop">
 
-      <div class="smodal" style="max-width:480px">
+      <div class="smodal" style="max-width:520px">
 
         <div class="smodal-head">
 
@@ -2098,131 +2140,177 @@
 
         </div>
 
-        <div class="smodal-body" style="gap:16px">
+        <div class="smodal-body vs-body">
 
-          <div class="sm-field">
 
-            <label class="sm-label">INPUT DEVICE (MICROPHONE)</label>
+          <!-- Section 1: Devices ---------------------------------- -->
 
-            <select class="sm-input" id="vsInputSelect"></select>
+          <div class="vs-section">
 
-          </div>
+            <div class="vs-section-h"><i data-lucide="audio-lines" style="width:13px;height:13px"></i>Devices</div>
 
-          <div class="sm-field">
+            <div class="sm-field">
 
-            <label class="sm-label">OUTPUT DEVICE (SPEAKERS)</label>
+              <label class="sm-label">INPUT DEVICE (MICROPHONE)</label>
 
-            <select class="sm-input" id="vsOutputSelect"></select>
+              <select class="sm-input" id="vsInputSelect"></select>
 
-          </div>
+            </div>
 
-          <div class="sm-field">
+            <div class="sm-field">
 
-            <label class="sm-label">INPUT VOLUME <span id="vsInputVolLbl" style="color:var(--t2)">100%</span></label>
+              <label class="sm-label">OUTPUT DEVICE (SPEAKERS)</label>
 
-            <input type="range" min="0" max="100" value="100" id="vsInputVol" class="vs-slider" />
-
-          </div>
-
-          <div class="sm-field">
-
-            <label class="sm-label">OUTPUT VOLUME <span id="vsOutputVolLbl" style="color:var(--t2)">100%</span></label>
-
-            <input type="range" min="0" max="100" value="100" id="vsOutputVol" class="vs-slider" />
-
-          </div>
-
-          <div class="sm-field">
-
-            <label class="sm-label">INPUT MODE</label>
-
-            <div class="vs-mode-row">
-
-              <button class="vs-mode-btn active" data-vs-mode="vad" type="button"><i data-lucide="activity" style="width:11px;height:11px"></i>VOICE ACTIVITY</button>
-
-              <button class="vs-mode-btn" data-vs-mode="ptt" type="button"><i data-lucide="hand" style="width:11px;height:11px"></i>PUSH-TO-TALK</button>
+              <select class="sm-input" id="vsOutputSelect"></select>
 
             </div>
 
           </div>
 
-          <div class="sm-field" id="vsPttRow" style="display:none">
 
-            <label class="sm-label">PUSH-TO-TALK KEY</label>
+          <!-- Section 2: Volumes ---------------------------------- -->
 
-            <button class="sm-input" id="vsPttKey" type="button" style="text-align:center;cursor:pointer">Click and press a key...</button>
+          <div class="vs-section">
 
-          </div>
+            <div class="vs-section-h"><i data-lucide="volume-2" style="width:13px;height:13px"></i>Volume</div>
 
-          <div class="sm-field">
+            <div class="sm-field">
 
-            <label class="sm-label">SHORTCUTS</label>
+              <label class="sm-label">INPUT (MIC) <span id="vsInputVolLbl" style="color:var(--t2)">100%</span></label>
 
-            <div class="vs-shortcut-row">
-
-              <div class="vs-shortcut-label">Toggle mute</div>
-
-              <button class="sm-input vs-shortcut-key" id="vsMuteKey" type="button" data-shortcut="mute">Click and press a combo...</button>
-
-              <button class="vs-shortcut-clear" id="vsMuteClear" type="button" title="Clear">×</button>
+              <input type="range" min="0" max="100" value="100" id="vsInputVol" class="vs-slider" />
 
             </div>
 
-            <div class="vs-shortcut-row" style="margin-top:6px">
+            <div class="sm-field">
 
-              <div class="vs-shortcut-label">Toggle mute + deafen</div>
+              <label class="sm-label">OUTPUT (SPEAKERS) <span id="vsOutputVolLbl" style="color:var(--t2)">100%</span></label>
 
-              <button class="sm-input vs-shortcut-key" id="vsDeafenKey" type="button" data-shortcut="deafen">Click and press a combo...</button>
-
-              <button class="vs-shortcut-clear" id="vsDeafenClear" type="button" title="Clear">×</button>
-
-            </div>
-
-            <div class="sm-hint" style="margin-top:6px">Shortcuts work only while this tab is focused. To use them while a game is fullscreen, install the desktop app.</div>
-
-          </div>
-
-          <div class="sm-field" id="vsVadRow">
-
-            <label class="sm-label">INPUT SENSITIVITY <span id="vsSensLbl" style="color:var(--t2)">-50 dB</span></label>
-
-            <input type="range" min="-100" max="0" value="-50" id="vsSens" class="vs-slider" />
-
-          </div>
-
-          <div class="sm-field">
-
-            <label class="sm-label">PROCESSING</label>
-
-            <div class="vs-toggle-row">
-
-              <label class="vs-toggle"><input type="checkbox" id="vsEcho" checked /> Echo cancellation</label>
-
-              <label class="vs-toggle"><input type="checkbox" id="vsNoise" checked /> Noise suppression</label>
-
-              <label class="vs-toggle"><input type="checkbox" id="vsAgc" /> Auto gain control</label>
+              <input type="range" min="0" max="100" value="100" id="vsOutputVol" class="vs-slider" />
 
             </div>
 
           </div>
 
-          <div class="sm-field">
 
-            <label class="sm-label">SELF-MONITOR (HEAR YOURSELF)</label>
+          <!-- Section 3: Input mode ------------------------------- -->
 
-            <div class="vs-toggle-row" style="margin-bottom:8px">
+          <div class="vs-section">
 
-              <label class="vs-toggle"><input type="checkbox" id="vsSelfMon" /> Play my mic back to me</label>
+            <div class="vs-section-h"><i data-lucide="mic" style="width:13px;height:13px"></i>Input mode</div>
+
+            <div class="sm-field">
+
+              <div class="vs-mode-row">
+
+                <button class="vs-mode-btn active" data-vs-mode="vad" type="button"><i data-lucide="activity" style="width:11px;height:11px"></i>VOICE ACTIVITY</button>
+
+                <button class="vs-mode-btn" data-vs-mode="ptt" type="button"><i data-lucide="hand" style="width:11px;height:11px"></i>PUSH-TO-TALK</button>
+
+              </div>
 
             </div>
 
-            <div id="vsSelfMonControls" style="display:none">
+            <div class="sm-field" id="vsPttRow" style="display:none">
 
-              <label class="sm-label" style="margin-bottom:6px">SELF-MONITOR VOLUME <span id="vsSelfMonVolLbl" style="color:var(--t2)">60%</span></label>
+              <label class="sm-label">PUSH-TO-TALK KEY</label>
+
+              <button class="sm-input" id="vsPttKey" type="button" style="text-align:center;cursor:pointer">Click and press a key...</button>
+
+            </div>
+
+            <div class="sm-field" id="vsVadRow">
+
+              <label class="sm-label">INPUT SENSITIVITY <span id="vsSensLbl" style="color:var(--t2)">-50 dB</span></label>
+
+              <input type="range" min="-100" max="0" value="-50" id="vsSens" class="vs-slider" />
+
+            </div>
+
+          </div>
+
+
+          <!-- Section 4: Processing ------------------------------- -->
+
+          <div class="vs-section">
+
+            <div class="vs-section-h"><i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i>Processing</div>
+
+            <div class="sm-field">
+
+              <div class="vs-toggle-row">
+
+                <label class="vs-toggle"><input type="checkbox" id="vsEcho" checked /> Echo cancellation</label>
+
+                <label class="vs-toggle"><input type="checkbox" id="vsNoise" checked /> Noise suppression</label>
+
+                <label class="vs-toggle"><input type="checkbox" id="vsAgc" /> Auto gain control</label>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- Section 5: Test (self-monitor) ---------------------- -->
+
+          <div class="vs-section">
+
+            <div class="vs-section-h"><i data-lucide="ear" style="width:13px;height:13px"></i>Test &amp; self-monitor</div>
+
+            <div class="sm-field">
+
+              <div class="vs-toggle-row">
+
+                <label class="vs-toggle"><input type="checkbox" id="vsSelfMon" /> Play my mic back to me</label>
+
+              </div>
+
+            </div>
+
+            <div class="sm-field" id="vsSelfMonControls" style="display:none">
+
+              <label class="sm-label">SELF-MONITOR VOLUME <span id="vsSelfMonVolLbl" style="color:var(--t2)">60%</span></label>
 
               <input type="range" min="0" max="100" value="60" id="vsSelfMonVol" class="vs-slider" />
 
-              <div class="sm-hint" style="margin-top:6px">Use this to test mic input, processing toggles, and noise. Disable before joining a call to avoid feedback through speakers (use headphones for safe testing).</div>
+              <div class="sm-hint">Use this to test mic input, processing toggles, and noise. Disable before joining a call to avoid feedback through speakers (use headphones for safe testing).</div>
+
+            </div>
+
+          </div>
+
+
+          <!-- Section 6: Shortcuts -------------------------------- -->
+
+          <div class="vs-section">
+
+            <div class="vs-section-h"><i data-lucide="keyboard" style="width:13px;height:13px"></i>Shortcuts</div>
+
+            <div class="sm-field">
+
+              <div class="vs-shortcut-row">
+
+                <div class="vs-shortcut-label">Toggle mute</div>
+
+                <button class="sm-input vs-shortcut-key" id="vsMuteKey" type="button" data-shortcut="mute">Click and press a combo...</button>
+
+                <button class="vs-shortcut-clear" id="vsMuteClear" type="button" title="Clear">×</button>
+
+              </div>
+
+              <div class="vs-shortcut-row" style="margin-top:6px">
+
+                <div class="vs-shortcut-label">Toggle mute + deafen</div>
+
+                <button class="sm-input vs-shortcut-key" id="vsDeafenKey" type="button" data-shortcut="deafen">Click and press a combo...</button>
+
+                <button class="vs-shortcut-clear" id="vsDeafenClear" type="button" title="Clear">×</button>
+
+              </div>
+
+              <div class="sm-hint" style="margin-top:6px">Shortcuts work only while this tab is focused. For system-wide hotkeys (when a game is fullscreen), install the desktop app.</div>
 
             </div>
 
