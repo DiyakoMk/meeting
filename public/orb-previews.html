@@ -53,7 +53,7 @@
   .lring:nth-of-type(3){animation-delay:1s}
   .lring:nth-of-type(4){animation-delay:2s}
   .otrack{position:absolute;width:160px;height:160px;border-radius:50%;border:1px dashed}
-  .orbiter{position:absolute;top:50%;left:50%;width:40px;height:40px;margin:-20px 0 0 -20px;animation:orbi 15s linear infinite}
+  .orbiter{position:absolute;top:50%;left:50%;width:40px;height:40px;margin:-20px 0 0 -20px;animation:orbi 15s linear infinite;z-index:12}
   .orbiter.o2{animation-delay:-5s}.orbiter.o3{animation-delay:-10s}
   .orb-av{
     width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);
@@ -96,9 +96,15 @@
   .legendary .planet{animation:legPulse 4s ease-in-out infinite}
   .legendary-aura{position:absolute;width:170px;height:170px;border-radius:50%;filter:blur(18px);opacity:.55;animation:auraSpin 8s linear infinite}
   .legendary-sweep{position:absolute;width:100%;height:1px;top:50%;transform-origin:50% 50%;animation:legSweep 5s linear infinite;opacity:.7}
-  .legendary-particle{position:absolute;width:3px;height:3px;border-radius:50%;top:50%;left:50%}
-  .lp1{transform:translate(-65px,-55px)}.lp2{transform:translate(62px,-44px)}.lp3{transform:translate(74px,42px)}
-  .lp4{transform:translate(-58px,58px)}.lp5{transform:translate(0,-80px)}.lp6{transform:translate(0,78px)}
+  .legendary-particle{position:absolute;width:3px;height:3px;border-radius:50%;top:50%;left:50%;z-index:11}
+  /* Six particles placed evenly on one clean orbit ring. This keeps
+     the legendary/mythic spark points intentional instead of random. */
+  .lp1{transform:translate(-50%,-50%) rotate(0deg) translateX(78px)}
+  .lp2{transform:translate(-50%,-50%) rotate(60deg) translateX(78px)}
+  .lp3{transform:translate(-50%,-50%) rotate(120deg) translateX(78px)}
+  .lp4{transform:translate(-50%,-50%) rotate(180deg) translateX(78px)}
+  .lp5{transform:translate(-50%,-50%) rotate(240deg) translateX(78px)}
+  .lp6{transform:translate(-50%,-50%) rotate(300deg) translateX(78px)}
   .inferno2 .planet{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.85),#fed7aa 20%,#f97316 55%,#7c2d12);box-shadow:0 0 90px rgba(249,115,22,.65),0 0 180px rgba(239,68,68,.3),inset 0 0 42px rgba(254,215,170,.55)!important}
   .inferno2 .atmo{background:radial-gradient(circle,rgba(249,115,22,.65),rgba(239,68,68,.25),transparent 70%)!important}
   .inferno2 .legendary-aura{background:conic-gradient(#f97316,#ef4444,#fbbf24,#f97316)}
@@ -114,14 +120,24 @@
 
   /* Mythic = base + official legendary layers + two extra official-looking overlays. */
   .mythic .legendary-aura{width:190px;height:190px;filter:blur(16px);opacity:.75}
-  .mythic .myth-ring{position:absolute;width:142px;height:142px;border-radius:50%;background:conic-gradient(#fff,#e879f9,#a78bfa,#60a5fa,#fff);-webkit-mask:radial-gradient(circle,transparent 62%,#000 66%);mask:radial-gradient(circle,transparent 62%,#000 66%);animation:auraSpin 5s linear infinite;z-index:8}
-  .mythic .myth-sweep{position:absolute;width:130px;height:1px;top:50%;left:50%;transform-origin:0 0;background:linear-gradient(90deg,transparent,#fff,#e879f9,transparent);animation:legSweep 3.8s linear infinite;z-index:9}
+  .mythic .myth-ring{position:absolute;width:142px;height:142px;border-radius:50%;background:conic-gradient(#fff,#e879f9,#a78bfa,#60a5fa,#fff);-webkit-mask:radial-gradient(circle,transparent 62%,#000 66%);mask:radial-gradient(circle,transparent 62%,#000 66%);animation:auraSpin 5s linear infinite;z-index:7}
+  .mythic .myth-sweep{position:absolute;width:130px;height:1px;top:50%;left:50%;transform-origin:0 0;background:linear-gradient(90deg,transparent,#fff,#e879f9,transparent);animation:legSweep 3.8s linear infinite;z-index:8}
+  .mythic .orbiter{z-index:20}
+  .mythic .legendary-particle{z-index:9}
   .prism .planet{background:radial-gradient(circle at 35% 30%,#fff,#fff1fb 25%,#f0abfc 55%,#4c1d95);box-shadow:0 0 90px rgba(232,121,249,.65),0 0 190px rgba(96,165,250,.35),inset 0 0 46px rgba(255,255,255,.42)!important}
   .prism .atmo{background:radial-gradient(circle,rgba(232,121,249,.65),rgba(96,165,250,.25),transparent 70%)!important}
   .prism .legendary-aura{background:conic-gradient(#fff,#f0abfc,#e879f9,#a78bfa,#60a5fa,#fff)}
   .prism .legendary-sweep{background:linear-gradient(90deg,transparent,#fff,#e879f9,transparent)}
   .prism .legendary-particle{background:#fff;box-shadow:0 0 9px #e879f9}
   .prism .vlabel{background:linear-gradient(90deg,#fff,#f0abfc,#e879f9,#a78bfa,#60a5fa,#fff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:txtFlow 4.5s ease-in-out infinite}
+  .aurora-myth .planet{background:radial-gradient(circle at 35% 30%,#fff,#dfffee 25%,#5eead4 55%,#0f766e);box-shadow:0 0 90px rgba(94,234,212,.65),0 0 190px rgba(34,211,238,.38),inset 0 0 46px rgba(209,250,229,.45)!important}
+  .aurora-myth .atmo{background:radial-gradient(circle,rgba(94,234,212,.65),rgba(34,211,238,.25),transparent 70%)!important}
+  .aurora-myth .legendary-aura{background:conic-gradient(#dfffee,#5eead4,#22d3ee,#60a5fa,#a7f3d0,#dfffee)}
+  .aurora-myth .myth-ring{background:conic-gradient(#fff,#a7f3d0,#5eead4,#22d3ee,#60a5fa,#fff)}
+  .aurora-myth .myth-sweep{background:linear-gradient(90deg,transparent,#dfffee,#22d3ee,transparent)}
+  .aurora-myth .legendary-sweep{background:linear-gradient(90deg,transparent,#dfffee,#5eead4,transparent)}
+  .aurora-myth .legendary-particle{background:#dfffee;box-shadow:0 0 9px #5eead4}
+  .aurora-myth .vlabel{background:linear-gradient(90deg,#dfffee,#a7f3d0,#5eead4,#22d3ee,#60a5fa,#dfffee);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:txtFlow 4.5s ease-in-out infinite;filter:drop-shadow(0 0 8px rgba(94,234,212,.55))}
   .footer{margin-top:36px;padding:18px;border-top:1px solid var(--tint);color:var(--t3);font-size:.75rem;text-align:center}
 </style>
 </head>
@@ -147,9 +163,10 @@
   <article class="card"><div class="card-head"><b>LEGENDARY</b><span>BOREALIS</span></div><div class="orb-slide legendary borealis"><div class="orb-wrap"><div class="legendary-aura"></div><div class="legendary-sweep"></div><div class="legendary-particle lp1"></div><div class="legendary-particle lp2"></div><div class="legendary-particle lp3"></div><div class="legendary-particle lp4"></div><div class="legendary-particle lp5"></div><div class="legendary-particle lp6"></div><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">BOREALIS</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">Northern lights, built on official layers</div><div class="tier legend">★ LEGENDARY</div></article>
 </section>
 
-<div class="section-h"><h2>// MYTHIC <span>above legendary, still same base</span></h2><span>1 sample</span></div>
+<div class="section-h"><h2>// MYTHIC <span>above legendary, still same base</span></h2><span>2 samples</span></div>
 <section class="grid">
   <article class="card"><div class="card-head"><b>MYTHIC</b><span>PRISM</span></div><div class="orb-slide legendary mythic prism"><div class="orb-wrap"><div class="legendary-aura"></div><div class="myth-ring"></div><div class="myth-sweep"></div><div class="legendary-sweep"></div><div class="legendary-particle lp1"></div><div class="legendary-particle lp2"></div><div class="legendary-particle lp3"></div><div class="legendary-particle lp4"></div><div class="legendary-particle lp5"></div><div class="legendary-particle lp6"></div><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">PRISM</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">One tier above legendary, but keeps the live geometry</div><div class="tier myth">✦ MYTHIC</div></article>
+  <article class="card"><div class="card-head"><b>MYTHIC</b><span>AURORA VEIL</span></div><div class="orb-slide legendary mythic aurora-myth"><div class="orb-wrap"><div class="legendary-aura"></div><div class="myth-ring"></div><div class="myth-sweep"></div><div class="legendary-sweep"></div><div class="legendary-particle lp1"></div><div class="legendary-particle lp2"></div><div class="legendary-particle lp3"></div><div class="legendary-particle lp4"></div><div class="legendary-particle lp5"></div><div class="legendary-particle lp6"></div><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">AURORA VEIL</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">green-blue northern lights, mythic tier</div><div class="tier myth">✦ MYTHIC</div></article>
 </section>
 
 <footer class="footer">Preview only · not wired into the app</footer>
