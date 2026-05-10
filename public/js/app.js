@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-s (voice: ICE state-driven status pill + real RTT ping + auto ICE-restart on failure)');
+  console.log('[orblood] client build 2026-05-10-t (voice: routing keys set immediately so early peers are not dropped; replaced misleading instant Connected toast with Joining)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
