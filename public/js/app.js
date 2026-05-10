@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-l (notifications: master + categories + per-channel/DM overrides; gated dispatch on dms/mentions/text/friend-req)');
+  console.log('[orblood] client build 2026-05-10-m (browser system notifications via Web Notifications API; in-app DM/channel toasts removed)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -8483,13 +8483,15 @@
 
     if (typeof updateBadges === 'function') updateBadges();
 
-    // Toast notification — gated by the user's Notification Settings.
+    // Browser notification — only when the user isn't viewing this
 
-    // Master OFF + category OFF still fires when the per-DM override
+    // conversation. Privacy "show message content" toggle hides the
 
-    // is "always"; "mute" silences this conversation regardless. The
+    // preview body. The tab-focused case is handled inside
 
-    // privacy "show message content" toggle hides the preview text.
+    // showBrowserNotification, which silently skips when the tab has
+
+    // focus; the read-receipt sound still plays here for that case.
 
     if (currentConversation !== k){
 
@@ -8501,21 +8503,31 @@
 
         const showContent = notifSettings.master.showContent;
 
-        const preview = showContent ? (message.text || '').slice(0, 60) : '';
+        const body = showContent
 
-        const txt = senderName + (preview ? ': ' + preview : ' sent a message');
+          ? ((message.text || '').slice(0, 140) || 'New direct message')
 
-        showToast(txt, 'success');
+          : 'New direct message';
 
-        if (notifSettings.master.sound) _playNotifSound();
+        const fired = showBrowserNotification({
+
+          title: senderName,
+
+          body, tag: 'dm:'+k,
+
+          onclick: () => {
+
+            try { setPage('pageMessages'); openConversation(k); } catch(_){}
+
+          },
+
+        });
+
+        if (fired && notifSettings.master.sound) _playNotifSound();
 
       }
 
     } else {
-
-      // User is already in this conversation — no toast, but the read
-
-      // receipt sound still plays per existing behaviour.
 
       _playNotifSound();
 
@@ -8837,11 +8849,11 @@
 
     }
 
-    // Notification dispatch — only when the user isn't already viewing
+    // Browser notification dispatch — only when the user isn't already
 
-    // the channel. Mentions get their own (more permissive) category;
+    // viewing the channel. Mentions get their own (more permissive)
 
-    // a plain channel message uses the textChannels category.
+    // category; a plain channel message uses the textChannels category.
 
     if (!isHere){
 
@@ -8875,17 +8887,31 @@
 
         const showContent = notifSettings.master.showContent;
 
-        const preview = showContent ? (text || '').slice(0, 60) : '';
-
-        const head = isMention
+        const title = isMention
 
           ? userName + ' mentioned you in ' + chName
 
           : userName + ' in ' + chName;
 
-        showToast(head + (preview ? ': ' + preview : ''), isMention ? 'warn' : 'success');
+        const body = showContent
 
-        if (notifSettings.master.sound) _playNotifSound();
+          ? ((text || '').slice(0, 140) || 'New message')
+
+          : (isMention ? 'You were mentioned' : 'New message');
+
+        const fired = showBrowserNotification({
+
+          title, body, tag: 'ch:'+channelId,
+
+          onclick: () => {
+
+            try { selectServer(serverId); selectChannel(channelId); } catch(_){}
+
+          },
+
+        });
+
+        if (fired && notifSettings.master.sound) _playNotifSound();
 
       }
 
@@ -9031,9 +9057,19 @@
 
     if (notificationAllowed('friendRequests')){
 
-      showToast(request.name+' sent you a friend request','success');
+      const fired = showBrowserNotification({
 
-      if (notifSettings.master.sound) _playNotifSound();
+        title: 'Friend request',
+
+        body:  request.name + ' wants to be friends',
+
+        tag:   'fr:'+(request.id||request.name),
+
+        onclick: () => { try { setPage('pageSettings'); setSettingsTab('incoming'); } catch(_){} },
+
+      });
+
+      if (fired && notifSettings.master.sound) _playNotifSound();
 
     }
 
@@ -13204,7 +13240,7 @@
 
     const def = {
 
-      master: { allow: true, showContent: true, sound: true },
+      master: { allow: true, showContent: true, sound: true, browser: false },
 
       cats: {
 
@@ -13283,6 +13319,95 @@
   }
 
 
+  // ============== BROWSER NOTIFICATION DISPATCHER ==============
+
+  // Wraps the Web Notifications API. The web build relies on this for
+
+  // any "user isn't looking at the tab" alerts — there is no in-app
+
+  // toast bubble for messages anymore. Permission is requested lazily
+
+  // the first time the user enables the toggle in Settings.
+
+  function _notifPermission(){
+
+    if (typeof Notification === 'undefined') return 'unsupported';
+
+    return Notification.permission;        // 'granted' | 'denied' | 'default'
+
+  }
+
+  async function _ensureBrowserNotifPermission(){
+
+    const p = _notifPermission();
+
+    if (p === 'unsupported') return false;
+
+    if (p === 'granted')     return true;
+
+    if (p === 'denied')      return false;
+
+    try {
+
+      const next = await Notification.requestPermission();
+
+      return next === 'granted';
+
+    } catch(_){ return false; }
+
+  }
+
+  // Fire a single notification. Returns true when one was actually
+
+  // shown so callers can know whether the user got pinged. Skipped
+
+  // automatically when the tab is focused — that's the original
+
+  // "user is here, no need to ping" behaviour.
+
+  function showBrowserNotification(opts){
+
+    if (typeof Notification === 'undefined') return false;
+
+    if (!notifSettings.master.browser) return false;
+
+    if (Notification.permission !== 'granted') return false;
+
+    if (typeof document !== 'undefined' && document.hasFocus && document.hasFocus()) return false;
+
+    const { title, body, tag, icon, onclick } = opts || {};
+
+    try {
+
+      const n = new Notification(title || 'ORBLOOD', {
+
+        body: body || '',
+
+        tag:  tag  || undefined,
+
+        icon: icon || '/favicon.ico',
+
+        silent: !notifSettings.master.sound,
+
+      });
+
+      n.onclick = () => {
+
+        try { window.focus(); } catch(_){}
+
+        try { n.close(); } catch(_){}
+
+        if (typeof onclick === 'function'){ try { onclick(); } catch(_){} }
+
+      };
+
+      return true;
+
+    } catch(_){ return false; }
+
+  }
+
+
   // ============== NOTIFICATIONS PANEL — RENDER + WIRING ==============
 
   let _nfTab = 'channels';   // 'channels' | 'dms'
@@ -13298,6 +13423,8 @@
       notifShowContent:['master','showContent'],
 
       notifSound:      ['master','sound'],
+
+      notifBrowser:    ['master','browser'],
 
       notifDM:         ['cats','dms'],
 
@@ -13319,7 +13446,55 @@
 
     });
 
+    _nfPaintPermissionPill();
+
     _nfRenderLists();
+
+  }
+
+  // Paint the small status pill next to the BROWSER NOTIFICATIONS
+
+  // label so the user can tell at a glance whether the browser is
+
+  // letting us pop notifications.
+
+  function _nfPaintPermissionPill(){
+
+    const pill = document.getElementById('notifPermPill');
+
+    const hint = document.getElementById('notifPermHint');
+
+    if (!pill) return;
+
+    const p = _notifPermission();
+
+    pill.classList.remove('nf-perm-default','nf-perm-granted','nf-perm-denied','nf-perm-unsupported');
+
+    if (p === 'granted'){
+
+      pill.classList.add('nf-perm-granted');  pill.textContent = 'ALLOWED';
+
+      if (hint) hint.textContent = 'The browser is allowing system pop-ups for ORBLOOD.';
+
+    } else if (p === 'denied'){
+
+      pill.classList.add('nf-perm-denied');   pill.textContent = 'BLOCKED';
+
+      if (hint) hint.textContent = 'The browser blocked notifications. Allow them in your browser site settings, then reload.';
+
+    } else if (p === 'unsupported'){
+
+      pill.classList.add('nf-perm-unsupported');pill.textContent = 'UNSUPPORTED';
+
+      if (hint) hint.textContent = 'This browser does not support system notifications.';
+
+    } else {
+
+      pill.classList.add('nf-perm-default');  pill.textContent = 'NOT ASKED';
+
+      if (hint) hint.textContent = 'Browser pop-ups appear even when the ORBLOOD tab is in the background. You\'ll be asked to allow notifications the first time you turn this on.';
+
+    }
 
   }
 
@@ -13514,6 +13689,62 @@
       });
 
     });
+
+    // Browser notifications toggle has its own handler because turning
+
+    // it ON has to ask the browser for permission first; if the user
+
+    // denies, we flip the checkbox back off.
+
+    const browserCb = document.getElementById('notifBrowser');
+
+    if (browserCb){
+
+      browserCb.addEventListener('change', async () => {
+
+        if (browserCb.checked){
+
+          const ok = await _ensureBrowserNotifPermission();
+
+          if (!ok){
+
+            browserCb.checked = false;
+
+            notifSettings.master.browser = false;
+
+            _saveNotifSettings();
+
+            _nfPaintPermissionPill();
+
+            const p = _notifPermission();
+
+            const msg = p === 'denied'
+
+              ? 'Notifications are blocked in this browser. Allow them in site settings and try again.'
+
+              : (p === 'unsupported'
+
+                  ? 'This browser does not support system notifications.'
+
+                  : 'Notification permission was not granted.');
+
+            showToast(msg, 'warn');
+
+            return;
+
+          }
+
+        }
+
+        notifSettings.master.browser = browserCb.checked;
+
+        _saveNotifSettings();
+
+        _nfPaintPermissionPill();
+
+      });
+
+    }
 
     document.querySelectorAll('.nf-tab').forEach(btn => {
 
