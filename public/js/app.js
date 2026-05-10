@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-m (browser system notifications via Web Notifications API; in-app DM/channel toasts removed)');
+  console.log('[orblood] client build 2026-05-10-n (notification icon = sender avatar; favicon as badge)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
