@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-o (DM history preserved across WS reconnect; TRANSMITTING TO eyebrow removed)');
+  console.log('[orblood] client build 2026-05-10-n (notification icon = sender avatar; favicon as badge)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
