@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-r (voice: signal routing accepts handles, explicit audio.play() with autoplay-blocked warning)');
+  console.log('[orblood] client build 2026-05-10-s (voice: ICE state-driven status pill + real RTT ping + auto ICE-restart on failure)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -1153,7 +1153,17 @@
 
     if (usersEl) usersEl.textContent = data.users.length;
 
-    if (pingEl) pingEl.textContent = inVoice && connectedChannel === selectedSlideChannel ? Math.floor(20+Math.random()*30)+'ms' : '--';
+    // Real RTT is owned by voice._startStatsPoller while in a call.
+
+    // When the user is browsing a different orb (not the active call),
+
+    // we don't have a meaningful number, so leave the pill blank.
+
+    if (pingEl && !(inVoice && connectedChannel === selectedSlideChannel)){
+
+      pingEl.textContent = '--';
+
+    }
 
   }
 
@@ -9603,17 +9613,232 @@
 
       };
 
+      // Watch ICE state to drive the orb status indicator (idle /
+
+      // connecting / connected / reconnecting / failed) and to trigger
+
+      // an automatic ICE restart on a transient drop — Chrome's
+
+      // getStats() considers 'failed' permanent, but a single restart
+
+      // recovers most NAT-rebind cases without user action.
+
+      pc.oniceconnectionstatechange = () => {
+
+        const state = pc.iceConnectionState;
+
+        const rec = peers.get(peerName);
+
+        if (!rec) return;
+
+        rec.iceState = state;
+
+        if (state === 'connected' || state === 'completed'){
+
+          rec.reconnectAttempts = 0;
+
+        } else if (state === 'failed' || state === 'disconnected'){
+
+          // Only the impolite side initiates a restart so both sides
+
+          // don't fight; we mark the side that created the offer
+
+          // (impolite by convention).
+
+          if (state === 'failed' && !rec.polite && (rec.reconnectAttempts || 0) < 3){
+
+            rec.reconnectAttempts = (rec.reconnectAttempts || 0) + 1;
+
+            console.warn('[voice] ICE failed, restarting (attempt '+rec.reconnectAttempts+')');
+
+            try {
+
+              pc.restartIce && pc.restartIce();
+
+              _makeOffer(peerName).catch(()=>{});
+
+            } catch(_){}
+
+          }
+
+        }
+
+        _recomputeVoiceStatus();
+
+      };
+
+      pc.onconnectionstatechange = () => {
+
+        const rec = peers.get(peerName);
+
+        if (rec) rec.connState = pc.connectionState;
+
+        _recomputeVoiceStatus();
+
+      };
+
       if (localStream){
 
         localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 
       }
 
-      const rec = { pc, audioEl, polite: false };
+      const rec = { pc, audioEl, polite: false, iceState: 'new', connState: 'new', reconnectAttempts: 0, rtt: null };
 
       peers.set(peerName, rec);
 
       return rec;
+
+    }
+
+
+    // Aggregate the connection state across all peers in the call into a
+
+    // single status the orb panel renders ("CONNECTING…", "CONNECTED",
+
+    // "RECONNECTING…", "FAILED"). The order of precedence is biased
+
+    // toward the worst state so the user sees the real problem.
+
+    function _recomputeVoiceStatus(){
+
+      if (!inVoice){ setVoiceStatus('idle'); return; }
+
+      const states = [];
+
+      peers.forEach(rec => states.push(rec.iceState || 'new'));
+
+      if (!states.length){ setVoiceStatus('connecting'); return; }
+
+      if (states.some(s => s === 'failed'))        return setVoiceStatus('failed');
+
+      if (states.some(s => s === 'disconnected'))  return setVoiceStatus('reconnecting');
+
+      if (states.some(s => s === 'checking' || s === 'new'))
+
+                                                   return setVoiceStatus('connecting');
+
+      setVoiceStatus('connected');
+
+    }
+
+
+    // Poll RTCPeerConnection stats once a second while in a call so the
+
+    // orb HUD can display a real round-trip time instead of a fake
+
+    // random number. We average across all peers.
+
+    let _statsTimer = null;
+
+    function _startStatsPoller(){
+
+      if (_statsTimer) return;
+
+      _statsTimer = setInterval(async () => {
+
+        if (!inVoice || peers.size === 0) return;
+
+        let totalRtt = 0, samples = 0;
+
+        for (const [, rec] of peers){
+
+          if (!rec.pc) continue;
+
+          try {
+
+            const report = await rec.pc.getStats(null);
+
+            report.forEach(s => {
+
+              // candidate-pair on the *currently selected* path carries
+
+              // currentRoundTripTime in seconds; fall back to roundTripTime
+
+              // for older browsers.
+
+              if (s.type === 'candidate-pair' && s.state === 'succeeded' && s.nominated){
+
+                const rtt = s.currentRoundTripTime != null
+
+                  ? s.currentRoundTripTime
+
+                  : s.roundTripTime;
+
+                if (rtt != null){
+
+                  rec.rtt = rtt;
+
+                  totalRtt += rtt;
+
+                  samples++;
+
+                }
+
+              }
+
+            });
+
+          } catch(_){}
+
+        }
+
+        const avgMs = samples ? Math.round((totalRtt / samples) * 1000) : null;
+
+        const pingEl = document.getElementById('orbHudPing');
+
+        if (pingEl) pingEl.textContent = (avgMs != null) ? (avgMs + 'ms') : '--';
+
+      }, 1000);
+
+    }
+
+    function _stopStatsPoller(){
+
+      if (_statsTimer){ clearInterval(_statsTimer); _statsTimer = null; }
+
+      const pingEl = document.getElementById('orbHudPing');
+
+      if (pingEl) pingEl.textContent = '--';
+
+    }
+
+
+    // Paint the status pill below the orb timer. Hides itself entirely
+
+    // in the 'idle' state so a not-connected user doesn't see chrome.
+
+    function setVoiceStatus(state){
+
+      const el = document.getElementById('orbVoiceStatus');
+
+      if (!el) return;
+
+      el.classList.remove('is-connecting','is-connected','is-reconnecting','is-failed');
+
+      const label = el.querySelector('.ovstatus-text');
+
+      if (state === 'idle' || !state){ el.style.display = 'none'; return; }
+
+      el.style.display = 'inline-flex';
+
+      const map = {
+
+        connecting:   { cls:'is-connecting',   text:'CONNECTING' },
+
+        connected:    { cls:'is-connected',    text:'CONNECTED'  },
+
+        reconnecting: { cls:'is-reconnecting', text:'RECONNECTING' },
+
+        failed:       { cls:'is-failed',       text:'CONNECTION LOST' },
+
+      };
+
+      const next = map[state] || map.connecting;
+
+      el.classList.add(next.cls);
+
+      if (label) label.textContent = next.text;
 
     }
 
@@ -9639,11 +9864,19 @@
 
       const rec = peers.get(peerName) || newPc(peerName);
 
+      // We initiated → we're the impolite side. The impolite side
+
+      // doesn't yield on glare and is the one that retries on ICE failure.
+
+      rec.polite = false;
+
       const offer = await rec.pc.createOffer();
 
       await rec.pc.setLocalDescription(offer);
 
       _signal(peerName, { kind:'sdp', sdp: rec.pc.localDescription });
+
+      _recomputeVoiceStatus();
 
     }
 
@@ -9651,7 +9884,15 @@
 
       let rec = peers.get(peerName);
 
-      if (!rec) rec = newPc(peerName);
+      if (!rec){
+
+        rec = newPc(peerName);
+
+        // Peer offered first → we're polite (the side that yields on glare).
+
+        rec.polite = true;
+
+      }
 
       await rec.pc.setRemoteDescription(sdp);
 
@@ -9664,6 +9905,8 @@
         _signal(peerName, { kind:'sdp', sdp: rec.pc.localDescription });
 
       }
+
+      _recomputeVoiceStatus();
 
     }
 
@@ -9695,21 +9938,35 @@
 
         if (!backend.isConfigured()) return;
 
+        setVoiceStatus('connecting');
+
         await loadIceConfig();
 
-        try { await ensureMic(); } catch(_){ return; }
+        try { await ensureMic(); } catch(_){
+
+          setVoiceStatus('failed');
+
+          return;
+
+        }
 
         serverId = sid; channelId = cid;
+
+        _startStatsPoller();
 
       },
 
       stop(){
+
+        _stopStatsPoller();
 
         peers.forEach((_, name) => tearDownPeer(name));
 
         if (localStream){ localStream.getTracks().forEach(t => t.stop()); localStream = null; }
 
         serverId = null; channelId = null;
+
+        setVoiceStatus('idle');
 
       },
 

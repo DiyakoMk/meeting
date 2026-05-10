@@ -578,6 +578,45 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .otimer.active{color:var(--success)}
 
+/* Compact pill below the call timer that mirrors the live WebRTC
+ * connection state (connecting / connected / reconnecting / failed).
+ * Replaces the old red-spin-on-disconnect button as the place to
+ * read the real status. */
+.ovstatus{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:3px 8px;border-radius:999px;
+  font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.5rem;letter-spacing:1.4px;font-weight:700;
+  text-transform:uppercase;
+  background:var(--tint-2);border:1px solid var(--tint-3);
+  color:var(--t2);
+  transition:background 0.2s,border-color 0.2s,color 0.2s;
+}
+.ovstatus-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.ovstatus.is-connecting,.ovstatus.is-reconnecting{
+  color:var(--warn);
+  border-color:rgba(245,158,11,0.45);
+  background:rgba(245,158,11,0.08);
+}
+.ovstatus.is-connecting .ovstatus-dot,
+.ovstatus.is-reconnecting .ovstatus-dot{
+  animation:ovstatus-pulse 1.2s ease-in-out infinite;
+  box-shadow:0 0 6px currentColor;
+}
+.ovstatus.is-connected{
+  color:var(--success);
+  border-color:rgba(34,197,94,0.45);
+  background:rgba(34,197,94,0.08);
+}
+.ovstatus.is-connected .ovstatus-dot{box-shadow:0 0 6px currentColor}
+.ovstatus.is-failed{
+  color:var(--danger);
+  border-color:rgba(239,68,68,0.45);
+  background:rgba(239,68,68,0.10);
+}
+.ovstatus.is-failed .ovstatus-dot{box-shadow:0 0 6px currentColor}
+@keyframes ovstatus-pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+
 .orb-hud{display:flex;gap:12px;font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;color:var(--t3)}
 
 .orb-hud span{display:flex;align-items:center;gap:3px}
