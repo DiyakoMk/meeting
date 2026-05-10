@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-k (remove PiP overlay; settings panel desktop-only note; voice settings reorganized into 6 sections)');
+  console.log('[orblood] client build 2026-05-10-l (notifications: master + categories + per-channel/DM overrides; gated dispatch on dms/mentions/text/friend-req)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -8483,21 +8483,43 @@
 
     if (typeof updateBadges === 'function') updateBadges();
 
-    // Toast notification when the user isn't viewing this conversation —
+    // Toast notification — gated by the user's Notification Settings.
 
-    // mirrors WhatsApp's "X sent a message" pulse so they don't miss it.
+    // Master OFF + category OFF still fires when the per-DM override
+
+    // is "always"; "mute" silences this conversation regardless. The
+
+    // privacy "show message content" toggle hides the preview text.
 
     if (currentConversation !== k){
 
-      const senderName = (conversations[k] && conversations[k].name) || k;
+      const allowed = notificationAllowed('dms', k);
 
-      const preview = (message.text || '').slice(0, 60);
+      if (allowed){
 
-      showToast(senderName + (preview ? ': ' + preview : ' sent a message'), 'success');
+        const senderName = (conversations[k] && conversations[k].name) || k;
+
+        const showContent = notifSettings.master.showContent;
+
+        const preview = showContent ? (message.text || '').slice(0, 60) : '';
+
+        const txt = senderName + (preview ? ': ' + preview : ' sent a message');
+
+        showToast(txt, 'success');
+
+        if (notifSettings.master.sound) _playNotifSound();
+
+      }
+
+    } else {
+
+      // User is already in this conversation — no toast, but the read
+
+      // receipt sound still plays per existing behaviour.
+
+      _playNotifSound();
 
     }
-
-    _playNotifSound();
 
   }
 
@@ -8789,9 +8811,9 @@
 
     serverChannelMessages[key].push(message);
 
-    if (currentServer === serverId && currentTextChannel === channelId &&
+    const isHere = currentServer === serverId && currentTextChannel === channelId;
 
-        typeof renderChannelView === 'function'){
+    if (isHere && typeof renderChannelView === 'function'){
 
       renderChannelView();
 
@@ -8810,6 +8832,60 @@
         if (typeof renderServerOverview === 'function' && currentServer === serverId) renderServerOverview();
 
         if (typeof updateBadges === 'function') updateBadges();
+
+      }
+
+    }
+
+    // Notification dispatch — only when the user isn't already viewing
+
+    // the channel. Mentions get their own (more permissive) category;
+
+    // a plain channel message uses the textChannels category.
+
+    if (!isHere){
+
+      const text = message.text || '';
+
+      const myHandle = (selfProfile.handle || '').replace(/^@/,'').toLowerCase();
+
+      const myName   = (selfProfile.name || '').toLowerCase();
+
+      const isMention = !!myHandle && (
+
+        text.toLowerCase().includes('@'+myHandle) ||
+
+        (myName && text.toLowerCase().includes('@'+myName))
+
+      );
+
+      const category = isMention ? 'mentions' : 'textChannels';
+
+      const allowed = notificationAllowed(category, channelId);
+
+      if (allowed){
+
+        const s = servers[serverId];
+
+        const tc = s && (s.textChannels||[]).find(t => t.id === channelId);
+
+        const chName = tc ? '#'+tc.name : 'a channel';
+
+        const userName = message.user || 'Someone';
+
+        const showContent = notifSettings.master.showContent;
+
+        const preview = showContent ? (text || '').slice(0, 60) : '';
+
+        const head = isMention
+
+          ? userName + ' mentioned you in ' + chName
+
+          : userName + ' in ' + chName;
+
+        showToast(head + (preview ? ': ' + preview : ''), isMention ? 'warn' : 'success');
+
+        if (notifSettings.master.sound) _playNotifSound();
 
       }
 
@@ -8953,9 +9029,13 @@
 
     if (typeof updateBadges === 'function') updateBadges();
 
-    showToast(request.name+' sent you a friend request','success');
+    if (notificationAllowed('friendRequests')){
 
-    _playNotifSound();
+      showToast(request.name+' sent you a friend request','success');
+
+      if (notifSettings.master.sound) _playNotifSound();
+
+    }
 
   }
 
@@ -13095,6 +13175,427 @@
 
   }
 
+
+  // ============== NOTIFICATION SETTINGS ==============
+
+  // Persisted via localStorage so the user's choices survive a reload.
+
+  // Schema:
+
+  //   master.allow / showContent / sound
+
+  //   cats.{dms,mentions,textChannels,voiceJoins,friendRequests}
+
+  //   overrides.channels[chId]      = 'always' | 'mute'  (absent = default)
+
+  //   overrides.dms[conversationKey]= 'always' | 'mute'
+
+  // Resolution rule (notificationAllowed): per-row override beats
+
+  // category which beats master. So a channel set to "always" still
+
+  // notifies even with master OFF; a channel set to "mute" stays
+
+  // silent even with master ON.
+
+  const NOTIF_LS_KEY = 'orblood:notifSettings';
+
+  const notifSettings = (() => {
+
+    const def = {
+
+      master: { allow: true, showContent: true, sound: true },
+
+      cats: {
+
+        dms: true,
+
+        mentions: true,
+
+        textChannels: false,
+
+        voiceJoins: true,
+
+        friendRequests: true,
+
+      },
+
+      overrides: { channels: {}, dms: {} }
+
+    };
+
+    try {
+
+      const raw = localStorage.getItem(NOTIF_LS_KEY);
+
+      if (!raw) return def;
+
+      const parsed = JSON.parse(raw);
+
+      return {
+
+        master:    Object.assign({}, def.master,    parsed.master    || {}),
+
+        cats:      Object.assign({}, def.cats,      parsed.cats      || {}),
+
+        overrides: {
+
+          channels: Object.assign({}, def.overrides.channels, (parsed.overrides && parsed.overrides.channels) || {}),
+
+          dms:      Object.assign({}, def.overrides.dms,      (parsed.overrides && parsed.overrides.dms)      || {}),
+
+        }
+
+      };
+
+    } catch (_) { return def; }
+
+  })();
+
+  function _saveNotifSettings(){
+
+    try { localStorage.setItem(NOTIF_LS_KEY, JSON.stringify(notifSettings)); } catch(_){}
+
+  }
+
+  // Decide whether a single notification should fire. Caller passes the
+
+  // category and an optional override key (channel id or dm key).
+
+  function notificationAllowed(category, overrideKey){
+
+    if (overrideKey){
+
+      const map = category === 'dms' ? notifSettings.overrides.dms : notifSettings.overrides.channels;
+
+      const v = map[overrideKey];
+
+      if (v === 'always') return true;
+
+      if (v === 'mute')   return false;
+
+    }
+
+    if (!notifSettings.master.allow) return false;
+
+    return !!notifSettings.cats[category];
+
+  }
+
+
+  // ============== NOTIFICATIONS PANEL — RENDER + WIRING ==============
+
+  let _nfTab = 'channels';   // 'channels' | 'dms'
+
+  let _nfFilter = '';
+
+  function renderNotifPanel(){
+
+    const idMap = {
+
+      notifAll:        ['master','allow'],
+
+      notifShowContent:['master','showContent'],
+
+      notifSound:      ['master','sound'],
+
+      notifDM:         ['cats','dms'],
+
+      notifMentions:   ['cats','mentions'],
+
+      notifTextCh:     ['cats','textChannels'],
+
+      notifVoice:      ['cats','voiceJoins'],
+
+      notifFriends:    ['cats','friendRequests'],
+
+    };
+
+    Object.entries(idMap).forEach(([id, path]) => {
+
+      const el = document.getElementById(id); if (!el) return;
+
+      el.checked = !!notifSettings[path[0]][path[1]];
+
+    });
+
+    _nfRenderLists();
+
+  }
+
+  function _nfChannelRows(){
+
+    const out = [];
+
+    Object.values(servers || {}).forEach(s => {
+
+      if (!s) return;
+
+      (s.textChannels || []).forEach(tc => {
+
+        out.push({ id: tc.id, name: '#'+tc.name, sub: s.name });
+
+      });
+
+    });
+
+    return out;
+
+  }
+
+  function _nfDmRows(){
+
+    const out = [];
+
+    Object.entries(conversations || {}).forEach(([k, c]) => {
+
+      if (!c || c.isSaved) return;
+
+      out.push({
+
+        id: k,
+
+        name: c.name || k,
+
+        sub: c.handle || '',
+
+        avColor: c.avColor || null,
+
+        avImage: c.avImage || null,
+
+        initial: c.initial || (c.name ? c.name[0] : '?'),
+
+      });
+
+    });
+
+    return out;
+
+  }
+
+  function _nfRenderLists(){
+
+    const channelsList = document.getElementById('nfChannelsList');
+
+    const dmsList      = document.getElementById('nfDmsList');
+
+    const empty        = document.getElementById('nfEmpty');
+
+    if (!channelsList || !dmsList) return;
+
+    document.querySelectorAll('.nf-tab').forEach(t =>
+
+      t.classList.toggle('active', t.dataset.nfTab === _nfTab));
+
+    const filter = (_nfFilter || '').toLowerCase().trim();
+
+    const matches = (row) =>
+
+      !filter ||
+
+      (row.name && row.name.toLowerCase().includes(filter)) ||
+
+      (row.sub  && row.sub.toLowerCase().includes(filter));
+
+    function renderRow(row, kind){
+
+      const overrideMap = kind === 'channels' ? notifSettings.overrides.channels : notifSettings.overrides.dms;
+
+      const state = overrideMap[row.id] || 'default';
+
+      let iconHtml;
+
+      if (kind === 'channels'){
+
+        iconHtml = '<div class="nf-row-icon hash">#</div>';
+
+      } else {
+
+        const style = row.avImage
+
+          ? 'background:transparent url('+row.avImage+') center/cover no-repeat'
+
+          : (row.avColor ? 'background:'+row.avColor : '');
+
+        const inner = row.avImage ? '' : escapeHtml(row.initial || '?');
+
+        iconHtml = '<div class="nf-row-icon" style="'+style+'">'+inner+'</div>';
+
+      }
+
+      return ''
+
+        + '<div class="nf-row" data-nf-row="'+row.id+'" data-nf-kind="'+kind+'">'
+
+        +   iconHtml
+
+        +   '<div class="nf-row-meta">'
+
+        +     '<div class="nf-row-name">'+escapeHtml(row.name)+'</div>'
+
+        +     (row.sub ? '<div class="nf-row-sub">'+escapeHtml(row.sub)+'</div>' : '')
+
+        +   '</div>'
+
+        +   '<div class="nf-seg">'
+
+        +     '<button type="button" class="nf-seg-btn def'+(state==='default'?' active':'')+'" data-nf-state="default">DEFAULT</button>'
+
+        +     '<button type="button" class="nf-seg-btn always'+(state==='always'?' active':'')+'" data-nf-state="always">ALWAYS</button>'
+
+        +     '<button type="button" class="nf-seg-btn mute'+(state==='mute'?' active':'')+'" data-nf-state="mute">MUTE</button>'
+
+        +   '</div>'
+
+        + '</div>';
+
+    }
+
+    const channelRows = _nfChannelRows().filter(matches);
+
+    const dmRows      = _nfDmRows().filter(matches);
+
+    channelsList.innerHTML = channelRows.map(r => renderRow(r, 'channels')).join('');
+
+    dmsList.innerHTML      = dmRows.map(r => renderRow(r, 'dms')).join('');
+
+    const activeRows = _nfTab === 'channels' ? channelRows : dmRows;
+
+    if (empty){
+
+      empty.style.display = activeRows.length ? 'none' : 'flex';
+
+    }
+
+    channelsList.style.display = (_nfTab==='channels' && activeRows.length) ? '' : 'none';
+
+    dmsList.style.display      = (_nfTab==='dms'      && activeRows.length) ? '' : 'none';
+
+    if (typeof refreshIcons === 'function') refreshIcons();
+
+  }
+
+  // Wire the section once on boot. The DOM ids exist in index.html
+
+  // before this script runs, so it's safe to query them here.
+
+  (function _wireNotifPanel(){
+
+    const idMap = {
+
+      notifAll:        ['master','allow'],
+
+      notifShowContent:['master','showContent'],
+
+      notifSound:      ['master','sound'],
+
+      notifDM:         ['cats','dms'],
+
+      notifMentions:   ['cats','mentions'],
+
+      notifTextCh:     ['cats','textChannels'],
+
+      notifVoice:      ['cats','voiceJoins'],
+
+      notifFriends:    ['cats','friendRequests'],
+
+    };
+
+    Object.entries(idMap).forEach(([id, path]) => {
+
+      const el = document.getElementById(id); if (!el) return;
+
+      el.addEventListener('change', () => {
+
+        notifSettings[path[0]][path[1]] = !!el.checked;
+
+        _saveNotifSettings();
+
+      });
+
+    });
+
+    document.querySelectorAll('.nf-tab').forEach(btn => {
+
+      btn.addEventListener('click', () => {
+
+        _nfTab = btn.dataset.nfTab || 'channels';
+
+        _nfRenderLists();
+
+      });
+
+    });
+
+    const search = document.getElementById('nfSearch');
+
+    if (search){
+
+      search.addEventListener('input', () => {
+
+        _nfFilter = search.value;
+
+        _nfRenderLists();
+
+      });
+
+    }
+
+    function _onSegClick(e){
+
+      const btn = e.target.closest('[data-nf-state]'); if (!btn) return;
+
+      const row = e.target.closest('[data-nf-row]'); if (!row) return;
+
+      const kind  = row.dataset.nfKind;
+
+      const id    = row.dataset.nfRow;
+
+      const next  = btn.dataset.nfState;
+
+      const map = kind === 'channels' ? notifSettings.overrides.channels : notifSettings.overrides.dms;
+
+      if (next === 'default') delete map[id];
+
+      else map[id] = next;
+
+      _saveNotifSettings();
+
+      _nfRenderLists();
+
+    }
+
+    const channelsList = document.getElementById('nfChannelsList');
+
+    const dmsList      = document.getElementById('nfDmsList');
+
+    if (channelsList) channelsList.addEventListener('click', _onSegClick);
+
+    if (dmsList)      dmsList.addEventListener('click', _onSegClick);
+
+    const reset = document.getElementById('nfResetOverrides');
+
+    if (reset){
+
+      reset.addEventListener('click', () => {
+
+        notifSettings.overrides.channels = {};
+
+        notifSettings.overrides.dms      = {};
+
+        _saveNotifSettings();
+
+        _nfRenderLists();
+
+        showToast('Notification overrides reset','success');
+
+      });
+
+    }
+
+  })();
+
+
   async function openVoiceSettings(){
 
     document.getElementById('voiceSettingsBackdrop').classList.add('show');
@@ -14660,6 +15161,8 @@
     }
 
     if (tab === 'appearance'){ syncThemePicker(); }
+
+    if (tab === 'notif'){ renderNotifPanel(); }
 
   }
 

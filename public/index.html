@@ -1274,19 +1274,110 @@
 
           <div class="settings-pane" data-st-pane="notif">
 
-            <div class="sm-field">
 
-              <label class="sm-label">NOTIFICATIONS</label>
+            <!-- Section 1 — global / master toggles -->
 
-              <label class="vs-toggle"><input type="checkbox" id="notifAll" checked /> Allow all notifications</label>
+            <div class="vs-section">
 
-              <label class="vs-toggle"><input type="checkbox" id="notifDM" checked /> Direct messages</label>
+              <div class="vs-section-h"><i data-lucide="bell" style="width:13px;height:13px"></i>Global</div>
 
-              <label class="vs-toggle"><input type="checkbox" id="notifMentions" checked /> Mentions in servers</label>
+              <div class="sm-field">
 
-              <label class="vs-toggle"><input type="checkbox" id="notifVoice" checked /> Voice channel joins</label>
+                <div class="vs-toggle-row">
 
-              <label class="vs-toggle"><input type="checkbox" id="notifFriends" checked /> Friend requests</label>
+                  <label class="vs-toggle"><input type="checkbox" id="notifAll" checked /> Allow notifications</label>
+
+                  <label class="vs-toggle"><input type="checkbox" id="notifShowContent" checked /> Show message content</label>
+
+                  <label class="vs-toggle"><input type="checkbox" id="notifSound" checked /> Notification sound</label>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- Section 2 — category toggles -->
+
+            <div class="vs-section">
+
+              <div class="vs-section-h"><i data-lucide="layers" style="width:13px;height:13px"></i>Categories</div>
+
+              <div class="sm-field">
+
+                <div class="vs-toggle-row">
+
+                  <label class="vs-toggle"><input type="checkbox" id="notifDM" checked /> Direct messages</label>
+
+                  <label class="vs-toggle"><input type="checkbox" id="notifMentions" checked /> Server mentions</label>
+
+                  <label class="vs-toggle"><input type="checkbox" id="notifTextCh" /> All text channel messages</label>
+
+                  <label class="vs-toggle"><input type="checkbox" id="notifVoice" checked /> Voice channel joins</label>
+
+                  <label class="vs-toggle"><input type="checkbox" id="notifFriends" checked /> Friend requests</label>
+
+                </div>
+
+                <div class="sm-hint" style="margin-top:8px">
+
+                  Per-channel and per-DM overrides below always win — even when a category is off,
+
+                  any channel set to "Always" will still notify.
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- Section 3 — per-channel / per-DM overrides -->
+
+            <div class="vs-section">
+
+              <div class="vs-section-h"><i data-lucide="sliders-horizontal" style="width:13px;height:13px"></i>Overrides</div>
+
+              <div class="nf-tabs">
+
+                <button class="nf-tab active" data-nf-tab="channels" type="button">CHANNELS</button>
+
+                <button class="nf-tab" data-nf-tab="dms" type="button">DIRECT MESSAGES</button>
+
+              </div>
+
+              <div class="nf-search-wrap">
+
+                <i data-lucide="search" style="width:12px;height:12px"></i>
+
+                <input type="text" id="nfSearch" class="nf-search" placeholder="Filter by name..." />
+
+              </div>
+
+              <div class="nf-list" id="nfChannelsList" data-nf-pane="channels"></div>
+
+              <div class="nf-list" id="nfDmsList" data-nf-pane="dms" style="display:none"></div>
+
+              <div class="nf-empty" id="nfEmpty" style="display:none">
+
+                <i data-lucide="bell-off" style="width:18px;height:18px"></i>
+
+                <div>No items yet. Join a server or open a DM and they'll appear here.</div>
+
+              </div>
+
+              <div class="nf-foot">
+
+                <span class="nf-foot-hint">Each row: <b>Default</b> follows the category toggles above · <b>Always</b> notifies even when the category is off · <b>Mute</b> silences this row only.</span>
+
+                <button type="button" class="sm-btn cancel" id="nfResetOverrides">
+
+                  <i data-lucide="rotate-ccw" style="width:11px;height:11px"></i>RESET ALL OVERRIDES
+
+                </button>
+
+              </div>
 
             </div>
 
