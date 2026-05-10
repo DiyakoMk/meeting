@@ -1536,6 +1536,40 @@
 
     </div>
 
+    <!-- Pack Preview Modal — fake server view rendered with the pack's
+
+         classes so the user can see what they'd be unlocking before
+
+         spending anything. JS fills #packPreviewBody with the right
+
+         markup based on the pack id. -->
+
+    <div class="modal-backdrop" id="packPreviewBackdrop">
+
+      <div class="smodal" style="max-width:540px">
+
+        <div class="smodal-head">
+
+          <div class="smodal-title" id="packPreviewTitle">// PREVIEW</div>
+
+          <button class="smodal-close" data-close-smodal="packPreviewBackdrop"><i data-lucide="x" style="width:13px;height:13px"></i></button>
+
+        </div>
+
+        <div class="smodal-body" id="packPreviewBody"></div>
+
+        <div class="smodal-foot">
+
+          <button class="sm-btn cancel" data-close-smodal="packPreviewBackdrop">BACK</button>
+
+          <button class="sm-btn primary" id="packPreviewUnlock">UNLOCK</button>
+
+        </div>
+
+      </div>
+
+    </div>
+
     <!-- Create Channel Modal (admin) -->
 
     <div class="modal-backdrop" id="createChannelBackdrop">

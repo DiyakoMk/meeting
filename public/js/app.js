@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-09-ap (revert global flow; cat-pin pack; voice channelData seed; aurora text legible + animated cover/emblem)');
+  console.log('[orblood] client build 2026-05-10-a (orb slider stable; pack preview modal)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -11189,7 +11189,7 @@
 
       const isOwned = owned.has(p.id);
 
-      return '<div class="cz-shop-item">'
+      return '<div class="cz-shop-item" data-cz-preview="'+p.id+'" style="cursor:pointer">'
 
         + '<div class="cz-shop-info">'
 
@@ -11366,6 +11366,126 @@
     renderHomeMarkedOrbits && renderHomeMarkedOrbits();
 
     renderOrbSlides && renderOrbSlides();
+
+  }
+
+  // Build a fake server view with the pack's classnames applied across
+
+  // every styled surface, so the user can see what they'd be buying
+
+  // before they unlock it. The markup mirrors the real renderers (same
+
+  // class names) so the pack CSS just lights up here automatically.
+
+  function openPackPreview(packId){
+
+    const pack = (_packsCatalog||[]).find(p => p.id === packId);
+
+    if (!pack) return;
+
+    const owned = ownedPackIds().has(packId);
+
+    document.getElementById('packPreviewTitle').textContent = '// PREVIEW · ' + pack.name.toUpperCase();
+
+    const unlockBtn = document.getElementById('packPreviewUnlock');
+
+    if (owned){ unlockBtn.disabled = true; unlockBtn.textContent = 'OWNED'; }
+
+    else { unlockBtn.disabled = false; unlockBtn.textContent = 'UNLOCK'; unlockBtn.dataset.czUnlock = packId; }
+
+    const surfaceCls = (k) => packClassFor(packId, k);
+
+    const html =
+
+      '<div class="cz-preview-stack">'
+
+      // Server banner with cover + emblem halo + name
+
+      + '<div class="cz-preview-section '+surfaceCls('serverCover')+' '+surfaceCls('serverEmblem')+'">'
+
+        + '<div class="cz-preview-l">SERVER COVER · NAME · EMBLEM</div>'
+
+        + '<div class="cz-preview-banner">'
+
+          + '<div class="ws-banner-cover" style="background-image:linear-gradient(135deg,#3a3a45,#1a1a22)"></div>'
+
+          + '<div class="cz-preview-banner-row">'
+
+            + '<div class="cz-preview-emblem ws-emblem" style="--srv-grad:linear-gradient(135deg,#ff7eb6,#7a0a14)">A</div>'
+
+            + '<div class="cz-preview-name ws-banner-title '+surfaceCls('serverName')+'">Sample Server</div>'
+
+          + '</div>'
+
+        + '</div>'
+
+      + '</div>'
+
+      // Server pin
+
+      + '<div class="cz-preview-section">'
+
+        + '<div class="cz-preview-l">SERVER PIN</div>'
+
+        + '<div class="ws-pinned-box '+surfaceCls('serverPin')+'" style="margin:0;padding:10px 12px">'
+
+          + '<div class="ws-pin-icon"><i data-lucide="pin" style="width:14px;height:14px"></i></div>'
+
+          + '<div class="ws-pin-info">'
+
+            + '<div class="ws-pin-l">SERVER PIN</div>'
+
+            + '<div class="ws-pin-text">Welcome — read the rules.</div>'
+
+          + '</div>'
+
+        + '</div>'
+
+      + '</div>'
+
+      // Category title + text channel + voice channel row
+
+      + '<div class="cz-preview-section">'
+
+        + '<div class="cz-preview-l">CATEGORY · TEXT · VOICE</div>'
+
+        + '<div class="cz-preview-cat-h '+surfaceCls('category')+'">'
+
+          + '<div class="ws-cat-h-name">GENERAL</div>'
+
+        + '</div>'
+
+        + '<div class="ws-cat-tc style-glow '+surfaceCls('textChannel')+'" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--tint-2);margin-bottom:6px">'
+
+          + '<i data-lucide="hash" style="width:14px;height:14px"></i>'
+
+          + '<span class="ws-cat-tc-n">general</span>'
+
+        + '</div>'
+
+        + '<div class="ws-cat-vc '+surfaceCls('voiceChannel')+'" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--tint-2)">'
+
+          + '<div class="ws-cat-vc-orb '+surfaceCls('orbit')+'"></div>'
+
+          + '<div class="ws-cat-vc-info">'
+
+            + '<div class="ws-cat-vc-n">LOUNGE</div>'
+
+            + '<div class="ws-cat-vc-c">0 MEMBERS</div>'
+
+          + '</div>'
+
+        + '</div>'
+
+      + '</div>'
+
+      + '</div>';
+
+    document.getElementById('packPreviewBody').innerHTML = html;
+
+    document.getElementById('packPreviewBackdrop').classList.add('show');
+
+    refreshIcons();
 
   }
 
@@ -15313,9 +15433,55 @@
 
     }
 
+    // Click anywhere on a shop card (outside the UNLOCK button) opens
+
+    // a preview. The button still bubbles UNLOCK first so a direct
+
+    // press of the action skips the preview when the user already knows.
+
+    const shopCard = e.target.closest('[data-cz-preview]');
+
+    if (shopCard){
+
+      e.stopPropagation();
+
+      openPackPreview(shopCard.dataset.czPreview);
+
+      return;
+
+    }
+
     if (e.target.id === 'customizeBackdrop'){
 
       document.getElementById('customizeBackdrop').classList.remove('show');
+
+    }
+
+  });
+
+  // Pack preview modal — UNLOCK button + backdrop close.
+
+  document.getElementById('packPreviewBackdrop').addEventListener('click', e => {
+
+    if (e.target.id === 'packPreviewBackdrop'){
+
+      document.getElementById('packPreviewBackdrop').classList.remove('show');
+
+      return;
+
+    }
+
+    const unlockBtn = e.target.closest('#packPreviewUnlock');
+
+    if (unlockBtn && !unlockBtn.disabled && unlockBtn.dataset.czUnlock){
+
+      e.stopPropagation();
+
+      _unlockPack(unlockBtn.dataset.czUnlock).then(() => {
+
+        document.getElementById('packPreviewBackdrop').classList.remove('show');
+
+      });
 
     }
 

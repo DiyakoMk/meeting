@@ -2857,6 +2857,22 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 .cz-shop-name{font-size:0.95rem;font-weight:600;color:var(--t1);margin-bottom:4px}
 .cz-shop-desc{font-size:0.75rem;color:var(--t2);line-height:1.5}
 .cz-shop-price{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.6rem;letter-spacing:1.5px;color:var(--accent);margin-top:4px}
+
+/* Pack preview modal — miniature server view that lets the user see
+ * what a pack will look like applied across all six surfaces before
+ * they unlock it. Each block borrows the same classnames the real
+ * world view uses so the pack CSS automatically lights everything up. */
+.cz-preview-stack{display:flex;flex-direction:column;gap:14px}
+.cz-preview-section{padding:14px;border:1px solid var(--tint-3);border-radius:12px;background:var(--tint-1)}
+.cz-preview-section + .cz-preview-section{margin-top:0}
+.cz-preview-l{font-family:'Space Mono','Vazirmatn',monospace;font-size:0.5rem;letter-spacing:1.6px;color:var(--t3);margin-bottom:8px}
+.cz-preview-banner{position:relative;height:80px;border-radius:10px;overflow:hidden;margin-bottom:10px;background:var(--tint-3)}
+.cz-preview-banner .ws-banner-cover{position:absolute;inset:0;background-size:cover;background-position:center}
+.cz-preview-banner-row{display:flex;align-items:center;gap:12px;padding:10px 12px;position:relative;z-index:2;height:100%}
+.cz-preview-emblem{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;flex-shrink:0;position:relative}
+.cz-preview-name{font-size:1.1rem;font-weight:600;color:var(--t1)}
+.cz-preview-cat-h{margin-bottom:8px}
+.cz-preview-orb{width:40px;height:40px;border-radius:50%;background:var(--vc-grad,radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#6366f1 55%,#1e1b4b));position:relative;flex-shrink:0}
 .cz-uploader-row{display:flex;align-items:center;gap:14px}
 .cz-uploader-preview{width:64px;height:64px;border-radius:50%;background:var(--tint-3);border:1px solid var(--tint-4);background-size:cover;background-position:center;flex-shrink:0;position:relative;overflow:hidden}
 .cz-cover-preview{width:140px;height:64px;border-radius:10px;background:var(--tint-3);border:1px solid var(--tint-4);background-size:cover;background-position:center;flex-shrink:0;position:relative;overflow:hidden}
@@ -2891,11 +2907,20 @@ select.sm-input option{background:var(--panel);color:var(--t1);padding:6px 10px}
 
 .cc-orb-track::-webkit-scrollbar{display:none}
 
-.cc-orb-card{flex:0 0 calc((100% - 20px)/3);min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:12px;cursor:pointer;border:1px solid transparent;transition:all 0.18s;scroll-snap-align:center;position:relative}
+/* Each card has a fixed footprint and the "selected" cue is purely
+ * visual (border + background) — no transform:scale, which used to
+ * jitter the carousel when a legendary card with a hue-rotate
+ * animation became the selected one (the snap target moved every
+ * tick, fighting the smooth scroll).
+ *
+ * `flex: 0 0 ...` width keeps three cards visible regardless of state
+ * and `contain: layout paint` isolates the legendary glow so its
+ * filter changes don't trigger a reflow on the parent track. */
+.cc-orb-card{flex:0 0 calc((100% - 20px)/3);min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:12px;cursor:pointer;border:1px solid transparent;transition:background 0.18s,border-color 0.18s,box-shadow 0.18s;scroll-snap-align:center;position:relative;contain:layout paint}
 
 .cc-orb-card:hover{background:var(--tint-2)}
 
-.cc-orb-card.selected{border-color:var(--tint-6);background:var(--tint-2);transform:scale(1.04)}
+.cc-orb-card.selected{border-color:var(--tint-6);background:var(--tint-2);box-shadow:0 0 0 1px var(--tint-7)}
 
 .cc-orb-glow{position:absolute;width:78px;height:78px;border-radius:50%;top:6px;opacity:0.7;pointer-events:none;filter:blur(2px)}
 
