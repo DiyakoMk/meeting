@@ -485,6 +485,10 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
   z-index: 8;
 
+  transition: opacity 0.5s, filter 0.5s;
+
+  will-change: transform;
+
 }
 
 .orb-slide.mythic .myth-sweep{
@@ -505,17 +509,78 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
   opacity: 0.85;
 
+  transition: opacity 0.5s, filter 0.5s;
+
+  will-change: transform;
+
 }
 
-/* Avatars need to sit above the new mythic overlay so they're never
+/* The base .orbiter rule already lives at z-index: 10 (planet stack);
 
- * hidden behind the spinning prism ring. */
+ * push the mythic overlay underneath so avatars stay on top without
 
-.orb-slide.mythic .orbiter,
+ * touching the .orbiter rule itself (touching it caused the orbi
 
-.orb-slide.mythic .orb-av{ z-index: 20; }
+ * keyframe to restart on every render-driven class swap). */
+
+.orb-slide.mythic .myth-ring{ z-index: 4; }
+
+.orb-slide.mythic .myth-sweep{ z-index: 4; }
 
 .orb-slide.mythic .legendary-aura{ width: 190px;height: 190px;filter: blur(16px);opacity: 0.75; }
+
+
+/* When the orb is inactive (user is on a different call) or empty, the
+
+ * mythic overlays should fade out alongside the planet, not keep
+
+ * spinning at full power. Mirrors the existing inactive/empty rules
+
+ * for legendary-aura/sweep so the orb reads as 'quiet' globally. */
+
+.orb-slide.inactive .myth-ring,
+
+.orb-slide.inactive .myth-sweep,
+
+.orb-slide.inactive .legendary-aura,
+
+.orb-slide.inactive .legendary-sweep,
+
+.orb-slide.inactive .legendary-particle{
+
+  opacity: 0.2;
+
+  filter: saturate(0.35) brightness(0.7);
+
+}
+
+.orb-slide.empty .myth-ring,
+
+.orb-slide.empty .myth-sweep{
+
+  opacity: 0.18;
+
+  filter: saturate(0.4);
+
+}
+
+/* Disconnected (no active call). When the user hasn't joined ANY voice
+
+ * channel, mythic overlays sit at half intensity instead of running
+
+ * at full brightness so a quiet column doesn't look like every orb
+
+ * is calling for attention. */
+
+.orb-col.disconnected .orb-slide.mythic .myth-ring,
+
+.orb-col.disconnected .orb-slide.mythic .myth-sweep{
+
+  opacity: 0.45;
+
+  filter: saturate(0.7);
+
+}
 
 
 /* Mythic — PRISM. Pearl core + violet/blue prism ring. */

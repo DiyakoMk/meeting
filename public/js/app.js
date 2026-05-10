@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-e (FERN common skin; PRISM + AURORA VEIL mythic; tier filter in create-voice picker)');
+  console.log('[orblood] client build 2026-05-10-f (mythic overlays fade with inactive/empty; orbiter z-index untouched to keep rotation stable)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
