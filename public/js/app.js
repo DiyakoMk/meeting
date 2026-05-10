@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-a (orb slider stable; pack preview modal)');
+  console.log('[orblood] client build 2026-05-10-b (preview modal polish; aurora text white-sweep slow; orb slider drift fix)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
