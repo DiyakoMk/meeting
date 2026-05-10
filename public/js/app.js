@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-s (voice: ICE state-driven status pill + real RTT ping + auto ICE-restart on failure)');
+  console.log('[orblood] client build 2026-05-10-t (voice: routing keys set immediately so early peers are not dropped; replaced misleading instant Connected toast with Joining)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -1625,7 +1625,13 @@
 
       callTimerInterval = setInterval(updateCallTimer, 500);
 
-      showToast('Connected to '+channelData[ch].name,'success');
+      // "Connected" is misleading here — the WebRTC handshake hasn't
+
+      // completed yet, only the local UI state. The status pill below
+
+      // the orb timer paints the real ICE-driven state.
+
+      showToast('Joining '+channelData[ch].name+'…','success');
 
     }
 
@@ -9938,6 +9944,16 @@
 
         if (!backend.isConfigured()) return;
 
+        // Set the routing keys immediately so any voice:join event the
+
+        // server sends while ICE config / getUserMedia are still pending
+
+        // gets matched against our active call (instead of being dropped
+
+        // because serverId/channelId were still null).
+
+        serverId = sid; channelId = cid;
+
         setVoiceStatus('connecting');
 
         await loadIceConfig();
@@ -9949,8 +9965,6 @@
           return;
 
         }
-
-        serverId = sid; channelId = cid;
 
         _startStatsPoller();
 
