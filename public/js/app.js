@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-h (voice settings: self-monitor mic playback with own volume + live processing toggle test)');
+  console.log('[orblood] client build 2026-05-10-i (game overlay PiP; modern voice toggles; mute/deafen hotkeys)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
