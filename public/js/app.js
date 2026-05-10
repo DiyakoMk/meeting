@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-d (drop COVER STYLE + EMBLEM HALO from customize; preview voice orb mirrors world view)');
+  console.log('[orblood] client build 2026-05-10-e (FERN common skin; PRISM + AURORA VEIL mythic; tier filter in create-voice picker)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -425,33 +425,61 @@
 
   // VOICE channel style presets
 
+  // Voice channel orb skin catalogue. Each entry now carries an
+
+  // explicit `tier` so the create-voice picker can filter by rarity
+
+  // (common / epic / legendary / mythic). Adding a new skin here is
+
+  // enough — the picker, channelData seeder, and orbits column all
+
+  // read from this single map.
+
   const voiceStyles = {
 
-    indigo:  { label:'INDIGO',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#6366f1 55%,#1e1b4b)',           c:'rgba(99,102,241,0.5)',  glow:'rgba(99,102,241,0.4)' },
+    // Common — same base recipe as the original variants.
 
-    pink:    { label:'PINK',    grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#ec4899 55%,#831843)',           c:'rgba(236,72,153,0.5)',  glow:'rgba(236,72,153,0.4)' },
+    indigo:  { label:'INDIGO',  tier:'common', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#6366f1 55%,#1e1b4b)',           c:'rgba(99,102,241,0.5)',  glow:'rgba(99,102,241,0.4)' },
 
-    green:   { label:'GREEN',   grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#22c55e 55%,#14532d)',           c:'rgba(34,197,94,0.5)',   glow:'rgba(34,197,94,0.4)' },
+    pink:    { label:'PINK',    tier:'common', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#ec4899 55%,#831843)',           c:'rgba(236,72,153,0.5)',  glow:'rgba(236,72,153,0.4)' },
 
-    cyan:    { label:'CYAN',    grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#22d3ee 55%,#164e63)',           c:'rgba(34,211,238,0.5)',  glow:'rgba(34,211,238,0.4)' },
+    green:   { label:'GREEN',   tier:'common', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#22c55e 55%,#14532d)',           c:'rgba(34,197,94,0.5)',   glow:'rgba(34,197,94,0.4)' },
 
-    gold:    { label:'GOLD',    grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.7),#fef3c7 25%,#f59e0b 55%,#7c2d12)',c:'rgba(245,158,11,0.5)',  glow:'rgba(245,158,11,0.4)' },
+    cyan:    { label:'CYAN',    tier:'common', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#22d3ee 55%,#164e63)',           c:'rgba(34,211,238,0.5)',  glow:'rgba(34,211,238,0.4)' },
 
-    purple:  { label:'PURPLE',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#a855f7 55%,#3b0764)',           c:'rgba(168,85,247,0.5)',  glow:'rgba(168,85,247,0.4)' },
+    purple:  { label:'PURPLE',  tier:'common', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#a855f7 55%,#3b0764)',           c:'rgba(168,85,247,0.5)',  glow:'rgba(168,85,247,0.4)' },
 
-    crimson: { label:'CRIMSON', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#b91c4a 55%,#3f0917)',           c:'rgba(185,28,74,0.5)',   glow:'rgba(185,28,74,0.4)' },
+    crimson: { label:'CRIMSON', tier:'common', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#b91c4a 55%,#3f0917)',           c:'rgba(185,28,74,0.5)',   glow:'rgba(185,28,74,0.4)' },
 
-    fire:    { label:'SOLARIS', skin:'fire',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fed7aa 20%,#f97316 55%,#7c2d12)', c:'rgba(249,115,22,0.55)', glow:'rgba(249,115,22,0.5)' },
+    fern:    { label:'FERN',    tier:'common', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#84cc16 55%,#365314)',           c:'rgba(132,204,22,0.5)',  glow:'rgba(132,204,22,0.4)' },
 
-    ice:     { label:'GLACIUS', skin:'ice',   grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.95),#e0f2fe 20%,#7dd3fc 55%,#0c4a6e)', c:'rgba(125,211,252,0.55)',glow:'rgba(125,211,252,0.5)' },
+    // Epic — saturated highlight + slightly stronger glow, no extra layers.
 
-    tree:    { label:'VERDANT', skin:'tree',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.7),#bbf7d0 25%,#4ade80 55%,#14532d)',  c:'rgba(74,222,128,0.55)', glow:'rgba(74,222,128,0.5)' },
+    gold:    { label:'GOLD',    tier:'epic',   grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.7),#fef3c7 25%,#f59e0b 55%,#7c2d12)',c:'rgba(245,158,11,0.5)',  glow:'rgba(245,158,11,0.4)' },
 
-    flame:   { label:'INFERNO', skin:'flame', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fed7aa 20%,#f97316 55%,#7c2d12)', c:'rgba(249,115,22,0.6)',  glow:'rgba(249,115,22,0.5)' },
+    // Legendary — uses the official legendary-aura/sweep/particle layers.
 
-    sun:     { label:'SUNFIRE', skin:'fire',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fef3c7 25%,#f59e0b 55%,#7c2d12)', c:'rgba(245,158,11,0.55)', glow:'rgba(245,158,11,0.5)' },
+    fire:    { label:'SOLARIS', tier:'legendary', skin:'fire',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fed7aa 20%,#f97316 55%,#7c2d12)', c:'rgba(249,115,22,0.55)', glow:'rgba(249,115,22,0.5)' },
 
-    aurora:  { label:'AURORA',  skin:'aurora', grad:'radial-gradient(circle at 35% 30%,#ffffff,#fff0f8 45%,#ffe1d6 100%)', c:'rgba(255,160,210,0.55)', glow:'rgba(255,160,210,0.55)' }
+    ice:     { label:'GLACIUS', tier:'legendary', skin:'ice',   grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.95),#e0f2fe 20%,#7dd3fc 55%,#0c4a6e)', c:'rgba(125,211,252,0.55)',glow:'rgba(125,211,252,0.5)' },
+
+    tree:    { label:'VERDANT', tier:'legendary', skin:'tree',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.7),#bbf7d0 25%,#4ade80 55%,#14532d)',  c:'rgba(74,222,128,0.55)', glow:'rgba(74,222,128,0.5)' },
+
+    flame:   { label:'INFERNO', tier:'legendary', skin:'flame', grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fed7aa 20%,#f97316 55%,#7c2d12)', c:'rgba(249,115,22,0.6)',  glow:'rgba(249,115,22,0.5)' },
+
+    sun:     { label:'SUNFIRE', tier:'legendary', skin:'fire',  grad:'radial-gradient(circle at 35% 30%,rgba(255,255,255,0.85),#fef3c7 25%,#f59e0b 55%,#7c2d12)', c:'rgba(245,158,11,0.55)', glow:'rgba(245,158,11,0.5)' },
+
+    // Mythic — one tier above legendary; uses the legendary layers PLUS
+
+    // a myth-ring + myth-sweep overlay defined alongside the existing
+
+    // legendary CSS in main.css.
+
+    aurora:  { label:'AURORA',     tier:'mythic', skin:'aurora',     grad:'radial-gradient(circle at 35% 30%,#ffffff,#fff0f8 45%,#ffe1d6 100%)', c:'rgba(255,160,210,0.55)', glow:'rgba(255,160,210,0.55)' },
+
+    prism:   { label:'PRISM',      tier:'mythic', skin:'prism',      grad:'radial-gradient(circle at 35% 30%,#ffffff,#fff1fb 25%,#f0abfc 55%,#4c1d95)', c:'rgba(232,121,249,0.6)', glow:'rgba(232,121,249,0.55)' },
+
+    aurveil: { label:'AURORA VEIL',tier:'mythic', skin:'aurveil',    grad:'radial-gradient(circle at 35% 30%,#ffffff,#a7f3d0 25%,#22d3ee 55%,#0f766e)',  c:'rgba(34,211,238,0.6)',   glow:'rgba(34,211,238,0.55)' }
 
   };
 
@@ -863,11 +891,25 @@
 
   function isFav(ch){ return favorites.includes(ch); }
 
-  function buildLegendaryExtras(){
+  function buildLegendaryExtras(isMythic){
+
+    // Mythic tier reuses every legendary layer and adds two extras:
+
+    // a sharp conic prism ring + a fast cross-axis sweep beam. The
+
+    // colour palettes for each are scoped per skin in main.css.
+
+    const mythExtras = isMythic
+
+      ? '<div class="myth-ring"></div><div class="myth-sweep"></div>'
+
+      : '';
 
     return '<div class="legendary-aura"></div>'+
 
       '<div class="legendary-sweep"></div>'+
+
+      mythExtras+
 
       '<div class="legendary-particle lp1"></div>'+
 
@@ -899,11 +941,21 @@
 
       const data = channelData[ch];
 
-      const isLegendary = data.tier === 'legendary';
+      // Mythic skins stack the legendary layer set + extra mythic-only
+
+      // overlays. Treat them as a superset of legendary so existing
+
+      // legendary CSS keeps applying (planet pulse, aura/sweep, etc.).
+
+      const isMythic = data.tier === 'mythic';
+
+      const isLegendary = isMythic || data.tier === 'legendary';
 
       let cls = 'orb-slide';
 
       if (isLegendary) cls += ' legendary';
+
+      if (isMythic)    cls += ' mythic';
 
       if (data.skin) cls += ' skin-'+data.skin;
 
@@ -955,7 +1007,7 @@
 
       }
 
-      const legExtras = isLegendary ? buildLegendaryExtras() : '';
+      const legExtras = isLegendary ? buildLegendaryExtras(isMythic) : '';
 
       sHtml += '<div class="'+cls+'" data-channel="'+ch+'">'+
 
@@ -7599,7 +7651,7 @@
 
           emoji: '🪐',
 
-          tier: st.skin ? 'legendary' : 'common',
+          tier: st.tier || (st.skin ? 'legendary' : 'common'),
 
           skin: st.skin || undefined
 
@@ -8099,7 +8151,7 @@
 
         avBorder:'#fff', emoji:'🪐',
 
-        tier: st.skin ? 'legendary' : 'common', skin: st.skin || undefined
+        tier: st.tier || (st.skin ? 'legendary' : 'common'), skin: st.skin || undefined
 
       };
 
@@ -8329,7 +8381,7 @@
 
           avBorder:'#fff', emoji:'🪐',
 
-          tier: st.skin ? 'legendary' : 'common', skin: st.skin || undefined
+          tier: st.tier || (st.skin ? 'legendary' : 'common'), skin: st.skin || undefined
 
         };
 
@@ -12307,6 +12359,28 @@
 
   }
 
+  // Tier filter for the create-voice orb picker. 'all' shows every
+
+  // skin in the catalogue; the others narrow it down so the user can
+
+  // scan a single rarity at a time. Persisted across modal opens via
+
+  // a module-level variable (no localStorage so a reload resets it).
+
+  let ccTierFilter = 'all';
+
+  const _CC_TIER_LABELS = { common:'COMMON', epic:'EPIC', legendary:'LEGENDARY', mythic:'MYTHIC' };
+
+  function _ccTierBadge(tier){
+
+    const label = _CC_TIER_LABELS[tier] || tier.toUpperCase();
+
+    const icon  = tier === 'mythic' ? '✦' : (tier === 'legendary' ? '★' : '');
+
+    return '<div class="cc-orb-tier cc-orb-tier-'+tier+'">'+(icon?icon+' ':'')+label+'</div>';
+
+  }
+
   function renderCcStyles(){
 
     // The TEXT CHANNEL BUTTON STYLE picker was removed - text channels just use a default style.
@@ -12319,21 +12393,75 @@
 
     const keys = Object.keys(voiceStyles);
 
-    if (keys.indexOf(ccSelectedStyle) < 0) ccSelectedStyle = keys[0];
+    // Apply the tier filter, but always make sure ccSelectedStyle stays
 
-    vg.innerHTML = '<button class="cc-orb-arrow" data-cc-orb-nav="-1" type="button"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>'+
+    // pointing at a visible card so the navigation arrows can't drift
 
-      '<div class="cc-orb-track" id="ccOrbTrack">'+
+    // into a hidden skin.
 
-        keys.map(st => {
+    const visibleKeys = ccTierFilter === 'all'
+
+      ? keys
+
+      : keys.filter(k => (voiceStyles[k].tier || (voiceStyles[k].skin ? 'legendary' : 'common')) === ccTierFilter);
+
+    if (visibleKeys.indexOf(ccSelectedStyle) < 0) ccSelectedStyle = visibleKeys[0] || keys[0];
+
+    // Tier filter chips. Counts come from the unfiltered catalogue so
+
+    // the user can see at a glance how many skins exist in each rarity.
+
+    const tierOrder = ['all','common','epic','legendary','mythic'];
+
+    const counts = keys.reduce((acc, k) => {
+
+      const t = voiceStyles[k].tier || (voiceStyles[k].skin ? 'legendary' : 'common');
+
+      acc[t] = (acc[t] || 0) + 1;
+
+      return acc;
+
+    }, { all: keys.length });
+
+    const filterChips = '<div class="cc-tier-filter">'
+
+      + tierOrder.filter(t => t === 'all' || counts[t]).map(t => {
+
+          const isOn = ccTierFilter === t;
+
+          const lbl = t === 'all' ? 'ALL' : (_CC_TIER_LABELS[t] || t.toUpperCase());
+
+          return '<button type="button" class="cc-tier-chip cc-tier-chip-'+t+(isOn?' active':'')+'" data-cc-tier="'+t+'">'
+
+            + lbl + ' <span class="cc-tier-count">'+counts[t]+'</span>'
+
+            + '</button>';
+
+        }).join('')
+
+      + '</div>';
+
+    vg.innerHTML = filterChips
+
+      + '<div class="cc-orb-row">'
+
+      + '<button class="cc-orb-arrow" data-cc-orb-nav="-1" type="button"><i data-lucide="chevron-left" style="width:14px;height:14px"></i></button>'
+
+      + '<div class="cc-orb-track" id="ccOrbTrack">'
+
+      + visibleKeys.map(st => {
 
           const sObj = voiceStyles[st];
 
           const isSel = ccActiveTab==="voice" && ccSelectedStyle===st;
 
-          const legBadge = sObj.skin ? '<div class="cc-orb-tier">★ LEGENDARY</div>' : '';
+          const tier  = sObj.tier || (sObj.skin ? 'legendary' : 'common');
 
-          return '<div class="cc-orb-card'+(sObj.skin?" skin-"+sObj.skin:"")+(sObj.skin?" is-legendary":"")+(isSel?" selected":"")+'" data-cc-voice-style="'+st+'">'+
+          const tierBadge = tier !== 'common' ? _ccTierBadge(tier) : '';
+
+          const tierCls = tier !== 'common' ? ' is-'+tier : '';
+
+          return '<div class="cc-orb-card'+(sObj.skin?" skin-"+sObj.skin:"")+tierCls+(isSel?" selected":"")+'" data-cc-voice-style="'+st+'">'+
 
             '<div class="cc-orb-glow" style="background:radial-gradient(circle at 50% 50%,'+sObj.glow+',transparent 65%)"></div>'+
 
@@ -12341,15 +12469,17 @@
 
             '<div class="cc-orb-label">'+escapeHtml(sObj.label||st.toUpperCase())+'</div>'+
 
-            legBadge+
+            tierBadge+
 
           '</div>';
 
-        }).join('')+
+        }).join('')
 
-      '</div>'+
+      + '</div>'
 
-      '<button class="cc-orb-arrow" data-cc-orb-nav="1" type="button"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>';
+      + '<button class="cc-orb-arrow" data-cc-orb-nav="1" type="button"><i data-lucide="chevron-right" style="width:14px;height:14px"></i></button>'
+
+      + '</div>';
 
     refreshIcons();
 
@@ -12643,7 +12773,7 @@
 
             avBorder: '#fff', emoji: '🪐',
 
-            tier: st.skin ? 'legendary' : 'common',
+            tier: st.tier || (st.skin ? 'legendary' : 'common'),
 
             skin: st.skin || undefined
 
@@ -15589,17 +15719,49 @@
 
   document.getElementById('ccVoiceStyleGrid').addEventListener('click', e => {
 
+    // Tier filter chip click — re-render so the visible cards match.
+
+    const tierBtn = e.target.closest('[data-cc-tier]');
+
+    if (tierBtn){
+
+      ccTierFilter = tierBtn.dataset.ccTier;
+
+      renderCcStyles();
+
+      requestAnimationFrame(() => centerCcOrb(false));
+
+      return;
+
+    }
+
     const nav = e.target.closest('[data-cc-orb-nav]');
 
     if (nav){
 
       const dir = parseInt(nav.dataset.ccOrbNav);
 
-      const keys = Object.keys(voiceStyles);
+      // Walk only the currently-visible (filtered) skins so the arrows
+
+      // never jump to a hidden card. Falls back to the full catalogue
+
+      // when the filter happens to match every skin.
+
+      const allKeys = Object.keys(voiceStyles);
+
+      const keys = ccTierFilter === 'all'
+
+        ? allKeys
+
+        : allKeys.filter(k => (voiceStyles[k].tier || (voiceStyles[k].skin ? 'legendary' : 'common')) === ccTierFilter);
+
+      if (!keys.length) return;
 
       let idx = keys.indexOf(ccSelectedStyle);
 
-      idx = (idx + dir + keys.length) % keys.length;
+      if (idx < 0) idx = 0;
+
+      else idx = (idx + dir + keys.length) % keys.length;
 
       ccSelectedStyle = keys[idx];
 
@@ -17541,7 +17703,7 @@
 
           avBorder:'#fff', emoji:'🪐',
 
-          tier: st.skin ? 'legendary' : 'common', skin: st.skin || undefined
+          tier: st.tier || (st.skin ? 'legendary' : 'common'), skin: st.skin || undefined
 
         };
 
