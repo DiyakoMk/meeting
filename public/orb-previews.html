@@ -3,582 +3,155 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Orbit variants v4 — common + mythic</title>
+<title>Orbit variants preview</title>
 <style>
   :root{
-    --bg:#020103;
-    --panel:#0a0a0f;
-    --t1:#f5f5f7;
-    --t2:rgba(245,245,247,0.6);
-    --t3:rgba(245,245,247,0.32);
-    --success:#22c55e;
-    --legendary:#facc15;
-    --mythic:#e879f9;
-    --tint:rgba(255,255,255,0.06);
+    --bg:#020103;--panel:#0a0a0f;--t1:#f5f5f7;--t2:rgba(245,245,247,.62);
+    --t3:rgba(245,245,247,.34);--tint:rgba(255,255,255,.06);
+    --success:#22c55e;--warn:#f59e0b;--mythic:#e879f9;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
-    background:var(--bg);
-    color:var(--t1);
-    font-family:'Inter',system-ui,-apple-system,sans-serif;
-    min-height:100vh;
-    padding:36px 18px 60px;
+    min-height:100vh;background:var(--bg);color:var(--t1);
+    font-family:Inter,system-ui,-apple-system,sans-serif;padding:34px 18px 60px;
   }
-  body::before{
-    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-    background:
-      radial-gradient(ellipse at 20% 10%,rgba(126,104,245,0.06),transparent 50%),
-      radial-gradient(ellipse at 90% 90%,rgba(225,88,234,0.05),transparent 50%);
+  body:before{
+    content:"";position:fixed;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 16% 8%,rgba(126,104,245,.08),transparent 48%),
+               radial-gradient(ellipse at 88% 88%,rgba(225,88,234,.06),transparent 52%);
   }
-  .page-head{position:relative;z-index:1;max-width:1480px;margin:0 auto 28px;padding:0 6px}
-  .page-head h1{font-size:1.4rem;font-weight:600;letter-spacing:0.5px}
-  .page-head p{color:var(--t2);margin-top:6px;font-size:0.85rem;line-height:1.5}
-  .section-h{
-    position:relative;z-index:1;max-width:1480px;margin:36px auto 14px;
-    display:flex;align-items:baseline;justify-content:space-between;
-    padding:0 6px;
+  header,.section-h,.grid,.footer{position:relative;z-index:1;max-width:1480px;margin-left:auto;margin-right:auto}
+  header{margin-bottom:28px}
+  header h1{font-size:1.35rem;font-weight:600;letter-spacing:.5px}
+  header p{color:var(--t2);font-size:.86rem;line-height:1.55;margin-top:6px}
+  .section-h{display:flex;justify-content:space-between;align-items:baseline;margin-top:34px;margin-bottom:14px}
+  .section-h h2{font-family:"Space Mono",ui-monospace,monospace;font-size:.7rem;letter-spacing:2.2px}
+  .section-h span{color:var(--t3);font-size:.62rem}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+  .card{
+    background:var(--panel);border:1px solid var(--tint);border-radius:14px;
+    padding:18px 14px 16px;display:flex;flex-direction:column;align-items:center;
   }
-  .section-h h2{
-    font-family:'Space Mono',ui-monospace,monospace;
-    font-size:0.7rem;letter-spacing:2.4px;font-weight:700;
-  }
-  .section-h h2 span{color:var(--t3);font-weight:400;margin-left:8px}
-  .section-h .pill{
-    font-family:'Space Mono',ui-monospace,monospace;
-    font-size:0.55rem;letter-spacing:1.4px;font-weight:700;
-    padding:3px 8px;border-radius:5px;
-  }
-  .pill-common{color:var(--t2);background:var(--tint);border:1px solid var(--tint)}
-  .pill-mythic{color:#fdf4ff;background:rgba(232,121,249,0.15);border:1px solid rgba(232,121,249,0.45)}
-
-  .grid{
-    position:relative;z-index:1;
-    max-width:1480px;margin:0 auto;
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-    gap:18px;
-  }
-
-  .col{
-    background:var(--panel);
-    border:1px solid var(--tint);
-    border-radius:14px;
-    padding:22px 14px 18px;
-    display:flex;flex-direction:column;align-items:center;
-    position:relative;overflow:hidden;
-  }
-  .col-head{
+  .card-head{
     width:100%;display:flex;justify-content:space-between;align-items:center;
-    font-family:'Space Mono',ui-monospace,monospace;font-size:0.55rem;
-    color:var(--t3);letter-spacing:1.6px;margin-bottom:12px;
+    color:var(--t3);font-family:"Space Mono",ui-monospace,monospace;font-size:.55rem;letter-spacing:1.5px;
   }
-  .col-head .lbl::before{
+  .card-head b{font-weight:500;color:var(--t2)}
+  .card-head b:before{
     content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
     background:var(--success);box-shadow:0 0 6px var(--success);margin-right:6px;
-    vertical-align:middle;
   }
 
-  .stage{
-    position:relative;width:200px;height:200px;
-    display:flex;align-items:center;justify-content:center;
-    margin:18px auto 22px;
+  /* Real app geometry copy:
+     orb-wrap 200x200, planet 80, atmo 120, otrack 160,
+     three lring waves, orbiters using the same translateX(80px) keyframe. */
+  .orb-slide{width:100%;display:flex;flex-direction:column;align-items:center;padding:4px 0}
+  .orb-wrap{width:200px;height:200px;position:relative;display:flex;align-items:center;justify-content:center;margin:10px 0 8px}
+  .planet{width:80px;height:80px;border-radius:50%;position:relative;z-index:10;overflow:hidden}
+  .atmo{position:absolute;width:120px;height:120px;border-radius:50%;animation:apulse 4s ease-in-out infinite}
+  .lring{position:absolute;width:100%;height:100%;border-radius:50%;border:2px solid;animation:rex 3s ease-out infinite}
+  .lring:nth-of-type(3){animation-delay:1s}
+  .lring:nth-of-type(4){animation-delay:2s}
+  .otrack{position:absolute;width:160px;height:160px;border-radius:50%;border:1px dashed}
+  .orbiter{position:absolute;top:50%;left:50%;width:40px;height:40px;margin:-20px 0 0 -20px;animation:orbi 15s linear infinite}
+  .orbiter.o2{animation-delay:-5s}.orbiter.o3{animation-delay:-10s}
+  .orb-av{
+    width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);
+    border:2px solid;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:600;
+    animation:corbi 15s linear infinite;color:#fff;
   }
+  .orbiter.o2 .orb-av{animation-delay:5s}.orbiter.o3 .orb-av{animation-delay:10s}
+  .vlabel{font-family:"Space Mono",ui-monospace,monospace;font-size:.72rem;letter-spacing:2.4px;font-weight:700;text-align:center;color:var(--t1)}
+  .vstatus{font-family:"Space Mono",ui-monospace,monospace;font-size:.55rem;letter-spacing:1.3px;color:var(--success);margin-top:5px}
+  .meta{color:var(--t3);font-size:.64rem;margin-top:10px;text-align:center}
+  .tier{font-family:"Space Mono",ui-monospace,monospace;font-size:.5rem;letter-spacing:1.4px;margin-top:10px;padding:3px 8px;border-radius:5px}
+  .common{color:var(--t2);background:var(--tint);border:1px solid var(--tint)}
+  .legend{color:#facc15;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.42)}
+  .myth{color:#fdf4ff;background:rgba(232,121,249,.14);border:1px solid rgba(232,121,249,.5)}
+  @keyframes orbi{from{transform:rotate(0deg) translateX(80px) rotate(0deg)}to{transform:rotate(360deg) translateX(80px) rotate(-360deg)}}
+  @keyframes corbi{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+  @keyframes apulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.1);opacity:.9}}
+  @keyframes rex{0%{transform:scale(.6);opacity:.6}100%{transform:scale(1.6);opacity:0}}
+  @keyframes legPulse{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(15deg)}}
+  @keyframes auraSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes legSweep{0%{transform:rotate(0);opacity:0}12%{opacity:.75}88%{opacity:.75}100%{transform:rotate(360deg);opacity:0}}
+  @keyframes txtFlow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
 
-  /* ───────── BASE RECIPE (matches the in-app variants exactly) ───────── */
-  .otrack{
-    position:absolute;width:160px;height:160px;border-radius:50%;
-    border:1px dashed;
-    z-index:1;
-  }
-  .lring{
-    position:absolute;width:100%;height:100%;border-radius:50%;
-    border:2px solid;
-    animation:rex 3s ease-out infinite;
-    z-index:2;
-  }
-  .lring.r2{animation-delay:1s}
-  .lring.r3{animation-delay:2s}
-  .atmo{
-    position:absolute;width:120px;height:120px;border-radius:50%;
-    animation:apulse 4s ease-in-out infinite;
-    z-index:3;
-  }
-  .planet{
-    width:80px;height:80px;border-radius:50%;
-    position:relative;z-index:5;overflow:hidden;
-  }
-  /* Orbiters use translateX(80px) — same approach as the live orbi
-   * keyframe so the radius is fixed and the orbiter stays on the
-   * dashed track without parent rotation jitter. */
-  .orbiter{
-    position:absolute;top:50%;left:50%;
-    width:32px;height:32px;margin:-16px 0 0 -16px;
-    border-radius:50%;
-    background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);
-    border:2px solid;
-    display:flex;align-items:center;justify-content:center;
-    color:#fff;font-size:0.62rem;font-weight:700;
-    animation:orbi 15s linear infinite;
-    z-index:4;
-  }
-  .orbiter.o2{animation-delay:-5s}
-  .orbiter.o3{animation-delay:-10s}
+  /* Common variants: same as project variants, only vars differ. */
+  .skin{--rgb:99,102,241;--c:rgba(var(--rgb),.5);--glow:rgba(var(--rgb),.4);--grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45),#6366f1 55%,#1e1b4b)}
+  .skin .atmo{background:radial-gradient(circle,var(--glow),transparent 70%)}
+  .skin .lring{border-color:rgba(var(--rgb),.4)}
+  .skin .otrack{border-color:rgba(var(--rgb),.25)}
+  .skin .planet{background:var(--grad);box-shadow:0 0 40px rgba(var(--rgb),.4),inset 0 0 20px rgba(255,255,255,.2)}
+  .skin .orb-av{border-color:#fff;box-shadow:0 0 12px rgba(var(--rgb),.4)}
+  .skin .vlabel{color:rgba(var(--rgb),.85)}
+  .cyan{--rgb:34,211,238;--grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45),#22d3ee 55%,#164e63)}
+  .violet{--rgb:168,85,247;--grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45),#a855f7 55%,#3b0764)}
+  .ember{--rgb:249,115,22;--grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),#f97316 55%,#7c2d12)}
+  .frost{--rgb:125,211,252;--grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,.7),#7dd3fc 55%,#0c4a6e)}
+  .rose{--rgb:244,114,182;--grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,.6),#f472b6 55%,#831843)}
+  .fern{--rgb:132,204,22;--grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,.45),#84cc16 55%,#365314)}
 
-  .vlabel{
-    margin-top:12px;
-    font-family:'Space Mono',ui-monospace,monospace;
-    font-size:0.72rem;letter-spacing:2.5px;font-weight:700;
-    color:var(--t1);text-align:center;line-height:1.2;
-  }
-  .vstatus{
-    margin-top:5px;font-family:'Space Mono',ui-monospace,monospace;
-    font-size:0.55rem;letter-spacing:1.4px;color:var(--success);
-    display:flex;align-items:center;gap:6px;
-  }
-  .vstatus::before{
-    content:"";display:block;width:5px;height:5px;border-radius:50%;
-    background:var(--success);box-shadow:0 0 5px var(--success);
-  }
-  .meta{margin-top:10px;font-size:0.62rem;color:var(--t3);letter-spacing:1px;text-align:center;line-height:1.4}
-  .tier{
-    margin-top:10px;
-    font-family:'Space Mono',ui-monospace,monospace;
-    font-size:0.5rem;letter-spacing:1.4px;font-weight:700;
-    padding:3px 8px;border-radius:5px;
-  }
-  .tier-common{color:var(--t2);background:var(--tint);border:1px solid var(--tint)}
-  .tier-mythic{
-    color:#fdf4ff;
-    background:linear-gradient(90deg,rgba(232,121,249,0.18),rgba(167,139,250,0.18));
-    border:1px solid rgba(232,121,249,0.5);
-  }
+  /* Legendary-compatible: same official extra layer names. */
+  .legendary .planet{animation:legPulse 4s ease-in-out infinite}
+  .legendary-aura{position:absolute;width:170px;height:170px;border-radius:50%;filter:blur(18px);opacity:.55;animation:auraSpin 8s linear infinite}
+  .legendary-sweep{position:absolute;width:100%;height:1px;top:50%;transform-origin:50% 50%;animation:legSweep 5s linear infinite;opacity:.7}
+  .legendary-particle{position:absolute;width:3px;height:3px;border-radius:50%;top:50%;left:50%}
+  .lp1{transform:translate(-65px,-55px)}.lp2{transform:translate(62px,-44px)}.lp3{transform:translate(74px,42px)}
+  .lp4{transform:translate(-58px,58px)}.lp5{transform:translate(0,-80px)}.lp6{transform:translate(0,78px)}
+  .inferno2 .planet{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.85),#fed7aa 20%,#f97316 55%,#7c2d12);box-shadow:0 0 90px rgba(249,115,22,.65),0 0 180px rgba(239,68,68,.3),inset 0 0 42px rgba(254,215,170,.55)!important}
+  .inferno2 .atmo{background:radial-gradient(circle,rgba(249,115,22,.65),rgba(239,68,68,.25),transparent 70%)!important}
+  .inferno2 .legendary-aura{background:conic-gradient(#f97316,#ef4444,#fbbf24,#f97316)}
+  .inferno2 .legendary-sweep{background:linear-gradient(90deg,transparent,#fed7aa,transparent)}
+  .inferno2 .legendary-particle{background:#fed7aa;box-shadow:0 0 8px #f97316}
+  .inferno2 .vlabel{background:linear-gradient(90deg,#fed7aa,#f97316,#dc2626);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .borealis .planet{background:radial-gradient(circle at 35% 30%,#fff,#a7f3d0 25%,#22d3ee 55%,#0f766e);box-shadow:0 0 80px rgba(34,211,238,.55),0 0 160px rgba(52,211,153,.25),inset 0 0 42px rgba(167,243,208,.45)!important}
+  .borealis .atmo{background:radial-gradient(circle,rgba(34,211,238,.6),rgba(52,211,153,.22),transparent 70%)!important}
+  .borealis .legendary-aura{background:conic-gradient(#22d3ee,#34d399,#60a5fa,#a78bfa,#22d3ee)}
+  .borealis .legendary-sweep{background:linear-gradient(90deg,transparent,#a7f3d0,#22d3ee,transparent)}
+  .borealis .legendary-particle{background:#a7f3d0;box-shadow:0 0 8px #22d3ee}
+  .borealis .vlabel{background:linear-gradient(90deg,#a7f3d0,#34d399,#22d3ee,#60a5fa,#a7f3d0);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:txtFlow 5s ease-in-out infinite}
 
-  /* ───────── KEYFRAMES (mirroring the live ones) ───────── */
-  @keyframes orbi{
-    from{transform:translate(-50%,-50%) rotate(0deg) translateX(80px) rotate(0deg)}
-    to  {transform:translate(-50%,-50%) rotate(360deg) translateX(80px) rotate(-360deg)}
-  }
-  @keyframes apulse{0%,100%{transform:scale(1);opacity:0.6}50%{transform:scale(1.1);opacity:0.9}}
-  @keyframes rex{0%{transform:scale(0.6);opacity:0.6}100%{transform:scale(1.6);opacity:0}}
-
-  /* ─────────────── COMMON COLOUR VARIANTS ─────────────── */
-  .col[class*=" c"] .otrack{border-color:var(--c1)}
-  .col[class*=" c"] .lring {border-color:var(--c1)}
-  .col[class*=" c"] .orbiter{border-color:var(--c1)}
-  .col[class*=" c"] .atmo  {background:radial-gradient(circle,var(--halo),transparent 70%)}
-  .col[class*=" c"] .planet{
-    background:var(--grad);
-    box-shadow:0 0 30px var(--halo),0 0 70px var(--halo),inset 0 0 24px rgba(255,255,255,0.18);
-  }
-  .col[class*=" c"] .vlabel{color:var(--c1)}
-
-  .c01{--c1:rgba(34,211,238,0.7);--halo:rgba(34,211,238,0.40);
-    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#22d3ee 55%,#164e63)}
-  .c02{--c1:rgba(168,85,247,0.7);--halo:rgba(168,85,247,0.40);
-    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#a855f7 55%,#3b0764)}
-  .c03{--c1:rgba(249,115,22,0.7);--halo:rgba(249,115,22,0.40);
-    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#f97316 55%,#7c2d12)}
-  .c04{--c1:rgba(125,211,252,0.7);--halo:rgba(125,211,252,0.40);
-    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.6),#7dd3fc 55%,#0c4a6e)}
-  .c05{--c1:rgba(244,114,182,0.7);--halo:rgba(244,114,182,0.40);
-    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.6),#f472b6 55%,#831843)}
-  .c06{--c1:rgba(132,204,22,0.7);--halo:rgba(132,204,22,0.40);
-    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#84cc16 55%,#365314)}
-  .c07{--c1:rgba(59,130,246,0.7);--halo:rgba(59,130,246,0.40);
-    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#3b82f6 55%,#1e3a8a)}
-  .c08{--c1:rgba(220,38,38,0.7);--halo:rgba(220,38,38,0.40);
-    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#dc2626 55%,#7f1d1d)}
-  .c09{--c1:rgba(16,185,129,0.7);--halo:rgba(16,185,129,0.40);
-    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#10b981 55%,#064e3b)}
-  .c10{--c1:rgba(245,158,11,0.7);--halo:rgba(245,158,11,0.40);
-    --grad:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.6),#f59e0b 55%,#78350f)}
-
-  /* ═════════════════════════════════════════════════════
-     MYTHIC — one tier above LEGENDARY
-     Adds on top of the base recipe:
-       • Inner heart-light pulse on the planet (warm rim shadow + bright core)
-       • Counter-rotating prism ring (conic gradient, sharp)
-       • Outer prism halo (conic blurred, slow)
-       • Cross-axis sweep beam every 4.2s
-       • Slow aurora drift on the rings (hue shift)
-       • Three sparkles around the orb
-       • Animated colour-flow on the label, with a halo glow
-     Geometry of the base layers stays identical so it drops into the
-     live orbits column. ═════════════════════════════════════════════ */
-  .myth .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#fff5fa 35%,#ffd6e8 60%,#7c1d6f 100%);
-    box-shadow:
-      0 0 18px rgba(255,255,255,0.55),
-      0 0 50px rgba(232,121,249,0.7),
-      0 0 110px rgba(167,139,250,0.5),
-      inset 0 -6px 16px rgba(124,29,111,0.45),
-      inset 0 4px 10px rgba(255,255,255,0.95);
-    animation:mythHeart 3.2s ease-in-out infinite;
-  }
-  .myth .atmo{
-    background:radial-gradient(circle,rgba(232,121,249,0.6),rgba(167,139,250,0.3),transparent 70%);
-  }
-  .myth .otrack{border-color:rgba(232,121,249,0.55);border-style:dashed}
-  .myth .lring{border-color:rgba(232,121,249,0.7)}
-  .myth .orbiter{
-    border-color:rgba(232,121,249,0.85);
-    box-shadow:0 0 10px rgba(232,121,249,0.5);
-  }
-
-  /* Two extra stacked rings — drop in on top of base lring stack. */
-  .myth-prism{
-    position:absolute;width:140px;height:140px;border-radius:50%;
-    -webkit-mask:radial-gradient(circle,transparent 60%,#000 64%);
-            mask:radial-gradient(circle,transparent 60%,#000 64%);
-    background:conic-gradient(#fff5fa,#fbcfe8,#e879f9,#a78bfa,#60a5fa,#fff5fa);
-    animation:mythSpin 5s linear infinite;
-    z-index:6;
-  }
-  .myth-prism-out{
-    position:absolute;width:180px;height:180px;border-radius:50%;
-    -webkit-mask:radial-gradient(circle,transparent 56%,#000 60%,transparent 78%);
-            mask:radial-gradient(circle,transparent 56%,#000 60%,transparent 78%);
-    background:conic-gradient(rgba(232,121,249,0.7),rgba(167,139,250,0.6),rgba(96,165,250,0.55),rgba(232,121,249,0.7));
-    filter:blur(3px);
-    animation:mythSpin 9s linear infinite reverse;
-    z-index:1;
-  }
-  .myth-sweep{
-    position:absolute;width:140px;height:1.5px;
-    background:linear-gradient(90deg,transparent,#fff5fa,#e879f9,transparent);
-    top:50%;left:50%;transform-origin:0 0;
-    animation:mythSweep 4.2s linear infinite;
-    z-index:7;opacity:0.85;
-  }
-  .myth-spark{
-    position:absolute;width:5px;height:5px;border-radius:50%;
-    background:#fff5fa;box-shadow:0 0 10px #e879f9,0 0 20px rgba(232,121,249,0.5);
-    z-index:8;animation:mythSparkle 2.6s ease-in-out infinite;
-  }
-  .myth-spark.s2{animation-delay:-0.9s}
-  .myth-spark.s3{animation-delay:-1.7s}
-
-  .myth .vlabel{
-    background:linear-gradient(90deg,#fff5fa,#fbcfe8,#e879f9,#a78bfa,#60a5fa,#fff5fa);
-    background-size:300% 100%;
-    -webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;
-    animation:mythFlow 4.5s ease-in-out infinite;
-    filter:drop-shadow(0 0 8px rgba(232,121,249,0.55));
-  }
-
-  @keyframes mythSpin {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-  @keyframes mythHeart{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
-  @keyframes mythSweep{
-    0%{transform:rotate(0deg);opacity:0}
-    8%{opacity:0.9}
-    92%{opacity:0.9}
-    100%{transform:rotate(360deg);opacity:0}
-  }
-  @keyframes mythSparkle{
-    0%,100%{transform:scale(1);opacity:0.5}
-    50%{transform:scale(1.7);opacity:1}
-  }
-  @keyframes mythFlow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
-
-  /* MYTHIC variants — same recipe, different palettes. */
-  .m01 .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#fff5fa 35%,#ffd6e8 60%,#7c1d6f 100%);
-  }
-  .m01 .myth-prism{background:conic-gradient(#fff5fa,#fbcfe8,#e879f9,#a78bfa,#60a5fa,#fff5fa)}
-  .m01 .myth-prism-out{background:conic-gradient(rgba(232,121,249,0.7),rgba(167,139,250,0.6),rgba(96,165,250,0.55),rgba(232,121,249,0.7))}
-  .m01 .myth-sweep{background:linear-gradient(90deg,transparent,#fff5fa,#e879f9,transparent)}
-  .m01 .vlabel{background:linear-gradient(90deg,#fff5fa,#fbcfe8,#e879f9,#a78bfa,#60a5fa,#fff5fa)}
-
-  .m02 .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#e0fff7 30%,#5eead4 60%,#0c4a6e 100%);
-    box-shadow:
-      0 0 18px rgba(255,255,255,0.55),
-      0 0 50px rgba(94,234,212,0.7),
-      0 0 110px rgba(56,189,248,0.5),
-      inset 0 -6px 16px rgba(12,74,110,0.45),
-      inset 0 4px 10px rgba(255,255,255,0.95);
-  }
-  .m02 .atmo{background:radial-gradient(circle,rgba(94,234,212,0.6),rgba(56,189,248,0.3),transparent 70%)}
-  .m02 .otrack{border-color:rgba(94,234,212,0.55)}
-  .m02 .lring{border-color:rgba(94,234,212,0.7)}
-  .m02 .orbiter{border-color:rgba(94,234,212,0.85);box-shadow:0 0 10px rgba(94,234,212,0.5)}
-  .m02 .myth-prism{background:conic-gradient(#e0fff7,#5eead4,#22d3ee,#60a5fa,#a78bfa,#e0fff7)}
-  .m02 .myth-prism-out{background:conic-gradient(rgba(94,234,212,0.7),rgba(56,189,248,0.6),rgba(167,139,250,0.55),rgba(94,234,212,0.7))}
-  .m02 .myth-sweep{background:linear-gradient(90deg,transparent,#e0fff7,#22d3ee,transparent)}
-  .m02 .vlabel{background:linear-gradient(90deg,#e0fff7,#5eead4,#22d3ee,#60a5fa,#a78bfa,#e0fff7);
-    filter:drop-shadow(0 0 8px rgba(94,234,212,0.55))}
-
-  .m03 .planet{
-    background:radial-gradient(circle at 35% 30%,#ffffff,#fff7e0 30%,#fbbf24 55%,#7c2d12 100%);
-    box-shadow:
-      0 0 18px rgba(255,255,255,0.55),
-      0 0 50px rgba(251,191,36,0.7),
-      0 0 110px rgba(220,38,38,0.5),
-      inset 0 -6px 16px rgba(124,45,18,0.45),
-      inset 0 4px 10px rgba(255,255,255,0.95);
-    animation:mythHeart 2.4s ease-in-out infinite;
-  }
-  .m03 .atmo{background:radial-gradient(circle,rgba(251,191,36,0.65),rgba(220,38,38,0.3),transparent 70%)}
-  .m03 .otrack{border-color:rgba(251,191,36,0.6)}
-  .m03 .lring{border-color:rgba(251,191,36,0.75)}
-  .m03 .orbiter{border-color:rgba(251,191,36,0.9);box-shadow:0 0 10px rgba(251,191,36,0.5)}
-  .m03 .myth-prism{background:conic-gradient(#fff7e0,#fbbf24,#dc2626,#fbbf24,#fff7e0);animation:mythSpin 3.5s linear infinite}
-  .m03 .myth-prism-out{background:conic-gradient(rgba(251,191,36,0.7),rgba(220,38,38,0.6),rgba(251,191,36,0.7))}
-  .m03 .myth-sweep{background:linear-gradient(90deg,transparent,#fff7e0,#dc2626,transparent);animation:mythSweep 3s linear infinite}
-  .m03 .vlabel{background:linear-gradient(90deg,#fff7e0,#fbbf24,#dc2626,#fbbf24,#fff7e0);
-    filter:drop-shadow(0 0 8px rgba(251,191,36,0.55))}
-
-  .footer{
-    max-width:1480px;margin:36px auto 0;padding:18px;
-    border-top:1px solid var(--tint);
-    color:var(--t3);font-size:0.75rem;text-align:center;
-    position:relative;z-index:1;
-  }
+  /* Mythic = base + official legendary layers + two extra official-looking overlays. */
+  .mythic .legendary-aura{width:190px;height:190px;filter:blur(16px);opacity:.75}
+  .mythic .myth-ring{position:absolute;width:142px;height:142px;border-radius:50%;background:conic-gradient(#fff,#e879f9,#a78bfa,#60a5fa,#fff);-webkit-mask:radial-gradient(circle,transparent 62%,#000 66%);mask:radial-gradient(circle,transparent 62%,#000 66%);animation:auraSpin 5s linear infinite;z-index:8}
+  .mythic .myth-sweep{position:absolute;width:130px;height:1px;top:50%;left:50%;transform-origin:0 0;background:linear-gradient(90deg,transparent,#fff,#e879f9,transparent);animation:legSweep 3.8s linear infinite;z-index:9}
+  .prism .planet{background:radial-gradient(circle at 35% 30%,#fff,#fff1fb 25%,#f0abfc 55%,#4c1d95);box-shadow:0 0 90px rgba(232,121,249,.65),0 0 190px rgba(96,165,250,.35),inset 0 0 46px rgba(255,255,255,.42)!important}
+  .prism .atmo{background:radial-gradient(circle,rgba(232,121,249,.65),rgba(96,165,250,.25),transparent 70%)!important}
+  .prism .legendary-aura{background:conic-gradient(#fff,#f0abfc,#e879f9,#a78bfa,#60a5fa,#fff)}
+  .prism .legendary-sweep{background:linear-gradient(90deg,transparent,#fff,#e879f9,transparent)}
+  .prism .legendary-particle{background:#fff;box-shadow:0 0 9px #e879f9}
+  .prism .vlabel{background:linear-gradient(90deg,#fff,#f0abfc,#e879f9,#a78bfa,#60a5fa,#fff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:txtFlow 4.5s ease-in-out infinite}
+  .footer{margin-top:36px;padding:18px;border-top:1px solid var(--tint);color:var(--t3);font-size:.75rem;text-align:center}
 </style>
 </head>
 <body>
-
-<header class="page-head">
-  <h1>// ORBIT VARIANTS · v4</h1>
-  <p>Common tier: same recipe as the live INDIGO/PINK/CYAN/GOLD orbs (rings expand outward, atmosphere pulses, three orbiters glide along the dashed track). Mythic tier: one above LEGENDARY — adds spinning prism rings, cross-axis sweep, and sparkles on the same base.</p>
+<header>
+  <h1>// ORBIT VARIANT PREVIEWS</h1>
+  <p>These follow the real app contract. Common skins only change <code>grad/c/glow</code>. Legendary uses the existing official layers: <code>legendary-aura</code>, <code>legendary-sweep</code>, and particles. Mythic is one tier above legendary but still keeps the same base geometry.</p>
 </header>
 
-<div class="section-h">
-  <h2>// COMMON TIER <span>same as INDIGO / PINK / CYAN / GOLD</span></h2>
-  <span class="pill pill-common">10 SKINS</span>
-</div>
-
+<div class="section-h"><h2>// COMMON <span>same base as normal variants</span></h2><span>6 samples</span></div>
 <section class="grid">
-
-  <article class="col c01">
-    <div class="col-head"><span class="lbl">ORBIT 01</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div>
-      <div class="orbiter o2">M</div>
-      <div class="orbiter o3">R</div>
-    </div>
-    <div class="vlabel">CYAN</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">cyan · teal</div>
-    <div class="tier tier-common">COMMON</div>
-  </article>
-
-  <article class="col c02">
-    <div class="col-head"><span class="lbl">ORBIT 02</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-    </div>
-    <div class="vlabel">VIOLET</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">violet · indigo</div>
-    <div class="tier tier-common">COMMON</div>
-  </article>
-
-  <article class="col c03">
-    <div class="col-head"><span class="lbl">ORBIT 03</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-    </div>
-    <div class="vlabel">EMBER</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">orange · scarlet</div>
-    <div class="tier tier-common">COMMON</div>
-  </article>
-
-  <article class="col c04">
-    <div class="col-head"><span class="lbl">ORBIT 04</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-    </div>
-    <div class="vlabel">FROST</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">sky · ice</div>
-    <div class="tier tier-common">COMMON</div>
-  </article>
-
-  <article class="col c05">
-    <div class="col-head"><span class="lbl">ORBIT 05</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-    </div>
-    <div class="vlabel">BLOSSOM</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">rose · pink</div>
-    <div class="tier tier-common">COMMON</div>
-  </article>
-
-  <article class="col c06">
-    <div class="col-head"><span class="lbl">ORBIT 06</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-    </div>
-    <div class="vlabel">FERN</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">lime · moss</div>
-    <div class="tier tier-common">COMMON</div>
-  </article>
-
-  <article class="col c07">
-    <div class="col-head"><span class="lbl">ORBIT 07</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-    </div>
-    <div class="vlabel">AZURE</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">electric blue</div>
-    <div class="tier tier-common">COMMON</div>
-  </article>
-
-  <article class="col c08">
-    <div class="col-head"><span class="lbl">ORBIT 08</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-    </div>
-    <div class="vlabel">RUBY</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">deep red</div>
-    <div class="tier tier-common">COMMON</div>
-  </article>
-
-  <article class="col c09">
-    <div class="col-head"><span class="lbl">ORBIT 09</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-    </div>
-    <div class="vlabel">JADE</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">emerald · mint</div>
-    <div class="tier tier-common">COMMON</div>
-  </article>
-
-  <article class="col c10">
-    <div class="col-head"><span class="lbl">ORBIT 10</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-    </div>
-    <div class="vlabel">AMBER</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">amber · honey</div>
-    <div class="tier tier-common">COMMON</div>
-  </article>
-
+  <article class="card"><div class="card-head"><b>COMMON</b><span>CYAN</span></div><div class="orb-slide skin cyan"><div class="orb-wrap"><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">CYAN</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">only grad/c/glow changed</div><div class="tier common">COMMON</div></article>
+  <article class="card"><div class="card-head"><b>COMMON</b><span>VIOLET</span></div><div class="orb-slide skin violet"><div class="orb-wrap"><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">VIOLET</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">same base recipe</div><div class="tier common">COMMON</div></article>
+  <article class="card"><div class="card-head"><b>COMMON</b><span>EMBER</span></div><div class="orb-slide skin ember"><div class="orb-wrap"><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">EMBER</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">same base recipe</div><div class="tier common">COMMON</div></article>
+  <article class="card"><div class="card-head"><b>COMMON</b><span>FROST</span></div><div class="orb-slide skin frost"><div class="orb-wrap"><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">FROST</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">same base recipe</div><div class="tier common">COMMON</div></article>
+  <article class="card"><div class="card-head"><b>COMMON</b><span>BLOSSOM</span></div><div class="orb-slide skin rose"><div class="orb-wrap"><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">BLOSSOM</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">same base recipe</div><div class="tier common">COMMON</div></article>
+  <article class="card"><div class="card-head"><b>COMMON</b><span>FERN</span></div><div class="orb-slide skin fern"><div class="orb-wrap"><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">FERN</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">same base recipe</div><div class="tier common">COMMON</div></article>
 </section>
 
-<div class="section-h">
-  <h2>// MYTHIC TIER <span>one above LEGENDARY</span></h2>
-  <span class="pill pill-mythic">3 SAMPLE SKINS</span>
-</div>
-
+<div class="section-h"><h2>// LEGENDARY <span>official legendary layers</span></h2><span>2 samples</span></div>
 <section class="grid">
-
-  <article class="col myth m01">
-    <div class="col-head"><span class="lbl">MYTHIC 01</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="myth-prism-out"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="myth-prism"></div>
-      <div class="myth-sweep"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-      <div class="myth-spark"    style="top:18%;left:80%"></div>
-      <div class="myth-spark s2" style="top:78%;left:24%"></div>
-      <div class="myth-spark s3" style="top:50%;left:92%"></div>
-    </div>
-    <div class="vlabel">PRISM</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">pink · violet · azure prism</div>
-    <div class="tier tier-mythic">✦ MYTHIC</div>
-  </article>
-
-  <article class="col myth m02">
-    <div class="col-head"><span class="lbl">MYTHIC 02</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="myth-prism-out"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="myth-prism"></div>
-      <div class="myth-sweep"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-      <div class="myth-spark"    style="top:22%;left:30%"></div>
-      <div class="myth-spark s2" style="top:72%;left:78%"></div>
-      <div class="myth-spark s3" style="top:50%;left:14%"></div>
-    </div>
-    <div class="vlabel">CELESTIAL</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">teal · sky · violet</div>
-    <div class="tier tier-mythic">✦ MYTHIC</div>
-  </article>
-
-  <article class="col myth m03">
-    <div class="col-head"><span class="lbl">MYTHIC 03</span><span>LIVE · 3 MEMBERS</span></div>
-    <div class="stage">
-      <div class="otrack"></div>
-      <div class="myth-prism-out"></div>
-      <div class="lring"></div><div class="lring r2"></div><div class="lring r3"></div>
-      <div class="atmo"></div>
-      <div class="myth-prism"></div>
-      <div class="myth-sweep"></div>
-      <div class="planet"></div>
-      <div class="orbiter">A</div><div class="orbiter o2">M</div><div class="orbiter o3">R</div>
-      <div class="myth-spark"    style="top:18%;left:55%"></div>
-      <div class="myth-spark s2" style="top:75%;left:25%"></div>
-      <div class="myth-spark s3" style="top:80%;left:78%"></div>
-    </div>
-    <div class="vlabel">PHOENIX</div>
-    <div class="vstatus">CONNECTED · 02:14</div>
-    <div class="meta">amber · scarlet · gold heart</div>
-    <div class="tier tier-mythic">✦ MYTHIC</div>
-  </article>
-
+  <article class="card"><div class="card-head"><b>LEGENDARY</b><span>INFERNO+</span></div><div class="orb-slide legendary inferno2"><div class="orb-wrap"><div class="legendary-aura"></div><div class="legendary-sweep"></div><div class="legendary-particle lp1"></div><div class="legendary-particle lp2"></div><div class="legendary-particle lp3"></div><div class="legendary-particle lp4"></div><div class="legendary-particle lp5"></div><div class="legendary-particle lp6"></div><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">INFERNO+</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">Inferno family, sharper label and aura</div><div class="tier legend">★ LEGENDARY</div></article>
+  <article class="card"><div class="card-head"><b>LEGENDARY</b><span>BOREALIS</span></div><div class="orb-slide legendary borealis"><div class="orb-wrap"><div class="legendary-aura"></div><div class="legendary-sweep"></div><div class="legendary-particle lp1"></div><div class="legendary-particle lp2"></div><div class="legendary-particle lp3"></div><div class="legendary-particle lp4"></div><div class="legendary-particle lp5"></div><div class="legendary-particle lp6"></div><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">BOREALIS</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">Northern lights, built on official layers</div><div class="tier legend">★ LEGENDARY</div></article>
 </section>
 
-<footer class="footer">
-  10 common · 3 mythic · ring/orbit/atmo geometry mirrors the live recipe
-</footer>
+<div class="section-h"><h2>// MYTHIC <span>above legendary, still same base</span></h2><span>1 sample</span></div>
+<section class="grid">
+  <article class="card"><div class="card-head"><b>MYTHIC</b><span>PRISM</span></div><div class="orb-slide legendary mythic prism"><div class="orb-wrap"><div class="legendary-aura"></div><div class="myth-ring"></div><div class="myth-sweep"></div><div class="legendary-sweep"></div><div class="legendary-particle lp1"></div><div class="legendary-particle lp2"></div><div class="legendary-particle lp3"></div><div class="legendary-particle lp4"></div><div class="legendary-particle lp5"></div><div class="legendary-particle lp6"></div><div class="atmo"></div><div class="lring"></div><div class="lring"></div><div class="lring"></div><div class="otrack"></div><div class="planet"></div><div class="orbiter"><div class="orb-av">A</div></div><div class="orbiter o2"><div class="orb-av">M</div></div><div class="orbiter o3"><div class="orb-av">R</div></div></div><div class="vlabel">PRISM</div><div class="vstatus">CONNECTED · 02:14</div></div><div class="meta">One tier above legendary, but keeps the live geometry</div><div class="tier myth">✦ MYTHIC</div></article>
+</section>
 
+<footer class="footer">Preview only · not wired into the app</footer>
 </body>
 </html>
