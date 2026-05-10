@@ -222,6 +222,8 @@
 
           <button class="ob danger" id="btnEnd" title="Disconnect" style="display:none"><i data-lucide="phone-off" style="width:14px;height:14px"></i></button>
 
+          <button class="ob" id="btnOverlay" title="Game overlay (Picture-in-Picture)" style="display:none"><i data-lucide="picture-in-picture-2" style="width:14px;height:14px"></i></button>
+
         </div>
 
         <div class="orb-empty-actions" id="orbEmptyActions" style="display:none">
@@ -2149,6 +2151,34 @@
             <label class="sm-label">PUSH-TO-TALK KEY</label>
 
             <button class="sm-input" id="vsPttKey" type="button" style="text-align:center;cursor:pointer">Click and press a key...</button>
+
+          </div>
+
+          <div class="sm-field">
+
+            <label class="sm-label">SHORTCUTS</label>
+
+            <div class="vs-shortcut-row">
+
+              <div class="vs-shortcut-label">Toggle mute</div>
+
+              <button class="sm-input vs-shortcut-key" id="vsMuteKey" type="button" data-shortcut="mute">Click and press a combo...</button>
+
+              <button class="vs-shortcut-clear" id="vsMuteClear" type="button" title="Clear">×</button>
+
+            </div>
+
+            <div class="vs-shortcut-row" style="margin-top:6px">
+
+              <div class="vs-shortcut-label">Toggle mute + deafen</div>
+
+              <button class="sm-input vs-shortcut-key" id="vsDeafenKey" type="button" data-shortcut="deafen">Click and press a combo...</button>
+
+              <button class="vs-shortcut-clear" id="vsDeafenClear" type="button" title="Clear">×</button>
+
+            </div>
+
+            <div class="sm-hint" style="margin-top:6px">Shortcuts work only while this tab is focused. To use them while a game is fullscreen, install the desktop app.</div>
 
           </div>
 

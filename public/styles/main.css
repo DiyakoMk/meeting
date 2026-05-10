@@ -2338,11 +2338,67 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .vs-mode-btn.active{color:var(--t1);background:rgba(185,28,74,0.2);border-color:var(--brand-glow)}
 
-.vs-toggle-row{display:flex;flex-direction:column;gap:6px}
+/* Modern pill-style toggle: hidden checkbox + 38x22 track + sliding
+ * thumb. The original native checkbox stays in the DOM so every
+ * existing change-listener keeps working. */
+.vs-toggle-row{display:flex;flex-direction:column;gap:8px}
+.vs-toggle{
+  position:relative;display:flex;align-items:center;gap:12px;
+  font-size:0.78rem;color:var(--t1);cursor:pointer;
+  padding:4px 2px;user-select:none;
+}
+.vs-toggle input[type=checkbox]{
+  position:absolute;opacity:0;pointer-events:none;width:0;height:0;
+}
+.vs-toggle::before{
+  content:"";flex-shrink:0;
+  width:38px;height:22px;border-radius:11px;
+  background:var(--tint-4);
+  border:1px solid var(--tint-5);
+  transition:background 0.18s,border-color 0.18s;
+}
+.vs-toggle::after{
+  content:"";position:absolute;left:5px;top:50%;
+  width:16px;height:16px;border-radius:50%;
+  background:#f5f5f7;
+  box-shadow:0 1px 3px rgba(0,0,0,0.45);
+  transform:translateY(-50%);
+  transition:left 0.18s ease, background 0.18s;
+}
+.vs-toggle:has(input:checked)::before{
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  border-color:transparent;
+}
+.vs-toggle:has(input:checked)::after{ left:19px; }
+.vs-toggle:hover::before{ filter:brightness(1.08); }
 
-.vs-toggle{display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--t1);cursor:pointer}
-
-.vs-toggle input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px}
+/* Hotkey rows. Each row: a label on the left, the recording button
+ * (full-width), and a small clear button on the right. */
+.vs-shortcut-row{
+  display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;
+}
+.vs-shortcut-label{
+  font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.65rem;letter-spacing:1.2px;color:var(--t2);
+  white-space:nowrap;
+}
+.vs-shortcut-key{
+  text-align:center;cursor:pointer;font-family:'Space Mono','Vazirmatn',monospace;
+  font-size:0.7rem;letter-spacing:1.4px;
+}
+.vs-shortcut-key.recording{
+  color:var(--accent);border-color:var(--ag);
+  background:var(--brand-glow-soft);
+}
+.vs-shortcut-clear{
+  width:28px;height:28px;border-radius:6px;
+  background:var(--tint-3);border:1px solid var(--tint-4);
+  color:var(--t2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;line-height:1;
+  transition:background 0.15s,color 0.15s;
+}
+.vs-shortcut-clear:hover{background:var(--tint-5);color:var(--t1)}
 
 .ec-tab{padding:6px 9px;font-size:1rem;border-radius:8px;cursor:pointer;flex-shrink:0;transition:background 0.15s,opacity 0.15s;opacity:0.55;line-height:1}
 
