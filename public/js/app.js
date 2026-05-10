@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-b (preview modal polish; aurora text white-sweep slow; orb slider drift fix)');
+  console.log('[orblood] client build 2026-05-10-d (drop COVER STYLE + EMBLEM HALO from customize; preview voice orb mirrors world view)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -11177,10 +11177,6 @@
 
     renderRow('serverPin');
 
-    renderRow('serverCover');
-
-    renderRow('serverEmblem');
-
     // Shop tab.
 
     const shopList = document.getElementById('czShopList');
@@ -11499,9 +11495,9 @@
 
           + '</div>'
 
-          + '<div class="pp-row pp-row-vc ws-cat-vc '+surfaceCls('voiceChannel')+'">'
+          + '<div class="pp-row pp-row-vc ws-cat-vc style-aurora '+surfaceCls('voiceChannel')+'">'
 
-            + '<div class="ws-cat-vc-orb pp-vc-orb '+surfaceCls('orbit')+'"></div>'
+            + '<div class="ws-cat-vc-orb pp-vc-orb"></div>'
 
             + '<div class="ws-cat-vc-info">'
 
