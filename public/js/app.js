@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-m (browser system notifications via Web Notifications API; in-app DM/channel toasts removed)');
+  console.log('[orblood] client build 2026-05-10-n (notification icon = sender avatar; favicon as badge)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -8509,11 +8509,29 @@
 
           : 'New direct message';
 
+        // Use the sender's uploaded avatar URL if we have one. The
+
+        // Notifications API only accepts a real image URL, so for users
+
+        // whose avatar is just a gradient + initial we fall back to the
+
+        // app icon (which carries the ORBLOOD brand). The favicon is
+
+        // used as the small "badge" so the OS shows our brand even when
+
+        // the icon is the contact's photo.
+
+        const senderAvatar = (conversations[k] && conversations[k].avImage) || null;
+
         const fired = showBrowserNotification({
 
           title: senderName,
 
           body, tag: 'dm:'+k,
+
+          icon:  senderAvatar || '/favicon.ico',
+
+          badge: '/favicon.ico',
 
           onclick: () => {
 
@@ -8899,9 +8917,35 @@
 
           : (isMention ? 'You were mentioned' : 'New message');
 
+        // Resolve the sender's avatar across known conversations so the
+
+        // notification shows their face when they have one. Falls back
+
+        // to the app icon (favicon) when no image is available.
+
+        const senderAv = (() => {
+
+          const a = (typeof resolveUserAvatar === 'function') ? resolveUserAvatar(message.user || '') : null;
+
+          if (a && a.isImage){
+
+            const m = (a.bg || '').match(/url\(([^)]+)\)/);
+
+            if (m && m[1]) return m[1].replace(/^['"]|['"]$/g,'');
+
+          }
+
+          return null;
+
+        })();
+
         const fired = showBrowserNotification({
 
           title, body, tag: 'ch:'+channelId,
+
+          icon:  senderAv || '/favicon.ico',
+
+          badge: '/favicon.ico',
 
           onclick: () => {
 
