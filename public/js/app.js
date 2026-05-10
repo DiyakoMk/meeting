@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-o (DM history preserved across WS reconnect; TRANSMITTING TO eyebrow removed)');
+  console.log('[orblood] client build 2026-05-10-p (presence event no longer rebuilds DM transcript; aurora+marble themes also drop the wrap chrome)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -8455,13 +8455,39 @@
 
     if (typeof renderDmList === 'function') renderDmList();
 
+    // For the open thread we only need to repaint the small subtitle —
+
+    // calling renderConversation() here would nuke the whole transcript
+
+    // (including any in-flight optimistic bubble waiting on a slow
+
+    // network round-trip), which is exactly the "page reloaded after I
+
+    // sent" flicker users hit. Keep the bubbles untouched and just
+
+    // rewrite the "ONLINE / OFFLINE" line in the header.
+
     if (currentConversation && conversations[currentConversation] &&
 
-        conversations[currentConversation].name === name &&
+        conversations[currentConversation].name === name){
 
-        typeof renderConversation === 'function'){
+      const conv = conversations[currentConversation];
 
-      renderConversation();
+      const sub = document.getElementById('dmHeadSubText');
+
+      if (sub){
+
+        sub.textContent = conv.isSaved
+
+          ? 'PERSONAL NOTES · ONLY YOU'
+
+          : (conv.online
+
+              ? 'ONLINE · ENCRYPTED CHANNEL'
+
+              : 'OFFLINE · LAST SEEN '+(conv.lastSeen || 'NOW').toUpperCase());
+
+      }
 
     }
 
@@ -8536,6 +8562,14 @@
     bumpDmList(k);
 
     if (typeof renderDmList === 'function') renderDmList();
+
+    // Repaint the open thread. renderConversation()'s fast-path will
+
+    // detect this is just an append and add a single bubble in place,
+
+    // leaving any optimistic outgoing bubble (the clock icon during a
+
+    // slow send) untouched.
 
     if (currentConversation === k && typeof renderConversation === 'function') renderConversation();
 
