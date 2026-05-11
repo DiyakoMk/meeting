@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-j (pro voice chain on call audio: highpass+lowpass+compressor+AGC+adaptive gate; live strength updates without re-acquire; quick access trimmed to 3 skeletons)');
+  console.log('[orblood] client build 2026-05-11-i (skeletons for friends + quick access; orb-only pulse during load instead of outer ring)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
