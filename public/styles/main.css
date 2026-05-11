@@ -297,6 +297,39 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .orb-av.speaking{border-color:var(--success)!important;box-shadow:0 0 16px rgba(34,197,94,0.6)!important}
 
+/* While the WebRTC peer connection to this user is still negotiating,
+ * paint a three-dot loader on top of the avatar (and dim the avatar a
+ * touch so the dots read clearly). The CSS-only animation cycles
+ * three dots staggered 0/150/300 ms. */
+.orb-av[data-peer-state="connecting"],
+.orb-av[data-peer-state="reconnecting"]{
+  opacity:0.55;
+  border-color:var(--warn)!important;
+  box-shadow:0 0 12px rgba(245,158,11,0.5)!important;
+}
+.orb-av[data-peer-state="failed"]{
+  opacity:0.55;
+  border-color:var(--danger)!important;
+  box-shadow:0 0 12px rgba(239,68,68,0.55)!important;
+}
+.orb-av-dots{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;gap:3px;
+  pointer-events:none;
+}
+.orb-av-dots span{
+  width:5px;height:5px;border-radius:50%;
+  background:#fff;
+  opacity:0.35;
+  animation:orb-av-dots-bounce 1s ease-in-out infinite;
+}
+.orb-av-dots span:nth-child(2){animation-delay:0.15s}
+.orb-av-dots span:nth-child(3){animation-delay:0.3s}
+@keyframes orb-av-dots-bounce{
+  0%,80%,100%{transform:translateY(0);opacity:0.35}
+  40%{transform:translateY(-3px);opacity:1}
+}
+
 .orb-slide.connected .planet{box-shadow:0 0 60px rgba(34,197,94,0.5),0 0 120px rgba(34,197,94,0.2),inset 0 0 40px var(--tint-7)}
 
 .orb-slide.marked .planet{box-shadow:0 0 70px rgba(245,158,11,0.4),0 0 130px rgba(245,158,11,0.18),inset 0 0 40px rgba(255,255,255,0.22)}

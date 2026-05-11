@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-10-t (voice: routing keys set immediately so early peers are not dropped; replaced misleading instant Connected toast with Joining)');
+  console.log('[orblood] client build 2026-05-11-a (voice: race-free join via voiceJoin members; pendingIce queue; connecting-dots overlay on avatar)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -951,7 +951,31 @@
 
         }
 
-        orbiterHtml += '<div class="orbiter" data-orb-idx="'+idx+'" style="animation-delay:'+(-idx*5)+'s'+(u?'':';opacity:0')+'"><div class="orb-av" style="border-color:'+data.avBorder+';box-shadow:0 0 12px '+data.color+'0.4)'+avBgExtra+'">'+avInner+'</div></div>';
+        // Tag the avatar with the WebRTC peer connection state so the
+
+        // overlay (three dots while connecting, red ring when failed)
+
+        // can attach via CSS — much lighter than re-rendering per state
+
+        // transition.
+
+        let avStateAttr = '';
+
+        if (u && u !== selfProfile.name && inVoice && connectedChannel === ch){
+
+          const pst = (typeof voice !== 'undefined' && voice.peerState) ? voice.peerState(u) : null;
+
+          if (pst && pst !== 'connected') avStateAttr = ' data-peer-state="'+pst+'"';
+
+        }
+
+        const connectingDots = avStateAttr.includes('connecting') || avStateAttr.includes('reconnecting')
+
+          ? '<span class="orb-av-dots" aria-hidden="true"><span></span><span></span><span></span></span>'
+
+          : '';
+
+        orbiterHtml += '<div class="orbiter" data-orb-idx="'+idx+'" style="animation-delay:'+(-idx*5)+'s'+(u?'':';opacity:0')+'"><div class="orb-av"'+avStateAttr+' style="border-color:'+data.avBorder+';box-shadow:0 0 12px '+data.color+'0.4)'+avBgExtra+'">'+avInner+connectingDots+'</div></div>';
 
       }
 
@@ -1079,19 +1103,81 @@
 
           orb.style.opacity = '';
 
+          // Sync the peer-state attribute so CSS paints the connecting
+
+          // dots / warning ring without re-rendering the slide.
+
+          if (av){
+
+            let pst = null;
+
+            if (u !== selfProfile.name && isConn && typeof voice !== 'undefined' && voice.peerState){
+
+              const p = voice.peerState(u);
+
+              if (p && p !== 'connected') pst = p;
+
+            }
+
+            if (pst) av.setAttribute('data-peer-state', pst);
+
+            else     av.removeAttribute('data-peer-state');
+
+            const hasDots = av.querySelector('.orb-av-dots');
+
+            const wantsDots = pst === 'connecting' || pst === 'reconnecting';
+
+            if (wantsDots && !hasDots){
+
+              const span = document.createElement('span');
+
+              span.className = 'orb-av-dots';
+
+              span.setAttribute('aria-hidden','true');
+
+              span.innerHTML = '<span></span><span></span><span></span>';
+
+              av.appendChild(span);
+
+            } else if (!wantsDots && hasDots){
+
+              hasDots.remove();
+
+            }
+
+          }
+
           if (av){
 
             const aRes = resolveUserAvatar(u);
 
+            // Update only the first text node so the .orb-av-dots
+
+            // overlay sibling stays in place. textContent='' would
+
+            // wipe it.
+
+            let firstText = null;
+
+            for (const n of av.childNodes){
+
+              if (n.nodeType === Node.TEXT_NODE){ firstText = n; break; }
+
+            }
+
             if (aRes.isImage){
 
-              av.textContent = '';
+              if (firstText) firstText.nodeValue = '';
+
+              else av.insertBefore(document.createTextNode(''), av.firstChild);
 
               av.style.background = aRes.bg;
 
             } else {
 
-              if (av.textContent !== aRes.text) av.textContent = aRes.text;
+              if (firstText){ if (firstText.nodeValue !== aRes.text) firstText.nodeValue = aRes.text; }
+
+              else av.insertBefore(document.createTextNode(aRes.text || ''), av.firstChild);
 
               av.style.background = '';
 
@@ -1706,6 +1792,20 @@
           updateOrbStates();
 
           if (typeof renderVoiceUsers === 'function' && voiceUsersSidebarOpen) renderVoiceUsers();
+
+          // Forward the authoritative member list to voice so it can
+
+          // initiate connections to peers who were already in the room
+
+          // before we joined. Without this we relied on the next
+
+          // voice:join broadcast which never fires for the joiner.
+
+          if (Array.isArray(r.members) && typeof voice !== 'undefined' && voice.onPeerJoined){
+
+            voice.onPeerJoined(sid, ch, r.members);
+
+          }
 
         }
 
@@ -9671,6 +9771,8 @@
 
         _recomputeVoiceStatus();
 
+        _refreshConnectingDots();
+
       };
 
       pc.onconnectionstatechange = () => {
@@ -9681,6 +9783,8 @@
 
         _recomputeVoiceStatus();
 
+        _refreshConnectingDots();
+
       };
 
       if (localStream){
@@ -9689,11 +9793,69 @@
 
       }
 
-      const rec = { pc, audioEl, polite: false, iceState: 'new', connState: 'new', reconnectAttempts: 0, rtt: null };
+      const rec = {
+
+        pc, audioEl, polite: false,
+
+        iceState: 'new', connState: 'new',
+
+        reconnectAttempts: 0, rtt: null,
+
+        // ICE candidates that arrive before the remote SDP has been
+
+        // applied (very common with our signalling order); we queue
+
+        // them on the rec and flush after setRemoteDescription.
+
+        pendingIce: [],
+
+        hasRemoteDesc: false,
+
+      };
 
       peers.set(peerName, rec);
 
+      _refreshConnectingDots();
+
       return rec;
+
+    }
+
+
+    // Paints/removes the small "…" three-dot spinner on the carousel
+
+    // avatars for peers we're still negotiating with. The spinner sits
+
+    // on top of the planet so the user sees who's still loading without
+
+    // staring at the status pill.
+
+    function _refreshConnectingDots(){
+
+      if (typeof updateOrbStates === 'function') updateOrbStates();
+
+    }
+
+
+    // Tell callers (renderers) whether a given peer is still negotiating
+
+    // so they can paint the connecting-dots indicator. Exposed via the
+
+    // returned interface as `voice.peerState(name)`.
+
+    function _peerState(peerName){
+
+      const rec = peers.get(peerName);
+
+      if (!rec) return null;
+
+      if (rec.iceState === 'connected' || rec.iceState === 'completed') return 'connected';
+
+      if (rec.iceState === 'failed')        return 'failed';
+
+      if (rec.iceState === 'disconnected')  return 'reconnecting';
+
+      return 'connecting';
 
     }
 
@@ -9900,15 +10062,51 @@
 
       }
 
-      await rec.pc.setRemoteDescription(sdp);
+      try {
+
+        await rec.pc.setRemoteDescription(sdp);
+
+      } catch(e){
+
+        console.warn('[voice] setRemoteDescription failed for', peerName, e && e.message);
+
+        return;
+
+      }
+
+      rec.hasRemoteDesc = true;
+
+      // Flush any ICE candidates that arrived before the SDP did.
+
+      if (rec.pendingIce && rec.pendingIce.length){
+
+        for (const c of rec.pendingIce){
+
+          try { await rec.pc.addIceCandidate(c); }
+
+          catch(e){ console.warn('[voice] queued addIceCandidate failed:', e && e.message); }
+
+        }
+
+        rec.pendingIce.length = 0;
+
+      }
 
       if (sdp.type === 'offer'){
 
-        const answer = await rec.pc.createAnswer();
+        try {
 
-        await rec.pc.setLocalDescription(answer);
+          const answer = await rec.pc.createAnswer();
 
-        _signal(peerName, { kind:'sdp', sdp: rec.pc.localDescription });
+          await rec.pc.setLocalDescription(answer);
+
+          _signal(peerName, { kind:'sdp', sdp: rec.pc.localDescription });
+
+        } catch(e){
+
+          console.warn('[voice] createAnswer failed:', e && e.message);
+
+        }
 
       }
 
@@ -9922,7 +10120,23 @@
 
       if (!rec) return;
 
-      try { await rec.pc.addIceCandidate(candidate); } catch(_){}
+      // Queue ICE that arrives before remoteDescription — addIceCandidate
+
+      // throws "Cannot add ICE candidate before setRemoteDescription" in
+
+      // Chrome otherwise and the connection silently never completes.
+
+      if (!rec.hasRemoteDesc){
+
+        rec.pendingIce.push(candidate);
+
+        return;
+
+      }
+
+      try { await rec.pc.addIceCandidate(candidate); }
+
+      catch(e){ console.warn('[voice] addIceCandidate failed:', e && e.message); }
 
     }
 
@@ -9936,7 +10150,48 @@
 
       peers.delete(peerName);
 
+      _refreshConnectingDots();
+
     }
+
+
+    // Initiate connections to any member we don't yet have a PC for.
+
+    // "First to join" decides who offers to avoid glare — we use the
+
+    // lexicographic order of display names so it's deterministic on
+
+    // both sides without an extra coordination round.
+
+    function _ensurePeersForMembers(members){
+
+      members.forEach(name => {
+
+        if (name === selfProfile.name) return;
+
+        if (peers.has(name)) return;
+
+        if (selfProfile.name < name){
+
+          _makeOffer(name).catch(e => console.warn('[voice] makeOffer failed:', e && e.message));
+
+        } else {
+
+          newPc(name); // wait for offer
+
+        }
+
+      });
+
+    }
+
+    // Membership snapshot we received while still booting (mic / ICE
+
+    // config not ready). We replay it the moment start() finishes so
+
+    // peers who joined before we were ready still get an offer.
+
+    let _pendingMembers = null;
 
     return {
 
@@ -9963,6 +10218,32 @@
           setVoiceStatus('failed');
 
           return;
+
+        }
+
+        // The localStream just became available. Replay the most recent
+
+        // membership snapshot so any peer who was already in the room
+
+        // gets an offer with the audio track attached, plus retro-fit
+
+        // tracks onto any RTCPeerConnection we created early.
+
+        peers.forEach((rec) => {
+
+          if (localStream && rec.pc && !rec.pc.getSenders().some(s => s.track && s.track.kind === 'audio')){
+
+            localStream.getAudioTracks().forEach(t => rec.pc.addTrack(t, localStream));
+
+          }
+
+        });
+
+        if (_pendingMembers){
+
+          const snap = _pendingMembers; _pendingMembers = null;
+
+          _ensurePeersForMembers(snap);
 
         }
 
@@ -9996,25 +10277,15 @@
 
         if (sid !== serverId || cid !== channelId) return;
 
-        // Initiate connections to anyone in `members` we don't already have a
+        // If we're still in the boot path (no mic yet), buffer this
 
-        // PC for, except ourselves. The "first to join" rule decides who
+        // membership snapshot and replay after start() resolves —
 
-        // makes the offer to avoid glare.
+        // otherwise we'd build PCs without an audio track.
 
-        members.forEach(name => {
+        if (!localStream){ _pendingMembers = members; return; }
 
-          if (name === selfProfile.name) return;
-
-          if (peers.has(name)) return;
-
-          // Deterministic: lexicographically smaller name initiates.
-
-          if (selfProfile.name < name) _makeOffer(name);
-
-          else newPc(name);  // wait for offer
-
-        });
+        _ensurePeersForMembers(members);
 
       },
 
@@ -10031,6 +10302,8 @@
         }
 
       },
+
+      peerState(name){ return _peerState(name); },
 
       handleSignal(msg){
 
