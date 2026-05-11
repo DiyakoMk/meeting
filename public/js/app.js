@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-g (voice: signal routes by name/handle/uid so non-friends in same room can connect)');
+  console.log('[orblood] client build 2026-05-11-h (voice: processing strength sliders + auto mute/deafen during playback; skeleton loaders for home/orbit/DMs)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
