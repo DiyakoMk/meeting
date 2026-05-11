@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-c (voice: noise gate + highpass + compressor; per-channel bitrate (admin); coloured ping; single CONNECTED label)');
+  console.log('[orblood] client build 2026-05-11-d (voice: removed buggy Web Audio chain — relying on browser built-in echo/noise; restores reliable peer connect)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -9862,163 +9862,37 @@
 
     }
 
-    // Build a processed MediaStream from the raw mic, adding a software
-
-    // chain on top of the browser's built-in echo/noise cancellation:
-
-    //  • highpass @ 90Hz to kill keyboard rumble, fan hum, mouth thumps
-
-    //  • DynamicsCompressor to even out close/far speech
-
-    //  • a soft noise gate (downward expander) that drops anything below
-
-    //    the user's chosen threshold to silence — the single biggest
-
-    //    perceived "noise removal" we can do client-side without
-
-    //    shipping a WASM denoiser. Browsers ship NoiseSuppression but
-
-    //    it's tuned conservatively; this gate cleans up what's left.
-
-    let _audioCtx = null;
-
-    function _buildProcessedStream(rawStream){
-
-      try {
-
-        if (!_audioCtx){
-
-          const AC = window.AudioContext || window.webkitAudioContext;
-
-          _audioCtx = new AC({ latencyHint: 'interactive' });
-
-        }
-
-        const src = _audioCtx.createMediaStreamSource(rawStream);
-
-        const highpass = _audioCtx.createBiquadFilter();
-
-        highpass.type = 'highpass';
-
-        highpass.frequency.value = 90;
-
-        const comp = _audioCtx.createDynamicsCompressor();
-
-        comp.threshold.value = -28;
-
-        comp.knee.value      = 18;
-
-        comp.ratio.value     = 3;
-
-        comp.attack.value    = 0.005;
-
-        comp.release.value   = 0.18;
-
-        // Simple noise gate via DynamicsCompressor in expander config
-
-        // isn't supported by the Web Audio API directly, so we use a
-
-        // GainNode driven by a small analyser-based ducker. Cheap and
-
-        // works well enough for voice.
-
-        const gate = _audioCtx.createGain();
-
-        gate.gain.value = 0;
-
-        const analyser = _audioCtx.createAnalyser();
-
-        analyser.fftSize = 512;
-
-        const data = new Uint8Array(analyser.fftSize);
-
-        // Threshold: ~-50dB by default; flips to wider when the user
-
-        // chose lower sensitivity in voiceSettings.
-
-        const sensitivity = (typeof voiceSettings === 'object' && voiceSettings && typeof voiceSettings.sensitivity === 'number')
-
-          ? voiceSettings.sensitivity : -50;
-
-        const thresholdDb = sensitivity;          // dB
-
-        const linThreshold = Math.pow(10, thresholdDb/20);
-
-        function tick(){
-
-          if (!_audioCtx || _audioCtx.state === 'closed') return;
-
-          analyser.getByteTimeDomainData(data);
-
-          // Compute peak amplitude (0..1).
-
-          let peak = 0;
-
-          for (let i=0;i<data.length;i++){
-
-            const v = Math.abs(data[i] - 128) / 128;
-
-            if (v > peak) peak = v;
-
-          }
-
-          const open = peak > linThreshold;
-
-          const target = open ? 1 : 0;
-
-          gate.gain.setTargetAtTime(target, _audioCtx.currentTime, open ? 0.005 : 0.07);
-
-          requestAnimationFrame(tick);
-
-        }
-
-        requestAnimationFrame(tick);
-
-        const dest = _audioCtx.createMediaStreamDestination();
-
-        // Pipe: src → highpass → comp → analyser (for level read) → gate → dest
-
-        src.connect(highpass);
-
-        highpass.connect(comp);
-
-        comp.connect(analyser);
-
-        comp.connect(gate);
-
-        gate.connect(dest);
-
-        // Carry over the original audio track id metadata too.
-
-        const out = dest.stream;
-
-        // Keep a reference to the raw stream so we can stop its tracks
-
-        // when stop()/reconfigureMic teardown runs.
-
-        out._rawStream = rawStream;
-
-        return out;
-
-      } catch(e){
-
-        console.warn('[voice] processed stream build failed, using raw mic:', e && e.message);
-
-        return rawStream;
-
-      }
-
-    }
-
     async function ensureMic(){
 
       if (localStream) return localStream;
 
-      let raw = null;
-
       try {
 
-        raw = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
+        // Rely entirely on the browser's built-in audio pipeline
+
+        // (echoCancellation + noiseSuppression + optional autoGainControl).
+
+        // The earlier custom Web Audio chain (highpass + compressor +
+
+        // analyser-driven gate) introduced a subtle but breaking bug:
+
+        //  • requestAnimationFrame stops firing in background tabs
+
+        //  • the gate starts closed (gain=0) and only opens on the next
+
+        //    rAF after audio arrives
+
+        //  • result: peers couldn't hear each other in many real
+
+        //    sessions, with no visible error.
+
+        // The browser pipeline is well-tuned for voice and battle-tested;
+
+        // we'll revisit a custom DSP path only if/when we ship a desktop
+
+        // build with a real WASM denoiser.
+
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
 
       } catch(e){
 
@@ -10027,8 +9901,6 @@
         throw e;
 
       }
-
-      localStream = _buildProcessedStream(raw);
 
       return localStream;
 
@@ -10047,11 +9919,11 @@
 
       if (!localStream) return false;
 
-      let rawNext = null;
+      let next = null;
 
       try {
 
-        rawNext = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
+        next = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
 
       } catch(e){
 
@@ -10060,8 +9932,6 @@
         return false;
 
       }
-
-      const next = _buildProcessedStream(rawNext);
 
       const newTrack = next.getAudioTracks()[0]; if (!newTrack) return false;
 
@@ -10073,17 +9943,9 @@
 
       });
 
-      // Stop the old raw + processed tracks AFTER swap so there's no
+      // Stop the old tracks AFTER swap so there's no silence window.
 
-      // silence window.
-
-      try {
-
-        if (localStream._rawStream) localStream._rawStream.getTracks().forEach(t => t.stop());
-
-        localStream.getTracks().forEach(t => t.stop());
-
-      } catch(_){}
+      try { localStream.getTracks().forEach(t => t.stop()); } catch(_){}
 
       localStream = next;
 
@@ -10723,15 +10585,7 @@
 
         if (localStream){
 
-          // Tear down both the processed and the raw underlying tracks.
-
-          try {
-
-            if (localStream._rawStream) localStream._rawStream.getTracks().forEach(t => t.stop());
-
-            localStream.getTracks().forEach(t => t.stop());
-
-          } catch(_){}
+          try { localStream.getTracks().forEach(t => t.stop()); } catch(_){}
 
           localStream = null;
 
