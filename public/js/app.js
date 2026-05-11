@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-j (pro voice chain on call audio: highpass+lowpass+compressor+AGC+adaptive gate; live strength updates without re-acquire; quick access trimmed to 3 skeletons)');
+  console.log('[orblood] client build 2026-05-11-k (fix: skeleton loaders never clearing on already-signed-in reload; flip _initialHydrating on all auth entry points)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -11373,7 +11373,21 @@
 
       // friends, marks, blocks). Falls through silently if no API is wired up.
 
-      if (await hydrateFromBackend()){
+      const _ok = await hydrateFromBackend();
+
+      // Whether the API responded or not, the initial load attempt is
+
+      // over. Clearing the flag here is critical — otherwise every
+
+      // render function keeps painting skeletons forever, which is the
+
+      // "home/DMs take ages to load" report. (Worlds didn't suffer
+
+      // because we never gated it on this flag.)
+
+      _initialHydrating = false;
+
+      if (_ok){
 
         if (typeof renderHomeFriends === 'function') renderHomeFriends();
 
@@ -11392,6 +11406,24 @@
         if (typeof renderServerRails === 'function') renderServerRails();
 
         if (typeof updateBadges === 'function') updateBadges();
+
+      } else {
+
+        // No backend / offline: clear the skeletons too so the user sees
+
+        // the real empty-state copy instead of shimmer bars forever.
+
+        if (typeof renderHomeMarkedOrbits === 'function') renderHomeMarkedOrbits();
+
+        if (typeof renderHomeMyServers   === 'function') renderHomeMyServers();
+
+        if (typeof renderDmList          === 'function') renderDmList();
+
+        if (typeof renderMarkedPanel     === 'function') renderMarkedPanel();
+
+        if (typeof renderOrbSlides       === 'function') renderOrbSlides();
+
+        if (typeof updateConnBanner      === 'function') updateConnBanner();
 
       }
 
@@ -11485,6 +11517,24 @@
 
       await runSplash('PROVISIONING YOUR ORBIT', 1500);
 
+      // Local-only signup (no backend) — nothing to hydrate, but the
+
+      // flag still needs to flip so home/DM skeletons clear.
+
+      _initialHydrating = false;
+
+      if (typeof renderHomeMarkedOrbits === 'function') renderHomeMarkedOrbits();
+
+      if (typeof renderHomeMyServers   === 'function') renderHomeMyServers();
+
+      if (typeof renderDmList          === 'function') renderDmList();
+
+      if (typeof renderMarkedPanel     === 'function') renderMarkedPanel();
+
+      if (typeof renderOrbSlides       === 'function') renderOrbSlides();
+
+      if (typeof updateConnBanner      === 'function') updateConnBanner();
+
       showToast('Welcome aboard, '+name,'success');
 
       return;
@@ -11544,6 +11594,20 @@
     hideAuthModal();
 
     await runSplash('LOADING YOUR TRANSMISSIONS', 1100);
+
+    _initialHydrating = false;
+
+    if (typeof renderHomeMarkedOrbits === 'function') renderHomeMarkedOrbits();
+
+    if (typeof renderHomeMyServers   === 'function') renderHomeMyServers();
+
+    if (typeof renderDmList          === 'function') renderDmList();
+
+    if (typeof renderMarkedPanel     === 'function') renderMarkedPanel();
+
+    if (typeof renderOrbSlides       === 'function') renderOrbSlides();
+
+    if (typeof updateConnBanner      === 'function') updateConnBanner();
 
     showToast('Signed in as '+user.name,'success');
 
