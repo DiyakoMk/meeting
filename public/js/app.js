@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-h (voice: processing strength sliders + auto mute/deafen during playback; skeleton loaders for home/orbit/DMs)');
+  console.log('[orblood] client build 2026-05-11-i (skeletons for friends + quick access; orb-only pulse during load instead of outer ring)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -4495,6 +4495,26 @@
 
     const row = document.getElementById('homeFriendsRow');
 
+    if (_initialHydrating){
+
+      // ADD bubble first (always usable), then 4 shimmer placeholders.
+
+      let sk = '<div class="friend-bubble add" id="addFriendBtn"><div class="friend-bubble-av"><i data-lucide="user-plus" style="width:18px;height:18px"></i></div><div class="friend-bubble-name">ADD</div></div>';
+
+      for (let i=0;i<4;i++){
+
+        sk += '<div class="sk-friend"><span class="sk sk-friend-av"></span><span class="sk sk-line sk-l-w70"></span></div>';
+
+      }
+
+      row.innerHTML = sk;
+
+      if (typeof refreshIcons === 'function') refreshIcons();
+
+      return;
+
+    }
+
     const inVoiceUsers = inVoice && connectedChannel ? channelData[connectedChannel].users : [];
 
     // Pull from the unified friends database. Show online friends first, then
@@ -4786,6 +4806,22 @@
     const list = document.getElementById('markedPanelList');
 
     if (!list) return;
+
+    if (_initialHydrating){
+
+      let sk = '';
+
+      for (let i=0;i<4;i++){
+
+        sk += '<div class="sk-mp-row"><span class="sk sk-mp-av"></span><span class="sk sk-line sk-l-w70"></span></div>';
+
+      }
+
+      list.innerHTML = sk;
+
+      return;
+
+    }
 
     document.querySelectorAll('.mp-tab').forEach(t => t.classList.toggle('active', t.dataset.mpTab === markedPanelTab));
 
