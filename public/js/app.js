@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-f (voice: join works from any context — resolve owner server from channel id; ping only while in a voice channel)');
+  console.log('[orblood] client build 2026-05-11-g (voice: signal routes by name/handle/uid so non-friends in same room can connect)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -10432,19 +10432,69 @@
 
     function _signal(peerName, signal){
 
-      // peerName is the *display name* — server will route to that user's
+      // peerName is the *display name* of the peer in this voice room.
 
-      // sockets. Backend voice-signal uses uid; for simplicity we relay by
+      // The backend signal relay routes by user id; we don't always know
 
-      // finding their handle from conversations.
+      // the peer's id locally, so we send a handle and let the server
 
-      const conv = Object.values(conversations).find(c => c.name === peerName);
+      // resolve it (the server case 'voice-signal' accepts either).
 
-      const handle = conv && conv.handle ? conv.handle.replace(/^@/,'') : null;
+      //
 
-      if (!handle) return;
+      // Look the handle up across every source we have:
 
-      wsSend({ type:'voice-signal', to: handle, signal });
+      //  1) conversations[] — fast hit when they're a friend / DM contact
+
+      //  2) server members  — covers peers we share a voice room with but
+
+      //     have no DM history (the exact case the previous version
+
+      //     silently dropped, leaving the WebRTC handshake stuck).
+
+      let handle = null;
+
+      const conv = Object.values(conversations).find(c => c && c.name === peerName);
+
+      if (conv && conv.handle) handle = conv.handle.replace(/^@/, '');
+
+      if (!handle){
+
+        for (const s of Object.values(servers || {})){
+
+          if (!s || !Array.isArray(s.members)) continue;
+
+          // members may be raw display names or {name, handle} objects.
+
+          const m = s.members.find(x => (typeof x === 'string' ? x : x && x.name) === peerName);
+
+          if (m && typeof m === 'object' && m.handle){
+
+            handle = m.handle.replace(/^@/, ''); break;
+
+          }
+
+        }
+
+      }
+
+      // Fall back to the display name. The server accepts either; if
+
+      // it can't resolve, the relay silently drops the message but we
+
+      // get a useful warning in the console instead of a stuck call.
+
+      const to = handle || peerName;
+
+      if (!to){
+
+        console.warn('[voice] _signal: no routable identifier for peer', peerName);
+
+        return;
+
+      }
+
+      wsSend({ type:'voice-signal', to, signal });
 
     }
 
