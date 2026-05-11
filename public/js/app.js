@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-a (voice: race-free join via voiceJoin members; pendingIce queue; connecting-dots overlay on avatar)');
+  console.log('[orblood] client build 2026-05-11-b (voice: processing toggles apply live, deafen really mutes peers, WS ping, solo=connected, drop duplicate CONNECTED label)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -1305,7 +1305,13 @@
 
       banner.className = 'orb-conn-banner connected';
 
-      txt.textContent = 'CONNECTED · ' + channelData[connectedChannel].name;
+      // "CONNECTED" status itself is owned by the pill below the orb
+
+      // timer (so the banner doesn't repeat the same word). The banner
+
+      // just shows which orbit we're in.
+
+      txt.textContent = channelData[connectedChannel].name;
 
       orbCol.classList.remove('disconnected');
 
@@ -8003,9 +8009,21 @@
 
       }
 
+      _startWsPingLoop();
+
     });
 
-    _ws.addEventListener('close', () => { _ws = null; _scheduleWsRetry(); });
+    _ws.addEventListener('close', () => {
+
+      _ws = null;
+
+      _stopWsPingLoop();
+
+      const el = document.getElementById('orbHudPing'); if (el) el.textContent = '--';
+
+      _scheduleWsRetry();
+
+    });
 
     _ws.addEventListener('error', () => { /* close handler will fire next */ });
 
@@ -8051,6 +8069,65 @@
 
   }
 
+  // ============== WS PING (server RTT for the orb HUD) ==============
+
+  // We keep a single lightweight RTT measurement so the orb's "ping"
+
+  // pill is always meaningful — even when the user is alone in a voice
+
+  // channel, or hasn't joined one at all. The number is the WebSocket
+
+  // round-trip in ms, refreshed every 3 seconds.
+
+  let _wsPingTimer  = null;
+
+  let _wsPingSentAt = 0;
+
+  let _wsLastPingMs = null;
+
+  function _startWsPingLoop(){
+
+    if (_wsPingTimer) return;
+
+    const tick = () => {
+
+      if (typeof wsSend !== 'function') return;
+
+      _wsPingSentAt = performance.now();
+
+      try { wsSend({ type: 'ping', t: _wsPingSentAt }); } catch(_){}
+
+    };
+
+    tick();
+
+    _wsPingTimer = setInterval(tick, 3000);
+
+  }
+
+  function _stopWsPingLoop(){
+
+    if (_wsPingTimer){ clearInterval(_wsPingTimer); _wsPingTimer = null; }
+
+    _wsLastPingMs = null;
+
+  }
+
+  function _onWsPong(msg){
+
+    const t = (msg && typeof msg.t === 'number') ? msg.t : _wsPingSentAt;
+
+    const rtt = Math.max(0, Math.round(performance.now() - t));
+
+    _wsLastPingMs = rtt;
+
+    const el = document.getElementById('orbHudPing');
+
+    if (el) el.textContent = rtt + 'ms';
+
+  }
+
+
   function _handleRealtimeEvent(msg){
 
     switch (msg.type){
@@ -8058,6 +8135,12 @@
       case 'hello':
 
         // Server confirmed auth.
+
+        break;
+
+      case 'pong':
+
+        _onWsPong(msg);
 
         break;
 
@@ -9651,13 +9734,39 @@
 
     }
 
+    function _buildAudioConstraints(){
+
+      // Reflect the user's Voice Settings toggles + selected input device
+
+      // into the mic constraints so the actual call honours Echo
+
+      // Cancellation, Noise Suppression and Auto Gain Control.
+
+      const vs = (typeof voiceSettings === 'object' && voiceSettings) || {};
+
+      return {
+
+        deviceId: vs.inputDevice && vs.inputDevice !== 'default'
+
+          ? { exact: vs.inputDevice } : undefined,
+
+        echoCancellation: 'echo' in vs ? !!vs.echo  : true,
+
+        noiseSuppression: 'noise' in vs ? !!vs.noise : true,
+
+        autoGainControl:  'agc'   in vs ? !!vs.agc   : false,
+
+      };
+
+    }
+
     async function ensureMic(){
 
       if (localStream) return localStream;
 
       try {
 
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
 
       } catch(e){
 
@@ -9668,6 +9777,63 @@
       }
 
       return localStream;
+
+    }
+
+
+    // Re-acquire the mic with the user's latest processing toggles and
+
+    // swap the new audio track into every active peer connection in
+
+    // place — no SDP renegotiation, no audio drop. Used by the Voice
+
+    // Settings modal so flipping a toggle takes effect mid-call.
+
+    async function reconfigureMic(){
+
+      if (!localStream) return false;
+
+      let next = null;
+
+      try {
+
+        next = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
+
+      } catch(e){
+
+        console.warn('[voice] reconfigureMic getUserMedia failed:', e && e.message);
+
+        return false;
+
+      }
+
+      const newTrack = next.getAudioTracks()[0]; if (!newTrack) return false;
+
+      peers.forEach(rec => {
+
+        const sender = rec.pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+
+        if (sender) sender.replaceTrack(newTrack).catch(()=>{});
+
+      });
+
+      // Stop the old tracks AFTER replacing so the new track is live
+
+      // first; this avoids a brief silence window.
+
+      localStream.getTracks().forEach(t => { try { t.stop(); } catch(_){} });
+
+      localStream = next;
+
+      // Preserve the muted-flag — if the user was muted, keep them muted.
+
+      if (typeof muted !== 'undefined' && muted){
+
+        localStream.getAudioTracks().forEach(t => t.enabled = false);
+
+      }
+
+      return true;
 
     }
 
@@ -9696,6 +9862,14 @@
       pc.ontrack = ev => {
 
         audioEl.srcObject = ev.streams[0];
+
+        // Honour the user's current deafened state when a new peer joins
+
+        // mid-deafen — otherwise they'd hear that one peer until they
+
+        // re-toggled.
+
+        if (typeof deafened !== 'undefined' && deafened) audioEl.muted = true;
 
         const p = audioEl.play();
 
@@ -9876,7 +10050,21 @@
 
       peers.forEach(rec => states.push(rec.iceState || 'new'));
 
-      if (!states.length){ setVoiceStatus('connecting'); return; }
+      // Alone in the room → we ARE connected to the channel; there's
+
+      // just no peer to negotiate ICE with yet. Show "connected" the
+
+      // moment the mic is live so the user isn't stuck on "connecting"
+
+      // forever waiting for a friend to join.
+
+      if (!states.length){
+
+        setVoiceStatus(localStream ? 'connected' : 'connecting');
+
+        return;
+
+      }
 
       if (states.some(s => s === 'failed'))        return setVoiceStatus('failed');
 
@@ -9951,11 +10139,13 @@
 
         }
 
-        const avgMs = samples ? Math.round((totalRtt / samples) * 1000) : null;
+        // We deliberately don't write the WebRTC RTT into the orb HUD
 
-        const pingEl = document.getElementById('orbHudPing');
+        // any more — the HUD is owned by the WS ping loop (one source
 
-        if (pingEl) pingEl.textContent = (avgMs != null) ? (avgMs + 'ms') : '--';
+        // of truth, always present, even when alone). We still keep
+
+        // per-peer rec.rtt around for any future debug overlay.
 
       }, 1000);
 
@@ -9964,10 +10154,6 @@
     function _stopStatsPoller(){
 
       if (_statsTimer){ clearInterval(_statsTimer); _statsTimer = null; }
-
-      const pingEl = document.getElementById('orbHudPing');
-
-      if (pingEl) pingEl.textContent = '--';
 
     }
 
@@ -10249,6 +10435,14 @@
 
         _startStatsPoller();
 
+        // Once the mic is live, even a one-person room counts as
+
+        // "connected" — re-evaluate the status pill instead of leaving
+
+        // it on the initial 'connecting'.
+
+        _recomputeVoiceStatus();
+
       },
 
       stop(){
@@ -10304,6 +10498,28 @@
       },
 
       peerState(name){ return _peerState(name); },
+
+      // Used by Voice Settings modal when the user flips echo / noise /
+
+      // AGC mid-call. Swaps in a fresh mic track with the new processing.
+
+      reconfigureMic(){ return reconfigureMic(); },
+
+      // Deafen: silence every remote audio element AND set their
+
+      // <audio>.muted so the browser also stops decoding. mute() handles
+
+      // the outbound side; we leave that to the existing mic toggle.
+
+      deafen(on){
+
+        peers.forEach(rec => {
+
+          if (rec.audioEl) rec.audioEl.muted = !!on;
+
+        });
+
+      },
 
       handleSignal(msg){
 
@@ -19022,7 +19238,11 @@
 
     if (!deafened){
 
-      // Going INTO deafen: remember mic state, then mute it.
+      // Going INTO deafen: silence remote audio + mute own mic. Standard
+
+      // convention across Discord/TS: deafen always pulls mic with it,
+
+      // because if you can't hear, you usually shouldn't be talking either.
 
       deafened = true;
 
@@ -19032,9 +19252,13 @@
 
       btn.innerHTML = '<i data-lucide="headphone-off" style="width:14px;height:14px"></i>';
 
+      try { voice.deafen(true); } catch(_){}
+
       if (!muted){
 
         muted = true;
+
+        try { voice.mute(true); } catch(_){}
 
         m.classList.add('muted-state');
 
@@ -19042,11 +19266,13 @@
 
       }
 
-      showToast('Deafened (mic muted too)','warn');
+      showToast('Deafened — remote audio + mic silenced','warn');
 
     } else {
 
-      // Going OUT of deafen: restore mic to the state it was in before deafen activated.
+      // Going OUT of deafen: un-silence remote audio + restore mic to
+
+      // whatever state it had before deafen activated.
 
       deafened = false;
 
@@ -19054,9 +19280,13 @@
 
       btn.innerHTML = '<i data-lucide="headphones" style="width:14px;height:14px"></i>';
 
+      try { voice.deafen(false); } catch(_){}
+
       if (!micMutedBeforeDeafen){
 
         muted = false;
+
+        try { voice.mute(false); } catch(_){}
 
         m.classList.remove('muted-state');
 
@@ -19064,7 +19294,7 @@
 
       }
 
-      showToast(micMutedBeforeDeafen ? 'Audio back on (mic still muted)' : 'Audio and mic back on','success');
+      showToast(micMutedBeforeDeafen ? 'Remote audio on (mic still muted)' : 'Remote audio and mic on','success');
 
     }
 
@@ -19130,6 +19360,8 @@
 
     await refreshSelfMonitor();
 
+    if (inVoice && voice && voice.reconfigureMic) await voice.reconfigureMic();
+
   });
 
   document.getElementById('vsNoise').addEventListener('change', async e => {
@@ -19138,6 +19370,8 @@
 
     await refreshSelfMonitor();
 
+    if (inVoice && voice && voice.reconfigureMic) await voice.reconfigureMic();
+
   });
 
   document.getElementById('vsAgc').addEventListener('change', async e => {
@@ -19145,6 +19379,8 @@
     voiceSettings.agc = e.target.checked;
 
     await refreshSelfMonitor();
+
+    if (inVoice && voice && voice.reconfigureMic) await voice.reconfigureMic();
 
   });
 

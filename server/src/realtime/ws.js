@@ -162,6 +162,13 @@ function handleClientMessage(ws, uid, msg) {
         .catch(() => {});
       break;
     }
+    case 'ping': {
+      // Lightweight RTT probe used by the orb HUD. Reflects whatever
+      // correlation id the client sent so the client can compute the
+      // exact round-trip duration.
+      try { ws.send(JSON.stringify({ type: 'pong', t: msg.t })); } catch(_){}
+      break;
+    }
     case 'voice-signal': {
       // WebRTC signaling relay. `to` may be either a numeric uid or a
       // handle (the client sends handle because it doesn't always know
