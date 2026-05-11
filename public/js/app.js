@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-f (voice: join works from any context — resolve owner server from channel id; ping only while in a voice channel)');
+  console.log('[orblood] client build 2026-05-11-g (voice: signal routes by name/handle/uid so non-friends in same room can connect)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
