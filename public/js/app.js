@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-d (voice: removed buggy Web Audio chain — relying on browser built-in echo/noise; restores reliable peer connect)');
+  console.log('[orblood] client build 2026-05-11-e (voice: connecting-dots mirrored on Voice Users sidebar avatars)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
