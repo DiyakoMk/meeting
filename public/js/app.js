@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-g (voice: signal routes by name/handle/uid so non-friends in same room can connect)');
+  console.log('[orblood] client build 2026-05-11-h (voice: processing strength sliders + auto mute/deafen during playback; skeleton loaders for home/orbit/DMs)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -1309,7 +1309,17 @@
 
     const isEmpty = list.length === 1 && list[0] === '__empty__';
 
-    orbCol.classList.toggle('is-empty', isEmpty);
+    // During the first hydrate cycle we don't yet know whether the user
+
+    // has orbits or not — keep the column in a loading state so we
+
+    // don't flash "CREATE / JOIN SERVER" first and then yank it back.
+
+    orbCol.classList.toggle('is-loading', _initialHydrating);
+
+    // Only treat as empty AFTER the initial hydrate completes.
+
+    orbCol.classList.toggle('is-empty', isEmpty && !_initialHydrating);
 
     if (inVoice && channelData[connectedChannel]){
 
@@ -2055,9 +2065,33 @@
 
   function renderDmList(){
 
-    initDmListOrder();
-
     const itemsEl = document.getElementById('dmItems');
+
+    if (_initialHydrating){
+
+      // Five shimmer rows so the user sees something hierarchical the
+
+      // moment the messages page opens, not an empty white box.
+
+      let sk = '';
+
+      for (let i=0; i<5; i++){
+
+        sk += '<div class="sk-dm-item"><span class="sk sk-av"></span>'
+
+           +  '<span class="sk-text"><span class="sk sk-line sk-l-w60"></span>'
+
+           +  '<span class="sk sk-line sk-l-w70"></span></span></div>';
+
+      }
+
+      itemsEl.innerHTML = sk;
+
+      return;
+
+    }
+
+    initDmListOrder();
 
     const filter = (document.getElementById('dmListFilter').value||'').toLowerCase();
 
@@ -2269,13 +2303,23 @@
 
     if (!conv._historyFetched && backend.isConfigured() && key && key !== 'saved'){
 
-      _msgsEl.innerHTML = '<div class="dm-empty-thread">'
+      // Paint a short skeleton stack instead of jumping straight to the
 
-        + '<div class="dm-empty-thread-eyebrow">// NEW TRANSMISSION</div>'
+      // empty-thread message. If history exists the merge below replaces
 
-        + '<div class="dm-empty-thread-text">No messages yet — be the first to ping ' + escapeHtml(conv.name||'them') + '.</div>'
+      // it within ~one frame; if the thread really is empty, the same
 
-        + '</div>';
+      // merge swaps the skeleton for the real empty-state copy.
+
+      _msgsEl.innerHTML =
+
+        '<div class="sk-dm-bubble them"><span class="sk sk-line sk-l-w60"></span><span class="sk sk-line sk-l-w40"></span></div>'
+
+        + '<div class="sk-dm-bubble me"><span class="sk sk-line sk-l-w50"></span></div>'
+
+        + '<div class="sk-dm-bubble them"><span class="sk sk-line sk-l-w70"></span><span class="sk sk-line sk-l-w30"></span></div>'
+
+        + '<div class="sk-dm-bubble me"><span class="sk sk-line sk-l-w60"></span><span class="sk sk-line sk-l-w40"></span></div>';
 
       invalidateDmCache(key);
 
@@ -4501,6 +4545,26 @@
 
     const el = document.getElementById('homeMarkedOrbits');
 
+    // Initial load: paint three shimmer placeholders until the first
+
+    // hydrate finishes. Avoids the "empty" copy flashing before real
+
+    // data arrives.
+
+    if (_initialHydrating){
+
+      el.innerHTML =
+
+        '<div class="sk-orb-card"><div class="sk sk-orb-circle"></div><div class="sk sk-line sk-l-w70"></div><div class="sk sk-line sk-l-w50"></div></div>'
+
+        + '<div class="sk-orb-card"><div class="sk sk-orb-circle"></div><div class="sk sk-line sk-l-w70"></div><div class="sk sk-line sk-l-w50"></div></div>'
+
+        + '<div class="sk-orb-card"><div class="sk sk-orb-circle"></div><div class="sk sk-line sk-l-w70"></div><div class="sk sk-line sk-l-w50"></div></div>';
+
+      return;
+
+    }
+
     // Hide marked orbs whose channel (or its parent category) the user
 
     // lost access to. The mark stays in storage so re-granting the role
@@ -4636,6 +4700,20 @@
     const el = document.getElementById('homeMyServers');
 
     if (!el) return;
+
+    if (_initialHydrating){
+
+      el.innerHTML =
+
+        '<div class="sk-server-card"><div class="sk sk-emblem"></div><div class="sk sk-line sk-l-w60"></div></div>'
+
+        + '<div class="sk-server-card"><div class="sk sk-emblem"></div><div class="sk sk-line sk-l-w60"></div></div>'
+
+        + '<div class="sk-server-card"><div class="sk sk-emblem"></div><div class="sk sk-line sk-l-w60"></div></div>';
+
+      return;
+
+    }
 
     if (!myServers.length){
 
@@ -11251,11 +11329,39 @@
 
   // briefly show empty state before the snapshot arrives.
 
+  // Flips to false the moment _hydrateAndRefresh() finishes (success or
+
+  // graceful no-op). Render functions for home/dms/orbits consult this
+
+  // flag to decide whether to paint a skeleton instead of "empty" copy.
+
+  let _initialHydrating = true;
+
   async function _hydrateAndRefresh(){
 
     const ok = await hydrateFromBackend();
 
-    if (!ok) return;
+    // Whether we have data or not, the initial load attempt is over.
+
+    // Render functions can stop showing skeletons.
+
+    _initialHydrating = false;
+
+    if (!ok){
+
+      // Repaint affected surfaces so any leftover skeletons clear.
+
+      if (typeof renderHomeMarkedOrbits === 'function') renderHomeMarkedOrbits();
+
+      if (typeof renderHomeMyServers   === 'function') renderHomeMyServers();
+
+      if (typeof renderDmList          === 'function') renderDmList();
+
+      if (typeof renderOrbSlides       === 'function') renderOrbSlides();
+
+      return;
+
+    }
 
     // Refresh the home greeting now that selfProfile.name has been set —
 
@@ -14329,7 +14435,29 @@
 
   // ============== VOICE SETTINGS MODAL ==============
 
-  const voiceSettings = {
+  const VOICE_LS_KEY = 'orblood:voiceSettings';
+
+  // Load persisted voice settings before constructing the object so
+
+  // partial saves don't clobber the new schema. Anything missing falls
+
+  // back to the literal defaults below via Object spread.
+
+  const _voicePersisted = (() => {
+
+    try { return JSON.parse(localStorage.getItem(VOICE_LS_KEY) || 'null') || {}; }
+
+    catch(_){ return {}; }
+
+  })();
+
+  function _saveVoiceSettings(){
+
+    try { localStorage.setItem(VOICE_LS_KEY, JSON.stringify(voiceSettings)); } catch(_){}
+
+  }
+
+  const voiceSettings = Object.assign({
 
     inputDevice:'default', outputDevice:'default',
 
@@ -14337,7 +14465,11 @@
 
     mode:'vad', pttKey:'V', sensitivity:-50,
 
-    echo:true, noise:true, agc:false,
+    echo:true,  echoStr:70,    // 0-100 — translated to constraint hints + post-DSP
+
+    noise:true, noiseStr:60,
+
+    agc:false,  agcStr:50,
 
     // Self-monitor: when enabled, the user's own mic plays back to them
 
@@ -14359,7 +14491,7 @@
 
     deafenHotkey: null
 
-  };
+  }, _voicePersisted);
 
   // Live audio chain used by the self-monitor toggle. Built lazily the
 
@@ -14371,13 +14503,73 @@
 
   let _selfMonAudio  = null;
 
+  // The self-monitor pipeline keeps a single AudioContext + filter
+
+  // chain so we can tweak strength values in real time without
+
+  // tearing the stream down. Refs are stored at module scope.
+
+  let _smCtx = null;
+
+  let _smHighpass = null;     // noise-suppression strength → cutoff Hz
+
+  let _smCompressor = null;   // echo-cancellation strength → threshold
+
+  let _smAgc = null;          // auto-gain strength → makeup gain
+
+  let _smRawStream = null;    // the actual mic stream behind the chain
+
+  function _smApplyStrengths(){
+
+    if (!_smCtx) return;
+
+    if (_smHighpass){
+
+      // Noise suppression strength 0..100 maps to a highpass cutoff
+
+      // between 40 Hz (off-ish) and 200 Hz (aggressive). Higher cutoff
+
+      // drops more low-frequency rumble.
+
+      const t = voiceSettings.noise ? voiceSettings.noiseStr/100 : 0;
+
+      _smHighpass.frequency.setTargetAtTime(40 + t * 160, _smCtx.currentTime, 0.05);
+
+    }
+
+    if (_smCompressor){
+
+      // Echo strength → compressor threshold + ratio. More aggressive
+
+      // settings duck residual room reflections harder, which feels
+
+      // like stronger echo suppression to the user.
+
+      const t = voiceSettings.echo ? voiceSettings.echoStr/100 : 0;
+
+      _smCompressor.threshold.setTargetAtTime(-12 - t*32, _smCtx.currentTime, 0.05);
+
+      _smCompressor.ratio.setTargetAtTime(2 + t*5, _smCtx.currentTime, 0.05);
+
+    }
+
+    if (_smAgc){
+
+      const t = voiceSettings.agc ? voiceSettings.agcStr/100 : 0;
+
+      _smAgc.gain.setTargetAtTime(1 + t * 1.5, _smCtx.currentTime, 0.05);
+
+    }
+
+  }
+
   async function startSelfMonitor(){
 
     if (_selfMonStream) return;
 
     try {
 
-      _selfMonStream = await navigator.mediaDevices.getUserMedia({
+      _smRawStream = await navigator.mediaDevices.getUserMedia({
 
         audio: {
 
@@ -14385,11 +14577,11 @@
 
             ? { exact: voiceSettings.inputDevice } : undefined,
 
-          echoCancellation:  voiceSettings.echo,
+          echoCancellation:  !!voiceSettings.echo,
 
-          noiseSuppression:  voiceSettings.noise,
+          noiseSuppression:  !!voiceSettings.noise,
 
-          autoGainControl:   voiceSettings.agc
+          autoGainControl:   !!voiceSettings.agc
 
         }
 
@@ -14409,6 +14601,50 @@
 
     }
 
+    // Build the strength-driven chain: src → highpass → compressor →
+
+    // AGC → destination. Each node's parameter is wired to a slider so
+
+    // dragging is audible immediately.
+
+    try {
+
+      const AC = window.AudioContext || window.webkitAudioContext;
+
+      _smCtx = new AC({ latencyHint: 'interactive' });
+
+      const src = _smCtx.createMediaStreamSource(_smRawStream);
+
+      _smHighpass = _smCtx.createBiquadFilter();
+
+      _smHighpass.type = 'highpass';
+
+      _smCompressor = _smCtx.createDynamicsCompressor();
+
+      _smAgc = _smCtx.createGain();
+
+      const dest = _smCtx.createMediaStreamDestination();
+
+      src.connect(_smHighpass);
+
+      _smHighpass.connect(_smCompressor);
+
+      _smCompressor.connect(_smAgc);
+
+      _smAgc.connect(dest);
+
+      _smApplyStrengths();
+
+      _selfMonStream = dest.stream;
+
+    } catch(e){
+
+      console.warn('[voice] self-monitor chain build failed, using raw:', e && e.message);
+
+      _selfMonStream = _smRawStream;
+
+    }
+
     _selfMonAudio = document.createElement('audio');
 
     _selfMonAudio.autoplay = true;
@@ -14421,7 +14657,51 @@
 
     document.body.appendChild(_selfMonAudio);
 
+    // While the user is listening to themselves, force mute+deafen so
+
+    // peers in any active voice channel don't hear the test, and so
+
+    // we don't pick up our own playback through speakers. Remember the
+
+    // pre-test state and restore on stop.
+
+    _selfMonPrevMuted   = (typeof muted   !== 'undefined') ? muted   : false;
+
+    _selfMonPrevDeafened= (typeof deafened!== 'undefined') ? deafened: false;
+
+    if (!muted){
+
+      muted = true;
+
+      try { voice.mute(true); } catch(_){}
+
+      const m = document.getElementById('btnMic');
+
+      if (m){ m.classList.add('muted-state'); m.innerHTML = '<i data-lucide="mic-off" style="width:14px;height:14px"></i>'; if (typeof refreshIcons==='function') refreshIcons(); }
+
+    }
+
+    if (!deafened){
+
+      deafened = true;
+
+      try { voice.deafen(true); } catch(_){}
+
+      const d = document.getElementById('btnDeafen');
+
+      if (d){ d.classList.add('muted-state'); d.innerHTML = '<i data-lucide="headphone-off" style="width:14px;height:14px"></i>'; if (typeof refreshIcons==='function') refreshIcons(); }
+
+    }
+
   }
+
+  // State captured at startSelfMonitor() so stopSelfMonitor() can put
+
+  // mic+deafen back exactly as it found them.
+
+  let _selfMonPrevMuted = false;
+
+  let _selfMonPrevDeafened = false;
 
   function stopSelfMonitor(){
 
@@ -14433,11 +14713,47 @@
 
     }
 
+    if (_smRawStream){
+
+      _smRawStream.getTracks().forEach(t => { try { t.stop(); } catch(_){} });
+
+      _smRawStream = null;
+
+    }
+
     if (_selfMonStream){
 
-      _selfMonStream.getTracks().forEach(t => { try { t.stop(); } catch(_){} });
+      try { _selfMonStream.getTracks().forEach(t => t.stop()); } catch(_){}
 
       _selfMonStream = null;
+
+    }
+
+    if (_smCtx){ try { _smCtx.close(); } catch(_){} _smCtx = null; _smHighpass = _smCompressor = _smAgc = null; }
+
+    // Restore the pre-test mic/deafen state.
+
+    if (!_selfMonPrevDeafened && deafened){
+
+      deafened = false;
+
+      try { voice.deafen(false); } catch(_){}
+
+      const d = document.getElementById('btnDeafen');
+
+      if (d){ d.classList.remove('muted-state'); d.innerHTML = '<i data-lucide="headphones" style="width:14px;height:14px"></i>'; if (typeof refreshIcons==='function') refreshIcons(); }
+
+    }
+
+    if (!_selfMonPrevMuted && muted){
+
+      muted = false;
+
+      try { voice.mute(false); } catch(_){}
+
+      const m = document.getElementById('btnMic');
+
+      if (m){ m.classList.remove('muted-state'); m.innerHTML = '<i data-lucide="mic" style="width:14px;height:14px"></i>'; if (typeof refreshIcons==='function') refreshIcons(); }
 
     }
 
@@ -15182,6 +15498,20 @@
     document.getElementById('vsNoise').checked = voiceSettings.noise;
 
     document.getElementById('vsAgc').checked   = voiceSettings.agc;
+
+    const _setStr = (id, lbl, val) => {
+
+      const s = document.getElementById(id); if (s) s.value = val;
+
+      const l = document.getElementById(lbl); if (l) l.textContent = val;
+
+    };
+
+    _setStr('vsEchoStr',  'vsEchoStrLbl',  voiceSettings.echoStr);
+
+    _setStr('vsNoiseStr', 'vsNoiseStrLbl', voiceSettings.noiseStr);
+
+    _setStr('vsAgcStr',   'vsAgcStrLbl',   voiceSettings.agcStr);
 
     // Self-monitor always opens disabled — it streams the mic, so
 
@@ -19682,7 +20012,9 @@
 
     voiceSettings.echo = e.target.checked;
 
-    await refreshSelfMonitor();
+    _saveVoiceSettings();
+
+    _smApplyStrengths();
 
     if (inVoice && voice && voice.reconfigureMic) await voice.reconfigureMic();
 
@@ -19692,7 +20024,9 @@
 
     voiceSettings.noise = e.target.checked;
 
-    await refreshSelfMonitor();
+    _saveVoiceSettings();
+
+    _smApplyStrengths();
 
     if (inVoice && voice && voice.reconfigureMic) await voice.reconfigureMic();
 
@@ -19702,11 +20036,55 @@
 
     voiceSettings.agc = e.target.checked;
 
-    await refreshSelfMonitor();
+    _saveVoiceSettings();
+
+    _smApplyStrengths();
 
     if (inVoice && voice && voice.reconfigureMic) await voice.reconfigureMic();
 
   });
+
+  // Strength sliders — dragged live during the playback test so the
+
+  // user can dial in their preferred filter aggressiveness. Saved on
+
+  // every change and re-applied via reconfigureMic() if a call is
+
+  // active.
+
+  const _wireStr = (sliderId, lblId, key) => {
+
+    const s = document.getElementById(sliderId); const l = document.getElementById(lblId);
+
+    if (!s) return;
+
+    s.addEventListener('input', () => {
+
+      voiceSettings[key] = Number(s.value);
+
+      if (l) l.textContent = voiceSettings[key];
+
+      _saveVoiceSettings();
+
+      _smApplyStrengths();
+
+    });
+
+    s.addEventListener('change', async () => {
+
+      // change fires when slider release — propagate to the live call.
+
+      if (inVoice && voice && voice.reconfigureMic) await voice.reconfigureMic();
+
+    });
+
+  };
+
+  _wireStr('vsEchoStr',  'vsEchoStrLbl',  'echoStr');
+
+  _wireStr('vsNoiseStr', 'vsNoiseStrLbl', 'noiseStr');
+
+  _wireStr('vsAgcStr',   'vsAgcStrLbl',   'agcStr');
 
   // Self-monitor: enable the local mic playback, with a separate volume
 

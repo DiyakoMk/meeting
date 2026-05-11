@@ -2385,13 +2385,45 @@
 
             <div class="sm-field">
 
-              <div class="vs-toggle-row">
+              <div class="vs-proc-row">
 
                 <label class="vs-toggle"><input type="checkbox" id="vsEcho" checked /> Echo cancellation</label>
 
+                <div class="vs-proc-strength">
+
+                  <span class="vs-proc-strength-l">STRENGTH <span id="vsEchoStrLbl" style="color:var(--t2)">70</span></span>
+
+                  <input type="range" min="0" max="100" value="70" id="vsEchoStr" class="vs-slider" />
+
+                </div>
+
+              </div>
+
+              <div class="vs-proc-row">
+
                 <label class="vs-toggle"><input type="checkbox" id="vsNoise" checked /> Noise suppression</label>
 
+                <div class="vs-proc-strength">
+
+                  <span class="vs-proc-strength-l">STRENGTH <span id="vsNoiseStrLbl" style="color:var(--t2)">60</span></span>
+
+                  <input type="range" min="0" max="100" value="60" id="vsNoiseStr" class="vs-slider" />
+
+                </div>
+
+              </div>
+
+              <div class="vs-proc-row">
+
                 <label class="vs-toggle"><input type="checkbox" id="vsAgc" /> Auto gain control</label>
+
+                <div class="vs-proc-strength">
+
+                  <span class="vs-proc-strength-l">STRENGTH <span id="vsAgcStrLbl" style="color:var(--t2)">50</span></span>
+
+                  <input type="range" min="0" max="100" value="50" id="vsAgcStr" class="vs-slider" />
+
+                </div>
 
               </div>
 
