@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-k (fix: skeleton loaders never clearing on already-signed-in reload; flip _initialHydrating on all auth entry points)');
+  console.log('[orblood] client build 2026-05-11-j (pro voice chain on call audio: highpass+lowpass+compressor+AGC+adaptive gate; live strength updates without re-acquire; quick access trimmed to 3 skeletons)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
