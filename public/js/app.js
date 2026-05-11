@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-i (skeletons for friends + quick access; orb-only pulse during load instead of outer ring)');
+  console.log('[orblood] client build 2026-05-11-j (pro voice chain on call audio: highpass+lowpass+compressor+AGC+adaptive gate; live strength updates without re-acquire; quick access trimmed to 3 skeletons)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -4809,9 +4809,13 @@
 
     if (_initialHydrating){
 
+      // Three placeholder rows — enough to read as a list-loading state
+
+      // without dominating the panel.
+
       let sk = '';
 
-      for (let i=0;i<4;i++){
+      for (let i=0;i<3;i++){
 
         sk += '<div class="sk-mp-row"><span class="sk sk-mp-av"></span><span class="sk sk-line sk-l-w70"></span></div>';
 
@@ -10068,37 +10072,197 @@
 
     }
 
+    // Build a processed MediaStream by wiring the raw mic through the
+
+    // same Web Audio chain the playback test uses, so what the peer
+
+    // hears matches the self-monitor preview exactly.
+
+    //
+
+    // Important: the noise gate's GainNode starts at 1, not 0. Earlier
+
+    // versions defaulted to 0 and only opened on the first rAF tick,
+
+    // which made background-tab sessions silent because rAF doesn't
+
+    // fire when the tab is hidden. Starting at 1 means worst case we
+
+    // pass audio through; the analyser loop tightens it once visible.
+
+    let _callCtx = null;
+
+    let _callGateRAF = 0;
+
+    let _callChain = null;   // { highpass, lowpass, compressor, agc, gate, analyser }
+
+    let _callNoiseFloor = 0.02;
+
+    function _applyCallStrengths(){
+
+      const c = _callChain; if (!c || !_callCtx) return;
+
+      const nTen = voiceSettings.noise ? voiceSettings.noiseStr/100 : 0;
+
+      const eTen = voiceSettings.echo  ? voiceSettings.echoStr /100 : 0;
+
+      const aTen = voiceSettings.agc   ? voiceSettings.agcStr  /100 : 0;
+
+      c.highpass  .frequency.setTargetAtTime(40   + nTen * 180,  _callCtx.currentTime, 0.05);
+
+      c.lowpass   .frequency.setTargetAtTime(12000 - nTen * 6500, _callCtx.currentTime, 0.05);
+
+      c.compressor.threshold.setTargetAtTime(-12  - eTen * 38,   _callCtx.currentTime, 0.05);
+
+      c.compressor.ratio    .setTargetAtTime(2    + eTen * 6,    _callCtx.currentTime, 0.05);
+
+      c.compressor.knee     .setTargetAtTime(24   - eTen * 18,   _callCtx.currentTime, 0.05);
+
+      c.agc.gain.setTargetAtTime(1 + aTen * 1.5, _callCtx.currentTime, 0.05);
+
+    }
+
+    function _startCallGate(){
+
+      const c = _callChain; if (!c || !_callCtx || !c.analyser) return;
+
+      const data = new Uint8Array(c.analyser.fftSize);
+
+      let lastT = performance.now();
+
+      _callNoiseFloor = 0.02;
+
+      const tick = () => {
+
+        if (!_callCtx || _callCtx.state === 'closed') return;
+
+        c.analyser.getByteTimeDomainData(data);
+
+        let peak = 0;
+
+        for (let i=0;i<data.length;i++){
+
+          const v = Math.abs(data[i]-128)/128;
+
+          if (v > peak) peak = v;
+
+        }
+
+        const now = performance.now();
+
+        const dt = Math.min(0.1, (now - lastT)/1000);
+
+        lastT = now;
+
+        const quiet = peak < _callNoiseFloor * 4;
+
+        if (quiet) _callNoiseFloor += (peak - _callNoiseFloor) * (dt/5);
+
+        else       _callNoiseFloor += (peak - _callNoiseFloor) * (dt/60);
+
+        _callNoiseFloor = Math.max(0.002, Math.min(0.1, _callNoiseFloor));
+
+        const t = voiceSettings.noise ? voiceSettings.noiseStr/100 : 0;
+
+        const openMult = 1.2 + t * 6.8;
+
+        const open = t < 0.1 ? true : peak > _callNoiseFloor * openMult;
+
+        c.gate.gain.setTargetAtTime(open ? 1 : 0, _callCtx.currentTime, open ? 0.003 : 0.08);
+
+        _callGateRAF = requestAnimationFrame(tick);
+
+      };
+
+      _callGateRAF = requestAnimationFrame(tick);
+
+    }
+
+    function _stopCallGate(){
+
+      if (_callGateRAF){ cancelAnimationFrame(_callGateRAF); _callGateRAF = 0; }
+
+    }
+
+    function _buildProcessedCallStream(raw){
+
+      try {
+
+        const AC = window.AudioContext || window.webkitAudioContext;
+
+        _callCtx = new AC({ latencyHint: 'interactive' });
+
+        const src = _callCtx.createMediaStreamSource(raw);
+
+        const highpass = _callCtx.createBiquadFilter();   highpass.type = 'highpass';
+
+        const lowpass  = _callCtx.createBiquadFilter();   lowpass.type  = 'lowpass';
+
+        const comp     = _callCtx.createDynamicsCompressor();
+
+        const agc      = _callCtx.createGain();
+
+        const gate     = _callCtx.createGain(); gate.gain.value = 1;
+
+        const analyser = _callCtx.createAnalyser(); analyser.fftSize = 1024;
+
+        const dest     = _callCtx.createMediaStreamDestination();
+
+        src.connect(highpass);
+
+        highpass.connect(lowpass);
+
+        lowpass.connect(comp);
+
+        comp.connect(agc);
+
+        agc.connect(analyser);
+
+        agc.connect(gate);
+
+        gate.connect(dest);
+
+        _callChain = { highpass, lowpass, compressor: comp, agc, gate, analyser };
+
+        _applyCallStrengths();
+
+        _startCallGate();
+
+        const out = dest.stream;
+
+        out._rawStream = raw;
+
+        return out;
+
+      } catch(e){
+
+        console.warn('[voice] processed call stream build failed:', e && e.message);
+
+        return raw;
+
+      }
+
+    }
+
+    function _destroyCallChain(){
+
+      _stopCallGate();
+
+      if (_callCtx){ try { _callCtx.close(); } catch(_){} _callCtx = null; }
+
+      _callChain = null;
+
+    }
+
     async function ensureMic(){
 
       if (localStream) return localStream;
 
+      let raw = null;
+
       try {
 
-        // Rely entirely on the browser's built-in audio pipeline
-
-        // (echoCancellation + noiseSuppression + optional autoGainControl).
-
-        // The earlier custom Web Audio chain (highpass + compressor +
-
-        // analyser-driven gate) introduced a subtle but breaking bug:
-
-        //  • requestAnimationFrame stops firing in background tabs
-
-        //  • the gate starts closed (gain=0) and only opens on the next
-
-        //    rAF after audio arrives
-
-        //  • result: peers couldn't hear each other in many real
-
-        //    sessions, with no visible error.
-
-        // The browser pipeline is well-tuned for voice and battle-tested;
-
-        // we'll revisit a custom DSP path only if/when we ship a desktop
-
-        // build with a real WASM denoiser.
-
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
+        raw = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
 
       } catch(e){
 
@@ -10107,6 +10271,8 @@
         throw e;
 
       }
+
+      localStream = _buildProcessedCallStream(raw);
 
       return localStream;
 
@@ -10125,11 +10291,23 @@
 
       if (!localStream) return false;
 
-      let next = null;
+      // Strength tweaks alone don't require getUserMedia — the chain
+
+      // updates its parameters live. Only re-acquire when the user
+
+      // changed device or flipped a boolean toggle that the browser
+
+      // pipeline owns (echo/noise/AGC constraints).
+
+      _applyCallStrengths();
+
+      // For boolean toggles + device changes, do a full swap.
+
+      let rawNext = null;
 
       try {
 
-        next = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
+        rawNext = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
 
       } catch(e){
 
@@ -10138,6 +10316,16 @@
         return false;
 
       }
+
+      // Tear down the old Web Audio chain and build a fresh one over
+
+      // the new mic so the new echo/noise/agc browser constraints
+
+      // actually apply.
+
+      _destroyCallChain();
+
+      const next = _buildProcessedCallStream(rawNext);
 
       const newTrack = next.getAudioTracks()[0]; if (!newTrack) return false;
 
@@ -10149,9 +10337,17 @@
 
       });
 
-      // Stop the old tracks AFTER swap so there's no silence window.
+      // Stop the old raw + processed tracks AFTER swap so there's no
 
-      try { localStream.getTracks().forEach(t => t.stop()); } catch(_){}
+      // silence window.
+
+      try {
+
+        if (localStream._rawStream) localStream._rawStream.getTracks().forEach(t => t.stop());
+
+        localStream.getTracks().forEach(t => t.stop());
+
+      } catch(_){}
 
       localStream = next;
 
@@ -10851,11 +11047,19 @@
 
         if (localStream){
 
-          try { localStream.getTracks().forEach(t => t.stop()); } catch(_){}
+          try {
+
+            if (localStream._rawStream) localStream._rawStream.getTracks().forEach(t => t.stop());
+
+            localStream.getTracks().forEach(t => t.stop());
+
+          } catch(_){}
 
           localStream = null;
 
         }
+
+        _destroyCallChain();
 
         serverId = null; channelId = null;
 
@@ -10908,6 +11112,14 @@
       // AGC mid-call. Swaps in a fresh mic track with the new processing.
 
       reconfigureMic(){ return reconfigureMic(); },
+
+      // Used by the Voice Settings strength sliders mid-call to push
+
+      // the new filter parameters into the live Web Audio chain
+
+      // without re-acquiring the mic. Cheap and continuous.
+
+      applyStrengths(){ _applyCallStrengths(); },
 
       // Called by the server-update handler when an admin changes the
 
@@ -14549,9 +14761,19 @@
 
   let _smHighpass = null;     // noise-suppression strength → cutoff Hz
 
-  let _smCompressor = null;   // echo-cancellation strength → threshold
+  let _smCompressor = null;   // echo strength → threshold/ratio
 
   let _smAgc = null;          // auto-gain strength → makeup gain
+
+  let _smLowpass = null;      // noise strength → trim high-frequency hiss
+
+  let _smGate = null;         // noise strength → adaptive noise gate
+
+  let _smAnalyser = null;     // drives the gate envelope
+
+  let _smGateRAF = 0;
+
+  let _smNoiseFloor = 0.02;   // EMA of background noise level (linear)
 
   let _smRawStream = null;    // the actual mic stream behind the chain
 
@@ -14561,31 +14783,45 @@
 
     if (_smHighpass){
 
-      // Noise suppression strength 0..100 maps to a highpass cutoff
+      // Noise suppression strength 0..100 → highpass cutoff 40-220 Hz.
 
-      // between 40 Hz (off-ish) and 200 Hz (aggressive). Higher cutoff
-
-      // drops more low-frequency rumble.
+      // Sweeps out HVAC rumble, fan hum, mic-stand thumps.
 
       const t = voiceSettings.noise ? voiceSettings.noiseStr/100 : 0;
 
-      _smHighpass.frequency.setTargetAtTime(40 + t * 160, _smCtx.currentTime, 0.05);
+      _smHighpass.frequency.setTargetAtTime(40 + t * 180, _smCtx.currentTime, 0.05);
+
+    }
+
+    if (_smLowpass){
+
+      // Same noise strength also pulls the lowpass cutoff inward —
+
+      // 12 kHz (off) → 5.5 kHz (max). Voice intelligibility lives below
+
+      // 4 kHz; cutting hiss above that is a clean perceptual win.
+
+      const t = voiceSettings.noise ? voiceSettings.noiseStr/100 : 0;
+
+      _smLowpass.frequency.setTargetAtTime(12000 - t * 6500, _smCtx.currentTime, 0.05);
 
     }
 
     if (_smCompressor){
 
-      // Echo strength → compressor threshold + ratio. More aggressive
+      // Echo strength → harder compression on the residual room
 
-      // settings duck residual room reflections harder, which feels
+      // reflections that survived the browser's AEC. Threshold drops
 
-      // like stronger echo suppression to the user.
+      // -12 → -50 dB; ratio climbs 2:1 → 8:1.
 
       const t = voiceSettings.echo ? voiceSettings.echoStr/100 : 0;
 
-      _smCompressor.threshold.setTargetAtTime(-12 - t*32, _smCtx.currentTime, 0.05);
+      _smCompressor.threshold.setTargetAtTime(-12 - t*38, _smCtx.currentTime, 0.05);
 
-      _smCompressor.ratio.setTargetAtTime(2 + t*5, _smCtx.currentTime, 0.05);
+      _smCompressor.ratio.setTargetAtTime(2 + t*6, _smCtx.currentTime, 0.05);
+
+      _smCompressor.knee.setTargetAtTime(24 - t*18, _smCtx.currentTime, 0.05);
 
     }
 
@@ -14596,6 +14832,102 @@
       _smAgc.gain.setTargetAtTime(1 + t * 1.5, _smCtx.currentTime, 0.05);
 
     }
+
+  }
+
+  // Adaptive noise gate. Tracks the rolling background noise floor and
+
+  // opens the gate when the instantaneous level is some multiplier
+
+  // above that floor. The multiplier scales with the noise strength so
+
+  // a higher strength means a tighter gate (more aggressive silence).
+
+  function _smStartGate(){
+
+    if (!_smCtx || !_smAnalyser || !_smGate) return;
+
+    const data = new Uint8Array(_smAnalyser.fftSize);
+
+    let lastT = performance.now();
+
+    const tick = () => {
+
+      if (!_smCtx || _smCtx.state === 'closed') return;
+
+      _smAnalyser.getByteTimeDomainData(data);
+
+      // Peak amplitude on the [-1,1] scale.
+
+      let peak = 0;
+
+      for (let i=0;i<data.length;i++){
+
+        const v = Math.abs(data[i] - 128) / 128;
+
+        if (v > peak) peak = v;
+
+      }
+
+      // Update the rolling noise floor only during quiet stretches —
+
+      // an EMA with a slow time constant. This way a person who's been
+
+      // silent for a few seconds re-baselines the gate without speech
+
+      // dragging the floor up.
+
+      const now = performance.now();
+
+      const dt = Math.min(0.1, (now - lastT) / 1000);
+
+      lastT = now;
+
+      const quiet = peak < _smNoiseFloor * 4;
+
+      if (quiet){
+
+        // ~5 s time constant when quiet so the floor settles.
+
+        _smNoiseFloor += (peak - _smNoiseFloor) * (dt / 5);
+
+      } else {
+
+        // Tiny upward drift during speech so we don't lock in too low.
+
+        _smNoiseFloor += (peak - _smNoiseFloor) * (dt / 60);
+
+      }
+
+      _smNoiseFloor = Math.max(0.002, Math.min(0.1, _smNoiseFloor));
+
+      // Gate ratio: at strength 0 we never close; at strength 100 the
+
+      // gate needs the signal to be 8x the floor to open.
+
+      const t = voiceSettings.noise ? voiceSettings.noiseStr/100 : 0;
+
+      const openMultiplier = 1.2 + t * 6.8;   // 1.2x (loose) → 8x (tight)
+
+      const open = peak > _smNoiseFloor * openMultiplier;
+
+      const target = open ? 1 : (t > 0.1 ? 0 : 1);  // disabled below 10%
+
+      _smGate.gain.setTargetAtTime(target, _smCtx.currentTime,
+
+        open ? 0.003 : 0.08);  // fast attack, slow release
+
+      _smGateRAF = requestAnimationFrame(tick);
+
+    };
+
+    _smGateRAF = requestAnimationFrame(tick);
+
+  }
+
+  function _smStopGate(){
+
+    if (_smGateRAF){ cancelAnimationFrame(_smGateRAF); _smGateRAF = 0; }
 
   }
 
@@ -14651,25 +14983,57 @@
 
       const src = _smCtx.createMediaStreamSource(_smRawStream);
 
+      // Filter chain:
+
+      //   src → highpass → lowpass → compressor → AGC → gate → dest
+
+      // The analyser taps off after the compressor so the gate
+
+      // decides on already-leveled material, not raw input where loud
+
+      // breaths could trip it open.
+
       _smHighpass = _smCtx.createBiquadFilter();
 
       _smHighpass.type = 'highpass';
+
+      _smLowpass = _smCtx.createBiquadFilter();
+
+      _smLowpass.type = 'lowpass';
 
       _smCompressor = _smCtx.createDynamicsCompressor();
 
       _smAgc = _smCtx.createGain();
 
+      _smGate = _smCtx.createGain();
+
+      _smGate.gain.value = 1;
+
+      _smAnalyser = _smCtx.createAnalyser();
+
+      _smAnalyser.fftSize = 1024;
+
       const dest = _smCtx.createMediaStreamDestination();
 
       src.connect(_smHighpass);
 
-      _smHighpass.connect(_smCompressor);
+      _smHighpass.connect(_smLowpass);
+
+      _smLowpass.connect(_smCompressor);
 
       _smCompressor.connect(_smAgc);
 
-      _smAgc.connect(dest);
+      _smAgc.connect(_smAnalyser);
+
+      _smAgc.connect(_smGate);
+
+      _smGate.connect(dest);
+
+      _smNoiseFloor = 0.02;
 
       _smApplyStrengths();
+
+      _smStartGate();
 
       _selfMonStream = dest.stream;
 
@@ -14765,7 +15129,11 @@
 
     }
 
-    if (_smCtx){ try { _smCtx.close(); } catch(_){} _smCtx = null; _smHighpass = _smCompressor = _smAgc = null; }
+    _smStopGate();
+
+    if (_smCtx){ try { _smCtx.close(); } catch(_){} _smCtx = null; }
+
+    _smHighpass = _smLowpass = _smCompressor = _smAgc = _smGate = _smAnalyser = null;
 
     // Restore the pre-test mic/deafen state.
 
@@ -20106,11 +20474,15 @@
 
     });
 
-    s.addEventListener('change', async () => {
+    s.addEventListener('change', () => {
 
-      // change fires when slider release — propagate to the live call.
+      // Strength changes are applied live on the chain itself — no
 
-      if (inVoice && voice && voice.reconfigureMic) await voice.reconfigureMic();
+      // need to re-acquire the mic. applyStrengths() pushes the new
+
+      // value into the active call's Web Audio nodes immediately.
+
+      if (inVoice && voice && voice.applyStrengths) voice.applyStrengths();
 
     });
 
