@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-b (voice: processing toggles apply live, deafen really mutes peers, WS ping, solo=connected, drop duplicate CONNECTED label)');
+  console.log('[orblood] client build 2026-05-11-a (voice: race-free join via voiceJoin members; pendingIce queue; connecting-dots overlay on avatar)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
