@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-e (voice: connecting-dots mirrored on Voice Users sidebar avatars)');
+  console.log('[orblood] client build 2026-05-11-f (voice: join works from any context — resolve owner server from channel id; ping only while in a voice channel)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -1779,9 +1779,35 @@
 
     // tracks who's connected). On success we also kick off WebRTC.
 
-    if (backend.isConfigured() && currentServer){
+    //
 
-      const sid = currentServer;
+    // The voice channel is owned by a *specific* server, which is NOT
+
+    // necessarily currentServer. When the user joins from the marked
+
+    // orbits list, the orbit carousel, or a quick-access entry,
+
+    // currentServer can be null (home page) or another server entirely.
+
+    // Resolve the channel's real owner from `servers`, otherwise the
+
+    // backend.voiceJoin call is silently skipped and WebRTC signalling
+
+    // never starts — the exact "no connect from orbits column" bug.
+
+    let sid = null;
+
+    for (const _sid in servers){
+
+      if ((servers[_sid].voiceChannels||[]).some(v => v.id === ch)){
+
+        sid = _sid; break;
+
+      }
+
+    }
+
+    if (backend.isConfigured() && sid){
 
       // If we were already in another voice channel, tell the backend we
 
@@ -1790,10 +1816,6 @@
       // us listed in both channels and our avatar lingers on the old orb.
 
       if (wasConnectedTo && wasConnectedTo !== ch){
-
-        // Resolve the old channel's server. It might be on a different
-
-        // server than the one we're joining now.
 
         let oldSid = sid;
 
@@ -1845,6 +1867,18 @@
 
       voice.start(sid, ch).catch(()=>{});
 
+      // Ping is a voice-call-only metric (call quality indicator), so
+
+      // we only run it while the user is actually in an orbit.
+
+      _startWsPingLoop();
+
+    } else if (!sid && backend.isConfigured()){
+
+      console.warn('[voice] joinVoiceChannel: could not resolve server for channel', ch);
+
+      showToast('Could not find the server that owns this voice channel','warn');
+
     }
 
   }
@@ -1859,15 +1893,49 @@
 
     if (channelData[ch]) channelData[ch].users = channelData[ch].users.filter(u=>u!==selfProfile.name);
 
-    if (backend.isConfigured() && currentServer){
+    // Like join, resolve the owning server from the channel id — not
 
-      backend.servers.voiceLeave(currentServer, ch).catch(()=>{});
+    // currentServer — so leaving from the home page (where currentServer
+
+    // is null) still tells the backend we're gone.
+
+    let leaveSid = null;
+
+    for (const _sid in servers){
+
+      if ((servers[_sid].voiceChannels||[]).some(v => v.id === ch)){
+
+        leaveSid = _sid; break;
+
+      }
+
+    }
+
+    if (backend.isConfigured() && leaveSid){
+
+      backend.servers.voiceLeave(leaveSid, ch).catch(()=>{});
 
     }
 
     try { voice.stop(); } catch(_){}
 
     inVoice = false;
+
+    // Stop pinging — HUD shows ping only while connected to a voice channel.
+
+    _stopWsPingLoop();
+
+    const _pingEl = document.getElementById('orbHudPing');
+
+    if (_pingEl){
+
+      _pingEl.textContent = '--';
+
+      const _pingSpan = _pingEl.closest('span');
+
+      if (_pingSpan) _pingSpan.classList.remove('ping-good','ping-okay','ping-bad');
+
+    }
 
     const lastChannel = ch;
 
@@ -8035,7 +8103,15 @@
 
       }
 
-      _startWsPingLoop();
+      // While reconnecting after a drop, if the user was already in a
+
+      // voice call, resume the ping probe so the HUD doesn't stay blank.
+
+      if (typeof inVoice !== 'undefined' && inVoice){
+
+        _startWsPingLoop();
+
+      }
 
     });
 
