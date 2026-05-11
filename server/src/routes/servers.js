@@ -116,7 +116,8 @@ async function buildServerPayload(sid) {
       customStyle: v.custom_style || null,
       visibleRoleIds:  parseRoleIds(v.visible_role_ids),
       permissionAllow: parseRoleIds(v.permission_allow),
-      permissionDeny:  parseRoleIds(v.permission_deny)
+      permissionDeny:  parseRoleIds(v.permission_deny),
+      bitrate: v.bitrate == null ? 64 : Number(v.bitrate)
     })),
     // Roles are returned only when the server has any custom roles persisted.
     // If null, the frontend's ensureRoles() builds owner/admin from membership.

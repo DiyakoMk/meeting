@@ -356,7 +356,10 @@ const channelPatchSchema = z.object({
   // but we still store as-is.
   visibleRoleIds:  z.array(z.string().min(1).max(40)).max(50).nullable().optional(),
   permissionAllow: overrideMapSchema,
-  permissionDeny:  overrideMapSchema
+  permissionDeny:  overrideMapSchema,
+  // Voice-channel-only. Opus bitrate in kbps; valid range per the RFC
+  // is 6..510. We clamp to the picker's actual values.
+  bitrate:         z.number().int().min(8).max(510).optional(),
 });
 
 function _buildChannelPatch(body) {
@@ -378,6 +381,10 @@ function _buildChannelPatch(body) {
   if (body.permissionDeny !== undefined) {
     sets.push('permission_deny = ?');
     args.push(body.permissionDeny === null ? null : JSON.stringify(body.permissionDeny));
+  }
+  if (body.bitrate !== undefined) {
+    sets.push('bitrate = ?');
+    args.push(Number(body.bitrate));
   }
   return { sets, args };
 }
@@ -477,7 +484,8 @@ async function __buildServerPayload(sid) {
       customStyle: v.custom_style || null,
       visibleRoleIds:  __parseRoleIds(v.visible_role_ids),
       permissionAllow: __parseRoleIds(v.permission_allow),
-      permissionDeny:  __parseRoleIds(v.permission_deny)
+      permissionDeny:  __parseRoleIds(v.permission_deny),
+      bitrate: v.bitrate == null ? 64 : Number(v.bitrate)
     }))
   };
 }

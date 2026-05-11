@@ -57,6 +57,10 @@ const schemaPath = path.resolve(here, '..', 'schema.sql');
   await ensureCol('server_categories', 'custom_style',   "VARCHAR(40) NULL");
   await ensureCol('text_channels',     'custom_style',   "VARCHAR(40) NULL");
   await ensureCol('voice_channels',    'custom_style',   "VARCHAR(40) NULL");
+  // Voice bitrate (Opus kbps). 64 is the conventional default we'd
+  // pick on a fresh row; leaving it nullable so existing rows aren't
+  // forced to be backfilled before the column is read.
+  await ensureCol('voice_channels',    'bitrate',        "INT NULL");
 
   // Migrate server_roles primary key from (id) to (server_id, id) so the
   // role id stays unique only within a server. Original schema treated id

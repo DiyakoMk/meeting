@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-b (voice: processing toggles apply live, deafen really mutes peers, WS ping, solo=connected, drop duplicate CONNECTED label)');
+  console.log('[orblood] client build 2026-05-11-c (voice: noise gate + highpass + compressor; per-channel bitrate (admin); coloured ping; single CONNECTED label)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -1085,7 +1085,17 @@
 
         vst.classList.toggle('connected', isConn);
 
-        vst.textContent = isConn?'CONNECTED':isMark?'MARKED · '+data.users.length+' ACTIVE':data.users.length+' '+(data.users.length===1?'MEMBER':'MEMBERS');
+        // When connected, show the member count instead of repeating
+
+        // "CONNECTED" — that word lives on the status pill under the
+
+        // call timer (single source of truth).
+
+        vst.textContent = isMark
+
+          ? 'MARKED · '+data.users.length+' ACTIVE'
+
+          : data.users.length+' '+(data.users.length===1?'MEMBER':'MEMBERS');
 
       }
 
@@ -8123,7 +8133,29 @@
 
     const el = document.getElementById('orbHudPing');
 
-    if (el) el.textContent = rtt + 'ms';
+    if (!el) return;
+
+    el.textContent = rtt + 'ms';
+
+    // Colour-code the HUD ping:
+
+    //  good (<80ms)  → success green
+
+    //  okay (<200ms) → warn amber
+
+    //  bad  (>=200)  → danger red
+
+    const span = el.closest('span');
+
+    if (!span) return;
+
+    span.classList.remove('ping-good','ping-okay','ping-bad');
+
+    if (rtt < 80)       span.classList.add('ping-good');
+
+    else if (rtt < 200) span.classList.add('ping-okay');
+
+    else                span.classList.add('ping-bad');
 
   }
 
@@ -8409,6 +8441,20 @@
     if (typeof renderHomeMyServers === 'function') renderHomeMyServers();
 
     if (typeof renderOrbSlides === 'function') renderOrbSlides();
+
+    // If we're currently in a voice channel in this server and its
+
+    // bitrate may have changed, push the new cap to every active
+
+    // sender without renegotiation.
+
+    if (inVoice && connectedChannel && typeof voice !== 'undefined' && voice.applyBitrate){
+
+      const vc = (server.voiceChannels || []).find(v => v.id === connectedChannel);
+
+      if (vc) voice.applyBitrate();
+
+    }
 
   }
 
@@ -9734,6 +9780,62 @@
 
     }
 
+    // Look up the configured bitrate for the active voice channel.
+
+    // Defaults to 64 kbps when nothing is set, mirroring the server.
+
+    function _currentChannelBitrate(){
+
+      if (!serverId || !channelId) return 64;
+
+      const s = servers[serverId]; if (!s) return 64;
+
+      const vc = (s.voiceChannels || []).find(v => v.id === channelId);
+
+      return (vc && Number(vc.bitrate)) || 64;
+
+    }
+
+    // Set the maximum send bitrate for the audio sender on this PC.
+
+    // This is a soft cap — the encoder may use less for silent audio.
+
+    async function _applyBitrateToPc(pc){
+
+      const kbps = _currentChannelBitrate();
+
+      try {
+
+        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+
+        if (!sender) return;
+
+        const params = sender.getParameters();
+
+        if (!params.encodings || !params.encodings.length){
+
+          params.encodings = [{}];
+
+        }
+
+        params.encodings[0].maxBitrate = kbps * 1000;
+
+        await sender.setParameters(params);
+
+      } catch(_){}
+
+    }
+
+    // Re-apply the bitrate cap on every active peer. Called when the
+
+    // server broadcasts a server-update with a new voice-channel value.
+
+    function _applyBitrateToAllPeers(){
+
+      peers.forEach(rec => { _applyBitrateToPc(rec.pc).catch(()=>{}); });
+
+    }
+
     function _buildAudioConstraints(){
 
       // Reflect the user's Voice Settings toggles + selected input device
@@ -9760,13 +9862,163 @@
 
     }
 
+    // Build a processed MediaStream from the raw mic, adding a software
+
+    // chain on top of the browser's built-in echo/noise cancellation:
+
+    //  • highpass @ 90Hz to kill keyboard rumble, fan hum, mouth thumps
+
+    //  • DynamicsCompressor to even out close/far speech
+
+    //  • a soft noise gate (downward expander) that drops anything below
+
+    //    the user's chosen threshold to silence — the single biggest
+
+    //    perceived "noise removal" we can do client-side without
+
+    //    shipping a WASM denoiser. Browsers ship NoiseSuppression but
+
+    //    it's tuned conservatively; this gate cleans up what's left.
+
+    let _audioCtx = null;
+
+    function _buildProcessedStream(rawStream){
+
+      try {
+
+        if (!_audioCtx){
+
+          const AC = window.AudioContext || window.webkitAudioContext;
+
+          _audioCtx = new AC({ latencyHint: 'interactive' });
+
+        }
+
+        const src = _audioCtx.createMediaStreamSource(rawStream);
+
+        const highpass = _audioCtx.createBiquadFilter();
+
+        highpass.type = 'highpass';
+
+        highpass.frequency.value = 90;
+
+        const comp = _audioCtx.createDynamicsCompressor();
+
+        comp.threshold.value = -28;
+
+        comp.knee.value      = 18;
+
+        comp.ratio.value     = 3;
+
+        comp.attack.value    = 0.005;
+
+        comp.release.value   = 0.18;
+
+        // Simple noise gate via DynamicsCompressor in expander config
+
+        // isn't supported by the Web Audio API directly, so we use a
+
+        // GainNode driven by a small analyser-based ducker. Cheap and
+
+        // works well enough for voice.
+
+        const gate = _audioCtx.createGain();
+
+        gate.gain.value = 0;
+
+        const analyser = _audioCtx.createAnalyser();
+
+        analyser.fftSize = 512;
+
+        const data = new Uint8Array(analyser.fftSize);
+
+        // Threshold: ~-50dB by default; flips to wider when the user
+
+        // chose lower sensitivity in voiceSettings.
+
+        const sensitivity = (typeof voiceSettings === 'object' && voiceSettings && typeof voiceSettings.sensitivity === 'number')
+
+          ? voiceSettings.sensitivity : -50;
+
+        const thresholdDb = sensitivity;          // dB
+
+        const linThreshold = Math.pow(10, thresholdDb/20);
+
+        function tick(){
+
+          if (!_audioCtx || _audioCtx.state === 'closed') return;
+
+          analyser.getByteTimeDomainData(data);
+
+          // Compute peak amplitude (0..1).
+
+          let peak = 0;
+
+          for (let i=0;i<data.length;i++){
+
+            const v = Math.abs(data[i] - 128) / 128;
+
+            if (v > peak) peak = v;
+
+          }
+
+          const open = peak > linThreshold;
+
+          const target = open ? 1 : 0;
+
+          gate.gain.setTargetAtTime(target, _audioCtx.currentTime, open ? 0.005 : 0.07);
+
+          requestAnimationFrame(tick);
+
+        }
+
+        requestAnimationFrame(tick);
+
+        const dest = _audioCtx.createMediaStreamDestination();
+
+        // Pipe: src → highpass → comp → analyser (for level read) → gate → dest
+
+        src.connect(highpass);
+
+        highpass.connect(comp);
+
+        comp.connect(analyser);
+
+        comp.connect(gate);
+
+        gate.connect(dest);
+
+        // Carry over the original audio track id metadata too.
+
+        const out = dest.stream;
+
+        // Keep a reference to the raw stream so we can stop its tracks
+
+        // when stop()/reconfigureMic teardown runs.
+
+        out._rawStream = rawStream;
+
+        return out;
+
+      } catch(e){
+
+        console.warn('[voice] processed stream build failed, using raw mic:', e && e.message);
+
+        return rawStream;
+
+      }
+
+    }
+
     async function ensureMic(){
 
       if (localStream) return localStream;
 
+      let raw = null;
+
       try {
 
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
+        raw = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
 
       } catch(e){
 
@@ -9775,6 +10027,8 @@
         throw e;
 
       }
+
+      localStream = _buildProcessedStream(raw);
 
       return localStream;
 
@@ -9793,11 +10047,11 @@
 
       if (!localStream) return false;
 
-      let next = null;
+      let rawNext = null;
 
       try {
 
-        next = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
+        rawNext = await navigator.mediaDevices.getUserMedia({ audio: _buildAudioConstraints() });
 
       } catch(e){
 
@@ -9806,6 +10060,8 @@
         return false;
 
       }
+
+      const next = _buildProcessedStream(rawNext);
 
       const newTrack = next.getAudioTracks()[0]; if (!newTrack) return false;
 
@@ -9817,11 +10073,17 @@
 
       });
 
-      // Stop the old tracks AFTER replacing so the new track is live
+      // Stop the old raw + processed tracks AFTER swap so there's no
 
-      // first; this avoids a brief silence window.
+      // silence window.
 
-      localStream.getTracks().forEach(t => { try { t.stop(); } catch(_){} });
+      try {
+
+        if (localStream._rawStream) localStream._rawStream.getTracks().forEach(t => t.stop());
+
+        localStream.getTracks().forEach(t => t.stop());
+
+      } catch(_){}
 
       localStream = next;
 
@@ -9966,6 +10228,14 @@
         localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 
       }
+
+      // Apply this voice channel's configured bitrate (kbps) to the
+
+      // outgoing audio sender. Uses RTCRtpSender.setParameters which
+
+      // works without renegotiation.
+
+      _applyBitrateToPc(pc).catch(()=>{});
 
       const rec = {
 
@@ -10451,7 +10721,21 @@
 
         peers.forEach((_, name) => tearDownPeer(name));
 
-        if (localStream){ localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+        if (localStream){
+
+          // Tear down both the processed and the raw underlying tracks.
+
+          try {
+
+            if (localStream._rawStream) localStream._rawStream.getTracks().forEach(t => t.stop());
+
+            localStream.getTracks().forEach(t => t.stop());
+
+          } catch(_){}
+
+          localStream = null;
+
+        }
 
         serverId = null; channelId = null;
 
@@ -10504,6 +10788,14 @@
       // AGC mid-call. Swaps in a fresh mic track with the new processing.
 
       reconfigureMic(){ return reconfigureMic(); },
+
+      // Called by the server-update handler when an admin changes the
+
+      // bitrate on the current voice channel — propagates the new cap
+
+      // to every active sender without renegotiation.
+
+      applyBitrate(){ _applyBitrateToAllPeers(); },
 
       // Deafen: silence every remote audio element AND set their
 
@@ -12672,6 +12964,32 @@
       document.getElementById('chanSettingsPermsToggle').textContent = 'SHOW';
 
       if (target.type === 'text') renderChanSettingsOverrides();
+
+    }
+
+    // Voice-orb-only: bitrate picker. Default to 64 kbps if the channel
+
+    // has no value yet (mirrors Discord's default audio quality).
+
+    const brField = document.getElementById('chanSettingsBitrateField');
+
+    if (brField){
+
+      brField.style.display = (target.type === 'voice') ? '' : 'none';
+
+      if (target.type === 'voice'){
+
+        const cur = Number(ent.bitrate) || 64;
+
+        document.querySelectorAll('[data-cs-br]').forEach(b => {
+
+          b.classList.toggle('active', Number(b.dataset.csBr) === cur);
+
+        });
+
+        document.getElementById('chanSettingsBitrateLbl').textContent = cur + ' kbps';
+
+      }
 
     }
 
@@ -19728,6 +20046,18 @@
 
   }
 
+  document.querySelectorAll('[data-cs-br]').forEach(btn => {
+
+    btn.addEventListener('click', () => {
+
+      document.querySelectorAll('[data-cs-br]').forEach(b => b.classList.toggle('active', b === btn));
+
+      document.getElementById('chanSettingsBitrateLbl').textContent = btn.dataset.csBr + ' kbps';
+
+    });
+
+  });
+
   document.getElementById('chanSettingsSave').addEventListener('click', async () => {
 
     if (!currentServer || !chanSettingsTarget) return;
@@ -19777,6 +20107,14 @@
         patch.permissionAllow = Object.keys(chanSettings_overrideAllow).length ? chanSettings_overrideAllow : null;
 
         patch.permissionDeny  = Object.keys(chanSettings_overrideDeny ).length ? chanSettings_overrideDeny  : null;
+
+      }
+
+      if (tType === 'voice'){
+
+        const active = document.querySelector('[data-cs-br].active');
+
+        if (active) patch.bitrate = Number(active.dataset.csBr);
 
       }
 

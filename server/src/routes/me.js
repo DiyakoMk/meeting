@@ -240,7 +240,8 @@ meRouter.get('/snapshot', async (req, res, next) => {
             customStyle: v.custom_style || null,
             visibleRoleIds:  parseRoleIds(v.visible_role_ids),
             permissionAllow: parseRoleIds(v.permission_allow),
-            permissionDeny:  parseRoleIds(v.permission_deny)
+            permissionDeny:  parseRoleIds(v.permission_deny),
+            bitrate: v.bitrate == null ? 64 : Number(v.bitrate)
           })),
           roles: (function(){
             const here = roleRows.filter(r => r.server_id === sid);
