@@ -39,7 +39,7 @@ case "${ID:-}" in ubuntu|debian) ;; *) warn "Untested on $ID — proceeding anyw
 DOMAIN="${DOMAIN:-}"
 EMAIL="${EMAIL:-}"
 REPO_URL="${REPO_URL:-https://github.com/DiyakoMk/meeting.git}"
-REPO_BRANCH="${REPO_BRANCH:-orblood}"
+REPO_BRANCH="${REPO_BRANCH:-orblood2}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/orblood}"
 APP_USER="${APP_USER:-orblood}"
 SKIP_TLS="${SKIP_TLS:-0}"
@@ -85,14 +85,22 @@ say "Installing apt packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 
-# Node 20 from NodeSource
-if ! command -v node >/dev/null || ! node --version | grep -qE '^v(20|22|24)'; then
+# Node 20 from NodeSource. Skip if a usable Node is already present —
+# many Iranian datacenter VPSes can't reach deb.nodesource.com behind
+# Cloudflare, in which case we expect the operator to have installed
+# Node manually (build-from-source / scp upload) before running this.
+if ! command -v node >/dev/null || ! node --version | grep -qE '^v(18|20|22|24)'; then
   apt-get install -y -qq curl ca-certificates gnupg
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null
+  if curl -fsSL --max-time 30 https://deb.nodesource.com/setup_20.x -o /tmp/nodesource.sh; then
+    bash /tmp/nodesource.sh >/dev/null
+    apt-get install -y -qq nodejs
+  else
+    fail "Could not download nodesource setup script. Install Node 20 manually first (e.g. build from source via 'git clone https://github.com/nodejs/node && cd node && ./configure && make -j\$(nproc) && make install'), then re-run this script."
+  fi
 fi
 
 apt-get install -y -qq \
-  nodejs git \
+  git \
   mariadb-server mariadb-client \
   nginx certbot python3-certbot-nginx \
   coturn \
@@ -220,7 +228,18 @@ systemctl restart orblood
 
 # ------ 8. Coturn ------
 say "Configuring Coturn"
-EXTERNAL_IP="$(curl -fsSL https://api.ipify.org 2>/dev/null || true)"
+# Detect the public IP. We try several services because ipify.org is on
+# Cloudflare and frequently unreachable from Iranian datacenters. As a
+# last resort fall back to the primary outbound interface address,
+# which is correct for most non-CGNAT VPS providers.
+EXTERNAL_IP="$(curl -fsSL --max-time 5 https://api.ipify.org 2>/dev/null \
+  || curl -fsSL --max-time 5 https://ifconfig.me 2>/dev/null \
+  || curl -fsSL --max-time 5 https://checkip.amazonaws.com 2>/dev/null \
+  || ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}' \
+  || true)"
+EXTERNAL_IP="$(echo "$EXTERNAL_IP" | tr -d '[:space:]')"
+[ -n "$EXTERNAL_IP" ] && say "Detected public IP: $EXTERNAL_IP"
+[ -z "$EXTERNAL_IP" ] && warn "Could not detect public IP — coturn will work behind 1:1 NAT but TURN relay may fail under CGNAT. Set EXTERNAL_IP manually if needed."
 cat > /etc/turnserver.conf <<EOF
 listening-port=3478
 tls-listening-port=5349
@@ -319,6 +338,15 @@ fi
 
 # ------ 11. firewall ------
 say "Configuring UFW"
+# Allow the SSH port we're connected on PLUS the default 22 so the
+# operator doesn't get locked out if their provider uses a non-standard
+# port (parsvds uses 9011, for example). We detect the active SSH port
+# from the current connection and add it to the allow list.
+CURRENT_SSH_PORT="$(ss -Htnp 'sport = :22 or sport = :9011' 2>/dev/null | head -1 | awk '{print $4}' | sed 's/.*://' || true)"
+[ -z "$CURRENT_SSH_PORT" ] && CURRENT_SSH_PORT="$(awk '/^Port / {print $2; exit}' /etc/ssh/sshd_config 2>/dev/null)"
+[ -z "$CURRENT_SSH_PORT" ] && CURRENT_SSH_PORT=22
+say "Allowing SSH on port $CURRENT_SSH_PORT (auto-detected)"
+ufw allow "$CURRENT_SSH_PORT/tcp" >/dev/null
 ufw allow 22/tcp >/dev/null
 ufw allow 80/tcp >/dev/null
 ufw allow 443/tcp >/dev/null

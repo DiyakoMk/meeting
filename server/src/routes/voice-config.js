@@ -15,8 +15,16 @@ voiceConfigRouter.get('/voice/config', requireAuth, (_req, res) => {
       username: config.voice.username,
       credential: config.voice.password
     });
+    // Many Iranian carriers DPI-block stun.l.google.com — derive a STUN
+    // entry from the TURN URLs so peers can self-discover their public
+    // address via our own coturn even when Google is blocked.
+    const stunUrls = config.voice.urls
+      .map(u => u.replace(/^turns?:/, 'stun:').split('?')[0])
+      .filter((u, i, arr) => arr.indexOf(u) === i);
+    if (stunUrls.length) ice.push({ urls: stunUrls });
   }
-  // A public STUN fallback so direct peer-to-peer still has a chance.
+  // Public STUN fallback as a last resort. Most ISPs in Iran can reach
+  // stun.l.google.com; for the few that can't, the entries above cover us.
   ice.push({ urls: ['stun:stun.l.google.com:19302'] });
   res.json({ iceServers: ice });
 });
