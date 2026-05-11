@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-d (voice: removed buggy Web Audio chain — relying on browser built-in echo/noise; restores reliable peer connect)');
+  console.log('[orblood] client build 2026-05-11-e (voice: connecting-dots mirrored on Voice Users sidebar avatars)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -1465,7 +1465,23 @@
 
           const a = resolveUserAvatar(u);
 
-          html += '<div class="vu-item'+(speaking?' speaking':'')+(mutedByMe?' muted-by-me':'')+'" data-vu-user="'+escapeHtml(u)+'" data-vu-ch="'+ch+'" data-name="'+escapeHtml(u)+(mutedByMe?' · MUTED BY YOU':'')+'"><div class="vu-av" style="background:'+a.bg+';border-color:'+data.avBorder+'"><span>'+(a.isImage?'':escapeHtml(a.text))+'</span><span class="vu-s on"></span></div></div>';
+          // Mirror the carousel's connecting indicator: while this
+
+          // peer's WebRTC connection is still negotiating, dim the
+
+          // avatar and overlay three pulsing dots.
+
+          const pst = (typeof voice !== 'undefined' && voice.peerState) ? voice.peerState(u) : null;
+
+          const stateAttr = (pst && pst !== 'connected') ? ' data-peer-state="'+pst+'"' : '';
+
+          const dots = (pst === 'connecting' || pst === 'reconnecting')
+
+            ? '<span class="orb-av-dots" aria-hidden="true"><span></span><span></span><span></span></span>'
+
+            : '';
+
+          html += '<div class="vu-item'+(speaking?' speaking':'')+(mutedByMe?' muted-by-me':'')+'" data-vu-user="'+escapeHtml(u)+'" data-vu-ch="'+ch+'" data-name="'+escapeHtml(u)+(mutedByMe?' · MUTED BY YOU':'')+'"><div class="vu-av"'+stateAttr+' style="background:'+a.bg+';border-color:'+data.avBorder+'"><span>'+(a.isImage?'':escapeHtml(a.text))+'</span>'+dots+'<span class="vu-s on"></span></div></div>';
 
         });
 
@@ -10139,6 +10155,16 @@
     function _refreshConnectingDots(){
 
       if (typeof updateOrbStates === 'function') updateOrbStates();
+
+      // Mirror onto the Voice Users sidebar too — it builds its own
+
+      // avatar grid, so we re-render whenever a peer's state flips.
+
+      if (typeof renderVoiceUsers === 'function' && typeof voiceUsersSidebarOpen !== 'undefined' && voiceUsersSidebarOpen){
+
+        renderVoiceUsers();
+
+      }
 
     }
 

@@ -143,6 +143,23 @@ body{font-family:'Inter','Vazirmatn',-apple-system,sans-serif;background:var(--b
 
 .vu-item.speaking .vu-av{border-color:var(--success);box-shadow:0 0 12px rgba(34,197,94,0.5)}
 
+/* Mirror the carousel avatar's connecting-state indicator on the
+ * Voice Users sidebar avatars too. Same colour rules: warn ring +
+ * dimmed surface for connecting/reconnecting, danger ring for
+ * failed. The .orb-av-dots overlay above slots straight into the
+ * existing avatar wrapper. */
+.vu-av[data-peer-state="connecting"],
+.vu-av[data-peer-state="reconnecting"]{
+  opacity:0.55;
+  border-color:var(--warn)!important;
+  box-shadow:0 0 12px rgba(245,158,11,0.5)!important;
+}
+.vu-av[data-peer-state="failed"]{
+  opacity:0.55;
+  border-color:var(--danger)!important;
+  box-shadow:0 0 12px rgba(239,68,68,0.55)!important;
+}
+
 .vu-item.dim{opacity:0.55}
 
 .vu-item.muted-by-me .vu-av{filter:grayscale(0.6) brightness(0.7)}
