@@ -69,41 +69,38 @@
 
   })();
 
-  // PWA: register the service worker so the shell works offline and the
+  // PWA: FORCE UNREGISTER OLD SERVICE WORKERS
+  // The old service worker was caching stale builds. We unregister it
+  // on every page load to ensure users always get fresh content.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      registrations.forEach(reg => {
+        reg.unregister();
+        console.log('[orblood] unregistered old service worker');
+      });
+    }).catch(() => {});
+  }
 
-  // app is installable on home screens. Wrapped in try/catch and a
-
-  // feature check so older browsers / iframes still load the page.
-
+  // Service worker temporarily disabled to fix caching issues
+  // Will re-enable with better cache strategy in future update
+  /*
   if ('serviceWorker' in navigator && window.isSecureContext){
-
     window.addEventListener('load', () => {
-
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
-
         .catch(err => console.warn('[orblood] sw register failed', err && err.message));
-
     });
 
     // When a new SW takes over (after an update), reload once so the
-
     // user sees the fresh build instead of a stale cached shell.
-
     let _swReloaded = false;
-
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-
       if (_swReloaded) return;
-
       _swReloaded = true;
-
       // Tiny defer so any pending navigation finishes before the reload.
-
       setTimeout(() => location.reload(), 50);
-
     });
-
   }
+  */
 
   // ============== STARS ==============
 

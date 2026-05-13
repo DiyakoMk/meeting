@@ -277,6 +277,14 @@ server {
 
     client_max_body_size 8m;
 
+    # Disable caching for HTML/JS/CSS to ensure users get fresh builds
+    location ~* \.(html|js|css)$ {
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+        try_files \$uri \$uri/ /index.html;
+    }
+
     location / {
         try_files \$uri \$uri/ /index.html;
     }
