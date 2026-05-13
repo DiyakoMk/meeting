@@ -1,0 +1,72 @@
+{
+  "name": "orblood-desktop",
+  "version": "0.1.0",
+  "description": "ORBLOOD desktop app — Electron shell that connects to a remote ORBLOOD server.",
+  "private": true,
+  "main": "src/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "ELECTRON_DEV=1 electron .",
+    "icons": "node scripts/make-icons.mjs",
+    "pack": "npm run icons && electron-builder --dir",
+    "build:win":   "npm run icons && electron-builder --win   --publish never",
+    "build:mac":   "npm run icons && electron-builder --mac   --publish never",
+    "build:linux": "npm run icons && electron-builder --linux --publish never",
+    "build:all":   "npm run icons && electron-builder -mwl    --publish never"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "png-to-ico": "^2.1.8",
+    "sharp": "^0.33.4"
+  },
+  "build": {
+    "appId": "com.orblood.desktop",
+    "productName": "Orblood",
+    "asar": true,
+    "files": [
+      "src/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "extraMetadata": {
+      "main": "src/main.cjs"
+    },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] }
+      ],
+      "category": "public.app-category.social-networking",
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.png",
+      "category": "Network"
+    },
+    "publish": null
+  }
+}

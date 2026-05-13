@@ -1,0 +1,148 @@
+name: Desktop build
+
+# Build the Electron desktop app for Windows / macOS / Linux on every
+# request. Triggers:
+#   1. Manual run from the Actions tab (workflow_dispatch).
+#   2. A push of any tag matching v* (e.g. v0.1.0) — the resulting
+#      installers are also attached to a GitHub Release.
+#   3. Any push to a "build/desktop" branch, in case you want to run the
+#      pipeline without minting a tag yet.
+#
+# The repo can stay private — Actions still run on GitHub-hosted runners
+# and the artifacts download is gated to people with read access to the
+# repo, which is the team you'd already trust.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Also publish a draft GitHub Release with these installers"
+        required: false
+        default: "false"
+  push:
+    tags:
+      - "v*"
+    branches:
+      - "build/desktop"
+
+permissions:
+  contents: write   # needed to create the Release when a tag is pushed
+
+jobs:
+  build:
+    name: ${{ matrix.os }} / ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows installer
+          - os: windows-latest
+            target: win
+            artifact: orblood-windows
+          # macOS DMG (universal — both arm64 and x64 from the same job)
+          - os: macos-latest
+            target: mac
+            artifact: orblood-macos
+          # Linux AppImage + .deb
+          - os: ubuntu-latest
+            target: linux
+            artifact: orblood-linux
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Native deps for sharp (icon raster) on Linux. macOS + Windows pull
+      # prebuilt binaries automatically.
+      - name: Linux build deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev libnss3 libxss1 libasound2 libsecret-1-dev \
+            libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libgbm1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install desktop deps
+        working-directory: desktop
+        run: |
+          # Use ci when the lockfile is committed; fall back to install on
+          # the very first run so a contributor can kick off the workflow
+          # without bootstrapping the lockfile locally first.
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
+        shell: bash
+
+      - name: Rasterise icons
+        working-directory: desktop
+        run: npm run icons
+        shell: bash
+
+      # electron-builder picks the platform from the script name. We pass
+      # --publish never explicitly so a misconfigured token can't push to
+      # a release we didn't ask for.
+      - name: Build (${{ matrix.target }})
+        working-directory: desktop
+        env:
+          # electron-builder uses these to decide whether to try uploading
+          # to GitHub Releases. We want manual control, so leave both off.
+          GH_TOKEN: ""
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run build:${{ matrix.target }}
+        shell: bash
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/*.dmg
+            desktop/dist/*.AppImage
+            desktop/dist/*.deb
+            desktop/dist/*.zip
+            desktop/dist/*.blockmap
+          if-no-files-found: warn
+          retention-days: 30
+
+  release:
+    name: Publish draft release
+    needs: build
+    runs-on: ubuntu-latest
+    # Only publish a release when:
+    #   - a v* tag was pushed, OR
+    #   - someone manually dispatched with release=true.
+    if: |
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.release == 'true')
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten artifact tree
+        run: |
+          mkdir -p out
+          find artifacts -type f \
+            \( -name '*.exe' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' -o -name '*.zip' -o -name '*.blockmap' \) \
+            -exec cp -v {} out/ \;
+          ls -la out/
+
+      - name: Draft GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('build-{0}', github.run_number) }}
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+          files: out/*

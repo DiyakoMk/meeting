@@ -1,0 +1,133 @@
+/* Poison Green — bioluminescent toxic green on near-black.
+ *
+ * Same dark canvas as Orblood but the brand accent shifts from blood-red
+ * to a radioactive lime green, with a subtle vapour-glow vignette behind
+ * the app shell. Panels stay near-black so the glow has somewhere to
+ * read against; tints lean ever-so-slightly green so the whole UI
+ * has a chemical / hazmat vibe instead of feeling like a recolour.
+ *
+ * Token-only file: no structural CSS lives here. The structural look
+ * comes from main.css using the same --accent / --tint-* / --gb tokens
+ * the dark theme defines. */
+
+:root[data-theme="poison-green"] {
+  /* Surfaces — keep them pitch-dark so the green glow reads. */
+  --bg:           #03060a;
+  --panel:        rgba(6, 12, 10, 0.97);
+  --glass:        rgba(140, 255, 180, 0.022);
+  --gb:           rgba(140, 255, 180, 0.06);
+
+  /* Typography — slightly cooler off-white so it doesn't fight the green. */
+  --t1: rgba(232, 248, 240, 0.95);
+  --t2: rgba(190, 220, 200, 0.55);
+  --t3: rgba(160, 200, 180, 0.22);
+
+  /* Brand accent: toxic neon lime. The 2 sits behind it as a deep moss
+   * for gradient endpoints (orb cores, button bases). */
+  --accent:   #19f06a;
+  --accent-2: #047a3a;
+  --ag:       rgba(25, 240, 106, 0.4);
+
+  /* Semantic — pulled toward the cool side so warn/danger stay readable
+   * against the green glow. */
+  --success:  #34d399;
+  --warn:     #fbbf24;
+  --danger:   #f87171;
+  --pink:     #34d399;          /* used by greet-grad mid-stop */
+
+  /* Tier badges — keep gold/red anchors but steer epic into emerald so
+   * the tier ribbons feel like part of the same system. */
+  --legendary: #facc15;
+  --epic:      #10b981;
+  --rare:      #19f06a;
+  --common:    #94a3b8;
+
+  --selection-bg: rgba(25, 240, 106, 0.32);
+  --selection-fg: #03060a;
+
+  /* Decorative scene paint applied on <body> behind the app shell.
+   * Layered radial glows approximate a slow-leaking toxic atmosphere
+   * — a bright bloom up top, a dimmer one bottom-right, all on top of
+   * the near-black base so you can see them without losing contrast. */
+  --scene-paint:
+    radial-gradient(circle at 50% 0%,   rgba(25, 240, 106, 0.08), transparent 50%),
+    radial-gradient(circle at 88% 88%,  rgba(4, 122, 58, 0.10),  transparent 55%),
+    radial-gradient(circle at 8% 78%,   rgba(25, 240, 106, 0.04), transparent 60%),
+    var(--bg);
+
+  /* Surface tints — very faint green wash so hovers / dividers / chips
+   * sit on a green-tinged surface rather than pure white-on-black. */
+  --tint-1: rgba(140,255,180,0.025);
+  --tint-2: rgba(140,255,180,0.045);
+  --tint-3: rgba(140,255,180,0.07);
+  --tint-4: rgba(140,255,180,0.09);
+  --tint-5: rgba(140,255,180,0.11);
+  --tint-6: rgba(140,255,180,0.16);
+  --tint-7: rgba(140,255,180,0.21);
+  --tint-9: rgba(140,255,180,0.32);
+  --tint-strong: rgba(180,255,210,0.55);
+
+  --border-1:  rgba(140,255,180,0.05);
+  --border-2:  rgba(140,255,180,0.07);
+  --border-3:  rgba(140,255,180,0.10);
+  --border-4:  rgba(140,255,180,0.13);
+  --border-5:  rgba(140,255,180,0.17);
+
+  --shadow-soft:   0 12px 36px rgba(0, 0, 0, 0.55);
+  --shadow-strong: 0 20px 40px rgba(0, 22, 8, 0.5);
+
+  /* Greeting headline gradient — bright white slipping into neon lime so
+   * "GOOD AFTERNOON, USER" hits the eye like a chemical readout. */
+  --greet-grad: linear-gradient(135deg, #ffffff 0%, #6ef0a0 55%, var(--accent) 100%);
+
+  /* Cover scrim painted on top of cover images — slightly green so a
+   * cover photo blends with the rest of the chrome instead of feeling
+   * like a window onto a different theme. */
+  --cover-scrim: linear-gradient(180deg, rgba(3,12,8,0.50), rgba(3,12,8,0.85));
+
+  /* Default avatar / orb fallback gradients — moss-on-green stack so a
+   * faceless avatar reads as part of the panel, not a cosmic indigo
+   * leftover from the dark theme. */
+  --av-default-grad:      linear-gradient(135deg, #4ade80, #064e3b);
+  --av-default-grad-warm: linear-gradient(135deg, #6ee7b7, #022c22);
+
+  /* Sphere highlight + inner shadow used inside orbs / planets. We push
+   * the inner shadow slightly toward green so the orbs look like they
+   * have green core radiation rather than just black. */
+  --orb-inner-highlight: rgba(220,255,235,0.5);
+  --orb-inner-shadow:    rgba(4, 18, 12, 0.72);
+
+  /* Brand glow alpha tones — the green halo around orbs, banner pulses,
+   * hovered chips, etc. Slightly cooler than Orblood's red because pure
+   * neon-lime smears very fast at high alpha. */
+  --brand-glow-strong: rgba(25, 240, 106, 0.55);
+  --brand-glow:        rgba(25, 240, 106, 0.4);
+  --brand-glow-soft:   rgba(25, 240, 106, 0.18);
+  --brand-glow-faint:  rgba(25, 240, 106, 0.08);
+}
+
+/* Body wash + structural overrides ---------------------------------- */
+
+/* The dark theme's body never paints --scene-paint directly because the
+ * default :root selector handles it via cascade order. For non-default
+ * themes we have to pin the body background ourselves. */
+:root[data-theme="poison-green"] body {
+  background: var(--scene-paint);
+}
+
+/* The cosmos starfield runs full-strength on dark themes; that's fine
+ * here too, but the cosmos::before / ::after radial glows were tuned
+ * for red. Hue-rotate them so they tint green instead of the original
+ * brand colour leaking through. */
+:root[data-theme="poison-green"] .cosmos::before,
+:root[data-theme="poison-green"] .cosmos::after {
+  filter: hue-rotate(135deg) saturate(1.05);
+}
+
+/* Orblood-red selection colour leaked into a few inputs that hard-code
+ * `::selection`; force the green selection here so it doesn't fight
+ * the brand. */
+:root[data-theme="poison-green"] ::selection {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}

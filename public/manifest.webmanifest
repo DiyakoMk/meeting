@@ -1,0 +1,22 @@
+{
+  "name": "ORBLOOD // Interstellar",
+  "short_name": "ORBLOOD",
+  "description": "Voice-first space chat — DMs, servers, voice channels.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "theme_color": "#020103",
+  "background_color": "#020103",
+  "lang": "en",
+  "dir": "auto",
+  "categories": ["social", "communication"],
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "32x32 48x48", "type": "image/x-icon" }
+  ],
+  "shortcuts": [
+    { "name": "DMs",   "url": "/?page=dms",   "description": "Open direct messages" },
+    { "name": "World", "url": "/?page=world", "description": "Open server view" }
+  ]
+}

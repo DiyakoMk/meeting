@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en" data-theme="orblood-dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Modal Samples — Orblood</title>
+<link rel="stylesheet" href="/styles/themes/orblood-dark.css" />
+<link rel="stylesheet" href="/styles/themes/marble-light.css" />
+<link rel="stylesheet" href="/styles/themes/poison-green.css" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0 }
+  html, body {
+    background: var(--bg);
+    color: var(--t1);
+    font-family: 'Inter', 'Space Grotesk', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  body {
+    background: var(--scene-paint, var(--bg));
+    padding: 32px 24px 80px;
+  }
+  .header {
+    max-width: 1080px; margin: 0 auto 40px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .header h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px; font-weight: 700; letter-spacing: 0.5px;
+  }
+  .header p { color: var(--t2); font-size: 13px; margin-top: 4px }
+  .theme-switch {
+    display: flex; gap: 6px;
+    padding: 6px; border: 1px solid var(--tint-3);
+    border-radius: 10px; background: var(--tint-1);
+  }
+  .theme-switch button {
+    background: transparent; color: var(--t2); border: none;
+    padding: 6px 12px; border-radius: 6px;
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    letter-spacing: 1.5px; cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .theme-switch button:hover { color: var(--t1) }
+  .theme-switch button.active {
+    background: var(--accent); color: #fff;
+  }
+
+  .grid {
+    max-width: 1080px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 32px;
+  }
+
+  .sample {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .sample-meta {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; letter-spacing: 1.6px; color: var(--t3);
+    text-transform: uppercase;
+  }
+  .sample-name {
+    font-size: 16px; font-weight: 600; color: var(--t1); margin-top: 2px;
+  }
+  .sample-desc { font-size: 12px; color: var(--t2); line-height: 1.55; margin-top: 4px }
+
+  .frame {
+    position: relative;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(185,28,74,0.06), transparent 60%),
+      var(--bg);
+    border: 1px solid var(--tint-3);
+    border-radius: 14px; padding: 28px 20px;
+    min-height: 360px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ============== VARIANT 1 — Glass Sheet ============== */
+  .v-glass {
+    width: 100%; max-width: 320px;
+    background:
+      radial-gradient(ellipse at 50% 0%, var(--brand-glow-soft), transparent 65%),
+      var(--tint-2);
+    border: 1px solid var(--tint-4);
+    border-radius: 14px;
+    box-shadow: 0 18px 48px rgba(0,0,0,0.5), inset 0 1px 0 var(--tint-4);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    overflow: hidden;
+  }
+  .v-glass-head {
+    padding: 14px 16px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .v-glass-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px; letter-spacing: 1.8px; color: var(--t3);
+  }
+  .v-glass-close {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: var(--tint-2); border: 1px solid var(--tint-3);
+    color: var(--t2); cursor: pointer; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .v-glass-body { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px }
+  .v-glass-orb {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa, #1e1b4b);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 20px;
+    box-shadow: 0 0 22px var(--brand-glow), inset 0 0 12px rgba(255,255,255,0.3);
+    border: 1px solid var(--tint-4);
+  }
+  .v-glass-row { display: flex; align-items: center; gap: 12px }
+  .v-glass-name { font-size: 16px; font-weight: 700; letter-spacing: 0.3px }
+  .v-glass-handle { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--t3); margin-top: 2px }
+  .v-glass-tags { display: flex; gap: 5px; flex-wrap: wrap }
+  .v-glass-tag {
+    padding: 3px 9px; border-radius: 5px;
+    background: var(--tint-2); border: 1px solid var(--tint-3);
+    color: var(--t2); font-family: 'Space Mono', monospace;
+    font-size: 9px; letter-spacing: 1.4px;
+  }
+  .v-glass-tag.on { color: var(--success); background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.25) }
+  .v-glass-bio {
+    padding: 9px 12px; border-radius: 10px;
+    background: var(--tint-2); border: 1px solid var(--tint-3);
+    color: var(--t2); font-size: 12px; line-height: 1.55;
+  }
+  .v-glass-actions {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    padding-top: 10px; border-top: 1px solid var(--tint-2);
+  }
+  .v-glass-btn {
+    padding: 8px 10px; border-radius: 8px;
+    background: var(--tint-2); border: 1px solid var(--tint-3);
+    color: var(--t1); font-family: 'Space Mono', monospace;
+    font-size: 9px; letter-spacing: 1.5px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .v-glass-btn:hover { background: var(--tint-4) }
+  .v-glass-btn.primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border: none; color: #fff;
+  }
+
+  /* ============== VARIANT 2 — Banner Hero ============== */
+  .v-hero {
+    width: 100%; max-width: 360px;
+    background: var(--panel);
+    border: 1px solid var(--tint-3);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+  }
+  .v-hero-banner {
+    height: 80px;
+    background:
+      radial-gradient(ellipse at 30% 30%, var(--accent), transparent 60%),
+      radial-gradient(ellipse at 80% 70%, var(--accent-2), transparent 60%),
+      linear-gradient(135deg, #1e1b4b, #0a0408);
+    position: relative;
+  }
+  .v-hero-orb-wrap {
+    position: relative; margin-top: -36px; padding: 0 16px;
+    display: flex; align-items: end; gap: 12px;
+  }
+  .v-hero-orb {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, #6ee7b7, #022c22);
+    border: 3px solid var(--panel);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 22px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+  }
+  .v-hero-info { flex: 1; padding-bottom: 6px; min-width: 0 }
+  .v-hero-name { font-size: 17px; font-weight: 700; letter-spacing: 0.3px }
+  .v-hero-handle { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--t3); margin-top: 2px }
+  .v-hero-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px }
+  .v-hero-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    padding: 10px; background: var(--tint-1);
+    border: 1px solid var(--tint-2); border-radius: 10px;
+  }
+  .v-hero-stat { text-align: center }
+  .v-hero-stat-n {
+    font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700;
+    color: var(--t1);
+  }
+  .v-hero-stat-l {
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.3px;
+    color: var(--t3); margin-top: 2px;
+  }
+  .v-hero-bio { font-size: 12px; line-height: 1.6; color: var(--t2) }
+  .v-hero-actions { display: flex; gap: 8px }
+  .v-hero-actions button {
+    flex: 1; padding: 9px;
+    background: var(--tint-2); border: 1px solid var(--tint-3);
+    color: var(--t1); border-radius: 8px;
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .v-hero-actions button:hover { background: var(--tint-4) }
+  .v-hero-actions button.primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-color: transparent; color: #fff;
+  }
+
+  /* ============== VARIANT 3 — Minimal Card ============== */
+  .v-min {
+    width: 100%; max-width: 300px;
+    background: var(--tint-1);
+    border: 1px solid var(--tint-3);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex; flex-direction: column; gap: 14px;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  .v-min-row { display: flex; align-items: center; gap: 12px }
+  .v-min-orb {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, #19f06a, #047a3a);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 18px; flex-shrink: 0;
+    box-shadow: 0 0 18px var(--brand-glow);
+  }
+  .v-min-name { font-size: 15px; font-weight: 600 }
+  .v-min-handle { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--t3); margin-top: 1px }
+  .v-min-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    letter-spacing: 1.5px; color: var(--success);
+  }
+  .v-min-status::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--success); box-shadow: 0 0 6px var(--success);
+  }
+  .v-min-divider { height: 1px; background: var(--tint-3); margin: 0 -18px }
+  .v-min-list { display: flex; flex-direction: column; gap: 8px }
+  .v-min-list-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px;
+  }
+  .v-min-l { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: var(--t3) }
+  .v-min-v { color: var(--t1); font-weight: 500 }
+  .v-min-actions { display: flex; gap: 6px; flex-wrap: wrap }
+  .v-min-pill {
+    flex: 1; min-width: 0;
+    padding: 7px 10px; border-radius: 999px;
+    background: var(--tint-2); border: 1px solid var(--tint-3);
+    color: var(--t1); cursor: pointer;
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.4px;
+    text-align: center; white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .v-min-pill:hover { background: var(--tint-4) }
+  .v-min-pill.danger { color: var(--danger); border-color: rgba(239,68,68,0.3) }
+
+  /* ============== VARIANT 4 — Stacked Sections ============== */
+  .v-stack {
+    width: 100%; max-width: 340px;
+    background: var(--panel);
+    border: 1px solid var(--tint-3);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  }
+  .v-stack-head {
+    padding: 14px 16px;
+    background: linear-gradient(180deg, var(--tint-3), transparent);
+    border-bottom: 1px solid var(--tint-2);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .v-stack-orb {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #a78bfa, #1e1b4b);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px; flex-shrink: 0;
+  }
+  .v-stack-title-wrap { flex: 1; min-width: 0 }
+  .v-stack-name { font-size: 14px; font-weight: 600 }
+  .v-stack-sub { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--t3); margin-top: 1px }
+  .v-stack-section { padding: 12px 16px; border-bottom: 1px solid var(--tint-2) }
+  .v-stack-section:last-child { border-bottom: none }
+  .v-stack-l {
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.6px;
+    color: var(--t3); margin-bottom: 8px;
+  }
+  .v-stack-v { font-size: 12px; color: var(--t1); line-height: 1.55 }
+  .v-stack-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px }
+  .v-stack-tag {
+    padding: 3px 8px; border-radius: 5px;
+    background: var(--tint-2); border: 1px solid var(--tint-3);
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.3px;
+    color: var(--t2);
+  }
+  .v-stack-actions { padding: 12px 16px; display: flex; gap: 8px; background: var(--tint-1) }
+  .v-stack-btn {
+    flex: 1; padding: 8px;
+    background: transparent; border: 1px solid var(--tint-3);
+    color: var(--t1); border-radius: 8px;
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .v-stack-btn:hover { background: var(--tint-2) }
+  .v-stack-btn.primary {
+    background: var(--accent); border-color: transparent; color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Profile modal — design samples</h1>
+    <p>Four variants. Toggle theme to see how each holds up.</p>
+  </div>
+  <div class="theme-switch" id="themeSwitch">
+    <button data-theme="orblood-dark" class="active">Orblood</button>
+    <button data-theme="marble-light">Marble</button>
+    <button data-theme="poison-green">Poison</button>
+  </div>
+</div>
+
+<div class="grid">
+
+  <div class="sample">
+    <div>
+      <div class="sample-meta">// VARIANT 1</div>
+      <div class="sample-name">Glass Sheet</div>
+      <div class="sample-desc">Frosted glass with brand-glow halo. Tight padding, two-column action grid, no banner.</div>
+    </div>
+    <div class="frame">
+      <div class="v-glass">
+        <div class="v-glass-head">
+          <div class="v-glass-title">// PROFILE</div>
+          <button class="v-glass-close">×</button>
+        </div>
+        <div class="v-glass-body">
+          <div class="v-glass-row">
+            <div class="v-glass-orb">U</div>
+            <div>
+              <div class="v-glass-name">User Two</div>
+              <div class="v-glass-handle">@user2</div>
+            </div>
+          </div>
+          <div class="v-glass-tags">
+            <span class="v-glass-tag">EXPLORER</span>
+            <span class="v-glass-tag on">ONLINE</span>
+          </div>
+          <div class="v-glass-bio">Friend request — not connected yet.</div>
+          <div class="v-glass-actions">
+            <button class="v-glass-btn primary">MESSAGE</button>
+            <button class="v-glass-btn">CALL</button>
+            <button class="v-glass-btn">FRIEND</button>
+            <button class="v-glass-btn">SHARE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sample">
+    <div>
+      <div class="sample-meta">// VARIANT 2</div>
+      <div class="sample-name">Banner Hero</div>
+      <div class="sample-desc">Banner up top, orb half-overlapping. Stats grid + bio + flat action row. More expressive.</div>
+    </div>
+    <div class="frame">
+      <div class="v-hero">
+        <div class="v-hero-banner"></div>
+        <div class="v-hero-orb-wrap">
+          <div class="v-hero-orb">U</div>
+          <div class="v-hero-info">
+            <div class="v-hero-name">User Two</div>
+            <div class="v-hero-handle">@user2 · ONLINE</div>
+          </div>
+        </div>
+        <div class="v-hero-body">
+          <div class="v-hero-stats">
+            <div class="v-hero-stat">
+              <div class="v-hero-stat-n">12</div>
+              <div class="v-hero-stat-l">FRIENDS</div>
+            </div>
+            <div class="v-hero-stat">
+              <div class="v-hero-stat-n">3</div>
+              <div class="v-hero-stat-l">SERVERS</div>
+            </div>
+            <div class="v-hero-stat">
+              <div class="v-hero-stat-n">42</div>
+              <div class="v-hero-stat-l">ORBS</div>
+            </div>
+          </div>
+          <div class="v-hero-bio">Pilot of the late-night orbit. Mostly lurking, sometimes shipping.</div>
+          <div class="v-hero-actions">
+            <button class="primary">MESSAGE</button>
+            <button>FRIEND</button>
+            <button>SHARE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sample">
+    <div>
+      <div class="sample-meta">// VARIANT 3</div>
+      <div class="sample-name">Minimal Card</div>
+      <div class="sample-desc">Smallest, calmest. Pill-shaped actions. Status dot inline. Best for tooltip-style profiles.</div>
+    </div>
+    <div class="frame">
+      <div class="v-min">
+        <div class="v-min-row">
+          <div class="v-min-orb">U</div>
+          <div>
+            <div class="v-min-name">User Two</div>
+            <div class="v-min-handle">@user2</div>
+          </div>
+        </div>
+        <div class="v-min-status">ONLINE · ENCRYPTED CHANNEL</div>
+        <div class="v-min-divider"></div>
+        <div class="v-min-list">
+          <div class="v-min-list-row">
+            <span class="v-min-l">JOINED</span>
+            <span class="v-min-v">MAY 2026</span>
+          </div>
+          <div class="v-min-list-row">
+            <span class="v-min-l">SHARED</span>
+            <span class="v-min-v">2 servers</span>
+          </div>
+          <div class="v-min-list-row">
+            <span class="v-min-l">RANK</span>
+            <span class="v-min-v">EXPLORER</span>
+          </div>
+        </div>
+        <div class="v-min-actions">
+          <button class="v-min-pill">MESSAGE</button>
+          <button class="v-min-pill">FRIEND</button>
+          <button class="v-min-pill danger">BLOCK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sample">
+    <div>
+      <div class="sample-meta">// VARIANT 4</div>
+      <div class="sample-name">Stacked Sections</div>
+      <div class="sample-desc">Discord-style: compact header, divided sections, sticky action footer. Classic and dense.</div>
+    </div>
+    <div class="frame">
+      <div class="v-stack">
+        <div class="v-stack-head">
+          <div class="v-stack-orb">U</div>
+          <div class="v-stack-title-wrap">
+            <div class="v-stack-name">User Two</div>
+            <div class="v-stack-sub">@user2 · ONLINE</div>
+          </div>
+        </div>
+        <div class="v-stack-section">
+          <div class="v-stack-l">ABOUT</div>
+          <div class="v-stack-v">Pilot of the late-night orbit. Mostly lurking, sometimes shipping.</div>
+        </div>
+        <div class="v-stack-section">
+          <div class="v-stack-l">JOINED</div>
+          <div class="v-stack-v">MAY 2026</div>
+        </div>
+        <div class="v-stack-section">
+          <div class="v-stack-l">ROLES</div>
+          <div class="v-stack-tags">
+            <span class="v-stack-tag">EXPLORER</span>
+            <span class="v-stack-tag">VOYAGER</span>
+            <span class="v-stack-tag">PILOT</span>
+          </div>
+        </div>
+        <div class="v-stack-actions">
+          <button class="v-stack-btn primary">MESSAGE</button>
+          <button class="v-stack-btn">FRIEND</button>
+          <button class="v-stack-btn">SHARE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('#themeSwitch button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#themeSwitch button').forEach(b => b.classList.toggle('active', b === btn));
+      document.documentElement.setAttribute('data-theme', btn.dataset.theme);
+    });
+  });
+</script>
+
+</body>
+</html>

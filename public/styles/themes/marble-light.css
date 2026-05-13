@@ -1,0 +1,350 @@
+/* Marble Light — white marble with red and black veins.
+ *
+ * Surfaces lean warm white, accents are blood red, contrast comes from
+ * deep ink black for borders and text instead of translucent white.
+ * The marble feel comes from layered radial gradients painted on <body>
+ * via --scene-paint. */
+
+:root[data-theme="marble-light"] {
+  /* Surfaces */
+  --bg:           #f3ece6;
+  --panel:        rgba(252, 248, 245, 0.97);
+  --glass:        rgba(0, 0, 0, 0.025);
+  --gb:           rgba(0, 0, 0, 0.08);
+
+  /* Typography */
+  --t1: rgba(20, 8, 8, 0.94);
+  --t2: rgba(60, 30, 35, 0.66);
+  --t3: rgba(80, 40, 45, 0.34);
+
+  /* Brand accent: blood red on white (slightly darker than dark theme
+   * so it doesn't fluoresce against the bright canvas). */
+  --accent:   #b40224;
+  --accent-2: #7a0a14;
+  --ag:       rgba(180, 2, 36, 0.32);
+
+  /* Semantic — same hues, nudged for legibility on light surfaces. */
+  --success:  #15803d;
+  --warn:     #b45309;
+  --danger:   #b91c1c;
+  --pink:     #9d174d;
+
+  /* Tier badges */
+  --legendary: #b45309;
+  --epic:      #831843;
+  --rare:      #b91c4a;
+  --common:    #57534e;
+
+  --selection-bg: rgba(180, 2, 36, 0.25);
+  --selection-fg: #1a0a0a;
+
+  /* Surface tints — flipped from white-on-dark to ink-on-cream. The same
+   * structural CSS gets the right look without per-element overrides. */
+  --tint-1:      rgba(0,0,0,0.018);
+  --tint-2:      rgba(0,0,0,0.04);
+  --tint-3:      rgba(0,0,0,0.06);
+  --tint-4:      rgba(0,0,0,0.08);
+  --tint-5:      rgba(0,0,0,0.10);
+  --tint-6:      rgba(0,0,0,0.14);
+  --tint-7:      rgba(0,0,0,0.18);
+  --tint-9:      rgba(0,0,0,0.30);
+  --tint-strong: rgba(0,0,0,0.55);
+
+  --border-1:  rgba(0,0,0,0.04);
+  --border-2:  rgba(0,0,0,0.07);
+  --border-3:  rgba(0,0,0,0.10);
+  --border-4:  rgba(0,0,0,0.14);
+  --border-5:  rgba(0,0,0,0.18);
+
+  --shadow-soft:   0 12px 36px rgba(40,15,15,0.12);
+  --shadow-strong: 0 20px 40px rgba(40,15,15,0.18);
+
+  /* Greeting headline gradient — ink + brand on warm cream so the title
+   * has weight without bleaching into the marble. */
+  --greet-grad: linear-gradient(135deg, #1a0a0a 0%, var(--accent) 70%, var(--accent-2) 100%);
+
+  /* Cover scrim is barely-there cream wash so a real cover photo tints
+   * but doesn't get crushed to black. */
+  --cover-scrim: linear-gradient(180deg, rgba(244,238,233,0.05), rgba(244,238,233,0.55));
+
+  /* Hero background swaps the cosmic vignette for a warm tint that
+   * matches the marble veining underneath. */
+  --hero-bg:
+    radial-gradient(ellipse at 80% 20%, rgba(180,2,36,0.08), transparent 55%),
+    radial-gradient(ellipse at 10% 100%, rgba(0,0,0,0.05), transparent 55%);
+
+  /* Default avatar fallback gradients — warm slate + soft rose instead
+   * of cosmic indigo, so a faceless avatar reads as part of the panel. */
+  --av-default-grad:      linear-gradient(135deg, #d6b8be, #6b4548);
+  --av-default-grad-warm: linear-gradient(135deg, #e6c9ce, #7a4a4f);
+
+  /* Sphere highlights/shadows — invert the inner wash so an orb on a
+   * light panel still looks 3D. */
+  --orb-inner-highlight: rgba(255,255,255,0.7);
+  --orb-inner-shadow:    rgba(0,0,0,0.18);
+
+  /* Brand glow alpha tones — dropped significantly so the red halo on
+   * orbs / banners doesn't bleed pink into the cream marble. */
+  --brand-glow-strong: rgba(180,2,36,0.32);
+  --brand-glow:        rgba(180,2,36,0.22);
+  --brand-glow-soft:   rgba(180,2,36,0.10);
+  --brand-glow-faint:  rgba(180,2,36,0.04);
+
+  /* Marble veining: layered radial + linear gradients evoke red and
+   * black veins running through warm white stone. The bottom layer is
+   * the solid base color. */
+  --scene-paint:
+    radial-gradient(ellipse 90% 60% at 12% 18%, rgba(0, 0, 0, 0.10), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 86% 8%,  rgba(180, 2, 36, 0.10), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 78% 92%, rgba(0, 0, 0, 0.08),  transparent 65%),
+    radial-gradient(ellipse 50% 30% at 25% 78%, rgba(180, 2, 36, 0.07), transparent 70%),
+    linear-gradient(125deg, rgba(255,255,255,0.6) 0%, rgba(244,238,233,0) 30%, rgba(245,235,232,0.5) 70%, rgba(252,250,247,0.7) 100%),
+    var(--bg);
+}
+
+/* The body background is the marble canvas itself. Everything else uses
+ * --panel / --tint-* tokens that already swap correctly. */
+:root[data-theme="marble-light"] body {
+  background: var(--scene-paint);
+}
+
+/* Hover/active states the dark theme used direct white tints in. We
+ * already remapped the rgba(255,255,255,X) values to --tint-* tokens
+ * inside main.css, so the same selectors now produce ink overlays.
+ *
+ * Below are surgical overrides for the small set of gradients that
+ * still bake in white explicitly (marble cards, orbit highlights) so
+ * they read on a light background. */
+
+/* Auth/splash backdrop is a dark cosmos by default — fade it on light. */
+:root[data-theme="marble-light"] .cosmos {
+  background: var(--scene-paint) !important;
+}
+
+/* The starfield + cosmic glows are themed for deep space; on marble we
+ * dim them so they don't fight the veining. */
+:root[data-theme="marble-light"] .stars,
+:root[data-theme="marble-light"] .cosmos::before,
+:root[data-theme="marble-light"] .cosmos::after {
+  opacity: 0.18;
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Server orbs / mark orbs / hero orb still draw their own coloured
+ * radial gradients (planet look). On marble we keep the colour but
+ * mute the inner white highlight so it doesn't pop. */
+:root[data-theme="marble-light"] .planet,
+:root[data-theme="marble-light"] .mark-orb-card .mo-orb,
+:root[data-theme="marble-light"] .ph-purple-orb {
+  filter: saturate(0.85) brightness(0.95);
+}
+
+/* Auth modal + identity card backgrounds — they were near-black panels.
+ * Force them onto the warm-white panel token. */
+:root[data-theme="marble-light"] .auth-card,
+:root[data-theme="marble-light"] .smodal,
+:root[data-theme="marble-light"] .ctx-menu,
+:root[data-theme="marble-light"] .banner-portal-menu,
+:root[data-theme="marble-light"] .toast,
+:root[data-theme="marble-light"] .srv-orb-tip,
+:root[data-theme="marble-light"] .vu-item::after,
+:root[data-theme="marble-light"] .ms-row::after {
+  background: var(--panel);
+  color: var(--t1);
+  border: 1px solid var(--border-3);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Inputs swap to a paper-feel surface. */
+:root[data-theme="marble-light"] input,
+:root[data-theme="marble-light"] textarea,
+:root[data-theme="marble-light"] .sm-input,
+:root[data-theme="marble-light"] .qs-input,
+:root[data-theme="marble-light"] select {
+  background: rgba(255,255,255,0.85);
+  color: var(--t1);
+  border-color: var(--border-3);
+}
+:root[data-theme="marble-light"] input::placeholder,
+:root[data-theme="marble-light"] textarea::placeholder {
+  color: var(--t3);
+}
+
+/* Glass panels show a subtle ink wash instead of light bloom. */
+:root[data-theme="marble-light"] .glass-panel {
+  background: rgba(252,248,245,0.55);
+  border-color: var(--border-3);
+  box-shadow: inset 0 1px 0 rgba(0,0,0,0.04), var(--shadow-soft);
+}
+
+/* The chat scroller backgrounds were tuned for dark surfaces; on marble
+ * we fall back to the panel surface. */
+:root[data-theme="marble-light"] #dmMsgs,
+:root[data-theme="marble-light"] .ws-channel-msgs,
+:root[data-theme="marble-light"] .members-sidebar {
+  background: rgba(252,248,245,0.55);
+}
+
+/* DM bubbles — ours stay red-on-white, theirs become ink-on-cream. */
+:root[data-theme="marble-light"] .dm-bubble {
+  background: rgba(0,0,0,0.04);
+  color: var(--t1);
+  border: 1px solid var(--border-2);
+}
+:root[data-theme="marble-light"] .dm-row[data-mine="1"] .dm-bubble,
+:root[data-theme="marble-light"] .dm-bubble.is-mine {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* World channel msgs look the same as dm bubbles. */
+:root[data-theme="marble-light"] .ws-msg-text {
+  background: rgba(0,0,0,0.04);
+  color: var(--t1);
+  border: 1px solid var(--border-2);
+}
+
+/* Avatar rings on a light bg should be pencil-thin ink. */
+:root[data-theme="marble-light"] .vu-av,
+:root[data-theme="marble-light"] .ms-av,
+:root[data-theme="marble-light"] .friend-bubble-av {
+  border-color: var(--border-4);
+}
+
+/* Online dots need a darker outer ring so they don't dissolve into
+ * the cream panel. */
+:root[data-theme="marble-light"] .ms-av.online::after,
+:root[data-theme="marble-light"] .vu-av .vu-s {
+  border-color: var(--panel);
+}
+
+/* The empty-state placeholder orb was a near-black sphere. */
+:root[data-theme="marble-light"] .orb-slide.empty-state .planet {
+  background: radial-gradient(circle at 35% 30%, rgba(0,0,0,0.06), #d4cdc4 55%, #a89a8d) !important;
+}
+
+/* Selection */
+:root[data-theme="marble-light"] ::selection {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+/* Banner action buttons (server settings, share) — the dark theme uses
+ * a black-glass fill that disappears on the cream marble. On marble we
+ * paint them white with a brand-red border + icon so the buttons read
+ * as crisp punched-out chips on the panel. Leave keeps its danger
+ * hover. */
+:root[data-theme="marble-light"] .ws-banner-menu-btn,
+:root[data-theme="marble-light"] .ws-banner-share-btn,
+:root[data-theme="marble-light"] .ws-banner-leave-btn {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+:root[data-theme="marble-light"] .ws-banner-menu-btn:hover,
+:root[data-theme="marble-light"] .ws-banner-share-btn:hover {
+  background: var(--brand-glow-soft);
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+:root[data-theme="marble-light"] .ws-banner-leave-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.55);
+  color: var(--danger);
+}
+
+/* Bottom taskbar — the dark theme paints it with rgba(0,0,0,0.32) which
+ * looks almost black on the cream marble. Swap to a near-white wash with
+ * a brand-red glow so the bar reads as part of the marble panel instead
+ * of a sunken band. The .tb buttons stay legible on the lighter base. */
+:root[data-theme="marble-light"] .taskbar {
+  background:
+    radial-gradient(ellipse at 50% 0%, var(--brand-glow-soft), transparent 65%),
+    rgba(252, 248, 245, 0.85);
+  border-top: 1px solid var(--border-3);
+}
+:root[data-theme="marble-light"] .tb {
+  color: var(--t2);
+}
+:root[data-theme="marble-light"] .tb:hover {
+  background: var(--tint-3);
+  color: var(--t1);
+}
+:root[data-theme="marble-light"] .tb.active {
+  background: linear-gradient(135deg, var(--brand-glow-soft), var(--brand-glow));
+  color: var(--accent);
+  border-color: var(--ag);
+}
+
+/* Category title was a white-to-pastel gradient that disappears on
+ * cream. Repaint with ink + brand-red so it reads on the marble base. */
+:root[data-theme="marble-light"] .ws-cat-h-name {
+  background: linear-gradient(90deg, var(--t1), var(--accent) 50%, var(--t1));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 18px rgba(180, 2, 36, 0.18);
+}
+:root[data-theme="marble-light"] .ws-cat-h-name::before,
+:root[data-theme="marble-light"] .ws-cat-h-name::after {
+  background: linear-gradient(90deg, transparent, rgba(180, 2, 36, 0.6));
+}
+:root[data-theme="marble-light"] .ws-cat-h-name::after {
+  background: linear-gradient(90deg, rgba(180, 2, 36, 0.6), transparent);
+}
+
+/* DM header bar (peer avatar + name + status). On marble the dark-theme
+ * gradient disappears into the cream panel; we want a clean white slab
+ * with a faint blood-red wash and a brand-tinted hairline at the bottom
+ * — the "white marble with blood veins" look from the rest of the
+ * marble theme. The DM input bar mirrors this so the chat area is
+ * sandwiched between two matching surfaces. */
+/* DM header + input bars use the same recipe as the home hero (no
+ * cover) so the chat top/bottom slabs feel like the rest of the marble
+ * canvas. We layer two soft radial vignettes on a near-cream base —
+ * one brand red, one black — exactly mirroring --hero-bg. */
+:root[data-theme="marble-light"] .dm-head {
+  background:
+    radial-gradient(ellipse at 80% 20%, rgba(180, 2, 36, 0.08), transparent 55%),
+    radial-gradient(ellipse at 10% 100%, rgba(0, 0, 0, 0.05), transparent 55%),
+    rgba(252, 248, 245, 0.92);
+}
+:root[data-theme="marble-light"] .dm-head::after {
+  background: linear-gradient(90deg, transparent, var(--ag), transparent);
+  height: 1px;
+}
+:root[data-theme="marble-light"] .dm-input-wrap {
+  background: transparent;
+  border-top: none;
+}
+
+/* DM scroller (the chat surface itself) on marble — instead of a flat
+ * cream rectangle that contrasts with the page, fall back to the same
+ * marble scene paint that the orbits column / body uses. This keeps
+ * the chat blended with the rest of the cosmic-marble canvas. */
+:root[data-theme="marble-light"] .dm-conv,
+:root[data-theme="marble-light"] #dmMsgs {
+  background: transparent;
+}
+
+/* Legendary voice channel name on marble — the dark-theme uses a gold-
+ * pink gradient on warm white text. On cream it's still legible but the
+ * "warm white" core gets lost; bias the gradient toward deeper amber
+ * and brand red so the name reads as a coloured tier label, not
+ * washed-out cream-on-cream. */
+:root[data-theme="marble-light"] .ws-cat-vc.is-legendary .ws-cat-vc-n {
+  background: linear-gradient(90deg, #b45309, #be185d 45%, var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+  filter: none;
+}
+:root[data-theme="marble-light"] .ws-cat-vc.connected.is-legendary .ws-cat-vc-n {
+  background: linear-gradient(90deg, #15803d, #16a34a 45%, #15803d);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="orblood-dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>// ORBLOOD notifications · glass</title>
+<link rel="stylesheet" href="/styles/themes/orblood-dark.css">
+<link rel="stylesheet" href="/styles/main.css">
+<style>
+  /* Page wash — same red/violet glows the home banner uses, so the
+   * glass toasts read against a real ORBLOOD-style backdrop. */
+  body{
+    background:
+      radial-gradient(ellipse at 18% 8%,  var(--brand-glow-soft), transparent 55%),
+      radial-gradient(ellipse at 82% 92%, var(--brand-glow-faint), transparent 55%),
+      radial-gradient(ellipse at 50% 50%, rgba(126,104,245,0.08), transparent 60%),
+      var(--bg);
+    min-height:100vh;
+    padding:36px 18px 60px;
+    font-family:'Inter','Vazirmatn',system-ui,sans-serif;
+    color:var(--t1);
+  }
+  header,.grid,.footer{position:relative;z-index:1;max-width:1340px;margin-left:auto;margin-right:auto}
+  header{margin-bottom:28px}
+  header h1{
+    font-family:'Space Grotesk','Inter',sans-serif;
+    font-size:1.4rem;font-weight:600;letter-spacing:0.5px;
+  }
+  header p{color:var(--t2);font-size:0.85rem;line-height:1.55;margin-top:6px;max-width:780px}
+  header em{color:var(--accent);font-style:normal;font-weight:500}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:18px}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--tint-3);
+    border-radius:14px;
+    padding:18px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .card-h{
+    display:flex;justify-content:space-between;align-items:baseline;
+    color:var(--t3);
+    font-family:'Space Mono','Vazirmatn',monospace;
+    font-size:0.55rem;letter-spacing:1.6px;
+    padding-bottom:12px;border-bottom:1px solid var(--tint-3);
+  }
+  .card-h b{color:var(--t1);font-weight:500;letter-spacing:1.2px}
+
+  /* ============================================================
+     ORBLOOD GLASS TOAST — design contract
+     ============================================================
+     Mirrors the QUICK TRANSMIT box (`.nx-box`):
+       •  background = `--tint-1` (translucent) + the soft brand-
+          glow radial we use on every modal / nx-box surface.
+       •  Heavy backdrop-filter blur (28px + 140% saturation) so the
+          window behind the toast bleeds through but stays legible.
+       •  Border at `--tint-3`, just like `.nx-box`.
+       •  Inner highlight (`inset 0 1px 0 --tint-4`) and a strong
+          drop shadow so the glass "lifts" off the desktop.
+     The eyebrow + name + body type scale matches `.dm-row`.
+     ============================================================ */
+  .nt{
+    position:relative;
+    background:
+      radial-gradient(ellipse at 50% 0%, var(--brand-glow-soft), transparent 70%),
+      var(--tint-1);
+    backdrop-filter: blur(28px) saturate(140%);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+    border:1px solid var(--tint-3);
+    border-radius:14px;
+    padding:12px 14px;
+    display:flex;gap:12px;align-items:flex-start;
+    box-shadow:
+      inset 0 1px 0 var(--tint-4),
+      0 18px 44px rgba(0,0,0,0.55),
+      0 4px 14px rgba(0,0,0,0.4);
+    overflow:hidden;
+  }
+  /* Subtle accent strip on the left — same trick that `.dm-pinned-box`
+   * uses to mark "important" rows in the chat. */
+  .nt::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:var(--accent);
+    opacity:0.85;
+  }
+  .nt.warn::before     {background:var(--warn)}
+  .nt.success::before  {background:var(--success)}
+  .nt.danger::before   {background:var(--danger)}
+  .nt.legendary::before{background:var(--legendary)}
+
+  /* Avatar — same look as `.dm-row .dm-av` (40x40 circle with the
+   * brand glow behind it). The `.online` dot reuses the success
+   * accent so the affordance is consistent across the app. */
+  .nt-av{
+    flex-shrink:0;width:40px;height:40px;border-radius:50%;
+    background:var(--av-default-grad);
+    border:2px solid var(--tint-5);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:600;font-size:0.9rem;letter-spacing:0.4px;
+    position:relative;
+    box-shadow:0 0 18px var(--brand-glow-faint);
+  }
+  .nt-av.online::after{
+    content:"";position:absolute;right:-1px;bottom:-1px;
+    width:11px;height:11px;border-radius:50%;
+    background:var(--success);
+    border:2px solid var(--panel);
+    box-shadow:0 0 6px rgba(34,197,94,0.85);
+  }
+  .nt-av.av-violet{background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#a78bfa 55%,#3b0764)}
+  .nt-av.av-cyan  {background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#22d3ee 55%,#164e63)}
+  .nt-av.av-rose  {background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#f472b6 55%,#831843)}
+  .nt-av.av-ember {background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#f97316 55%,#7c2d12)}
+  .nt-av.av-jade  {background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#10b981 55%,#064e3b)}
+  .nt-av.av-azure {background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.45),#3b82f6 55%,#1e3a8a)}
+  .nt-av.av-gold  {background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.7),#fef3c7 25%,#f59e0b 55%,#7c2d12)}
+
+  .nt-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+
+  /* Eyebrow — Space Mono uppercase, same recipe as `.qs-head-hint`
+   * over QUICK TRANSMIT, with a small pulsing dot for active states. */
+  .nt-eyebrow{
+    display:flex;align-items:center;gap:6px;
+    font-family:'Space Mono','Vazirmatn',monospace;
+    font-size:0.5rem;letter-spacing:1.6px;color:var(--t3);
+    text-transform:uppercase;
+  }
+  .nt-eyebrow .dot{
+    width:6px;height:6px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 6px var(--accent);
+  }
+  .nt-eyebrow.danger  .dot{background:var(--danger);box-shadow:0 0 6px var(--danger)}
+  .nt-eyebrow.warn    .dot{background:var(--warn);box-shadow:0 0 6px var(--warn)}
+  .nt-eyebrow.success .dot{background:var(--success);box-shadow:0 0 6px var(--success)}
+  .nt-eyebrow.gold    .dot{background:var(--legendary);box-shadow:0 0 6px var(--legendary)}
+
+  .nt-row{display:flex;align-items:baseline;gap:8px;justify-content:space-between}
+  .nt-name{
+    font-size:0.86rem;font-weight:600;color:var(--t1);line-height:1.3;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .nt-meta{
+    flex-shrink:0;font-family:'Space Mono','Vazirmatn',monospace;
+    font-size:0.55rem;letter-spacing:1.2px;color:var(--t3);
+  }
+  .nt-text{
+    font-size:0.78rem;color:var(--t1);line-height:1.5;
+    overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  }
+  .nt-text.muted {color:var(--t2)}
+  .nt-text.hidden{color:var(--t3);font-style:italic;-webkit-line-clamp:1}
+
+  .nt-pill{
+    background:rgba(239,68,68,0.18);color:#fda4af;
+    padding:1px 6px;border-radius:5px;
+    font-family:'Space Mono','Vazirmatn',monospace;
+    font-size:0.55rem;letter-spacing:1.2px;font-weight:700;
+    border:1px solid rgba(239,68,68,0.45);
+  }
+
+  /* Action buttons — match `.qs-send` + `.sm-btn` from main.css. The
+   * glass surface keeps `--tint-3` so the button reads on top. */
+  .nt-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .nt-btn{
+    background:var(--tint-3);
+    border:1px solid var(--tint-4);
+    color:var(--t1);
+    font-family:'Space Mono','Vazirmatn',monospace;
+    font-size:0.6rem;letter-spacing:1.2px;font-weight:700;
+    padding:5px 10px;border-radius:6px;
+    cursor:pointer;display:flex;align-items:center;gap:5px;
+    transition:background 0.15s,border-color 0.15s;
+  }
+  .nt-btn:hover{background:var(--tint-5);border-color:var(--tint-6)}
+  .nt-btn.primary{
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    border-color:transparent;color:#fff;
+  }
+  .nt-btn.primary:hover{filter:brightness(1.1)}
+  .nt-btn.success{background:rgba(34,197,94,0.15);color:var(--success);border-color:rgba(34,197,94,0.4)}
+  .nt-btn.success:hover{background:rgba(34,197,94,0.25)}
+
+  .nt-close{
+    flex-shrink:0;width:22px;height:22px;border-radius:6px;
+    background:transparent;border:none;color:var(--t3);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:0.95rem;line-height:1;
+    transition:background 0.15s,color 0.15s;
+  }
+  .nt-close:hover{background:var(--tint-3);color:var(--t1)}
+
+  /* Variant — server mention. Adds a soft red ring + halo, mirroring
+   * the active-channel glow on the orbits column. */
+  .nt.mention{
+    border-color:rgba(239,68,68,0.35);
+    box-shadow:
+      inset 0 1px 0 rgba(239,68,68,0.18),
+      0 18px 44px rgba(239,68,68,0.22),
+      0 4px 14px rgba(0,0,0,0.4);
+  }
+  .nt.mention .nt-av{box-shadow:0 0 14px rgba(239,68,68,0.45)}
+
+  /* Variant — voice. The avatar pulses gold like a connected
+   * legendary orb so the toast reads as "live audio activity". */
+  .nt.voice .nt-av{animation:nt-pulse 2.6s ease-in-out infinite}
+  @keyframes nt-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}
+
+  /* Image attachment preview — uses the brand 4-stop nebula gradient
+   * we already use behind the home banner. */
+  .nt-image{
+    margin-top:8px;width:100%;height:120px;border-radius:8px;
+    background:linear-gradient(135deg,#312e81,#7c3aed,var(--accent),#f97316);
+    background-size:200% 200%;animation:nt-imgflow 8s ease-in-out infinite;
+    border:1px solid var(--tint-3);position:relative;overflow:hidden;
+  }
+  .nt-image-cap{
+    position:absolute;left:10px;bottom:8px;
+    font-family:'Space Mono','Vazirmatn',monospace;
+    font-size:0.55rem;letter-spacing:1.2px;
+    color:rgba(255,255,255,0.92);
+    background:rgba(0,0,0,0.55);
+    padding:3px 8px;border-radius:4px;
+    backdrop-filter:blur(4px);
+  }
+  @keyframes nt-imgflow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+
+  /* Quick reply input — same shape as `.qs-input` from main.css. */
+  .nt-reply{margin-top:8px;display:flex;gap:6px}
+  .nt-reply input{
+    flex:1;background:rgba(0,0,0,0.30);
+    border:1px solid var(--tint-3);
+    color:var(--t1);font:inherit;font-size:0.74rem;
+    padding:8px 10px;border-radius:6px;outline:none;
+    transition:border-color 0.15s,background 0.15s;
+  }
+  .nt-reply input::placeholder{color:var(--t3)}
+  .nt-reply input:focus{border-color:var(--accent);background:rgba(0,0,0,0.4)}
+  .nt-reply button{
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    border:none;color:#fff;font:inherit;cursor:pointer;
+    font-family:'Space Mono','Vazirmatn',monospace;
+    padding:8px 14px;border-radius:6px;
+    font-size:0.62rem;letter-spacing:1.4px;font-weight:700;
+  }
+
+  /* Stack — three toasts collapsed under one. */
+  .nt-stack{position:relative;padding-bottom:20px}
+  .nt-stack .nt + .nt{
+    margin-top:-58px;
+    transform:scale(0.97);
+    filter:brightness(0.78);
+    pointer-events:none;
+  }
+  .nt-stack .nt + .nt + .nt{
+    transform:scale(0.94);
+    filter:brightness(0.62);
+  }
+
+  .footer{
+    margin-top:36px;padding:18px;
+    border-top:1px solid var(--tint-3);
+    color:var(--t3);font-size:0.75rem;text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>// ORBLOOD NOTIFICATIONS · glass</h1>
+  <p>
+    Eight toast variants drawn on the same surface recipe as the <em>QUICK TRANSMIT</em> box on the
+    home page (translucent panel, brand-glow halo, frosted blur, inner highlight). Geometry and
+    type scale follow the existing chat / modal contract. Pick the numbers you want and we'll
+    wire them into the desktop build.
+  </p>
+</header>
+
+<section class="grid">
+
+  <!-- 01 — Bare DM (privacy) -->
+  <article class="card">
+    <div class="card-h"><span>01</span><b>BARE DM · NO BODY</b></div>
+    <div class="nt">
+      <div class="nt-av av-violet online">M</div>
+      <div class="nt-body">
+        <div class="nt-eyebrow"><span class="dot"></span>DIRECT MESSAGE</div>
+        <div class="nt-row">
+          <div class="nt-name">Murph</div>
+          <div class="nt-meta">2s</div>
+        </div>
+        <div class="nt-text hidden">New message · open to read</div>
+      </div>
+      <button class="nt-close" type="button" aria-label="Dismiss">×</button>
+    </div>
+  </article>
+
+  <!-- 02 — Standard DM with preview -->
+  <article class="card">
+    <div class="card-h"><span>02</span><b>DM · WITH PREVIEW</b></div>
+    <div class="nt">
+      <div class="nt-av av-rose online">A</div>
+      <div class="nt-body">
+        <div class="nt-eyebrow"><span class="dot"></span>DIRECT MESSAGE</div>
+        <div class="nt-row">
+          <div class="nt-name">Aria</div>
+          <div class="nt-meta">just now</div>
+        </div>
+        <div class="nt-text">Hey, jumping into the LOUNGE orbit — want to join? Bringing the new track.</div>
+      </div>
+      <button class="nt-close" type="button" aria-label="Dismiss">×</button>
+    </div>
+  </article>
+
+  <!-- 03 — DM with reply + mark read -->
+  <article class="card">
+    <div class="card-h"><span>03</span><b>DM · ACTIONS</b></div>
+    <div class="nt">
+      <div class="nt-av av-cyan online">R</div>
+      <div class="nt-body">
+        <div class="nt-eyebrow"><span class="dot"></span>DIRECT MESSAGE</div>
+        <div class="nt-row">
+          <div class="nt-name">Reno</div>
+          <div class="nt-meta">10s</div>
+        </div>
+        <div class="nt-text">Got the patch deployed, mind taking a look at the orbit column?</div>
+        <div class="nt-actions">
+          <button class="nt-btn primary" type="button">REPLY</button>
+          <button class="nt-btn" type="button">MARK READ</button>
+        </div>
+      </div>
+      <button class="nt-close" type="button" aria-label="Dismiss">×</button>
+    </div>
+  </article>
+
+  <!-- 04 — Server mention -->
+  <article class="card">
+    <div class="card-h"><span>04</span><b>SERVER MENTION</b></div>
+    <div class="nt mention danger">
+      <div class="nt-av av-ember online">D</div>
+      <div class="nt-body">
+        <div class="nt-eyebrow danger"><span class="dot"></span>MENTION · NOX SERVER · #general</div>
+        <div class="nt-row">
+          <div class="nt-name">Diyako <span class="nt-pill">@you</span></div>
+          <div class="nt-meta">14s</div>
+        </div>
+        <div class="nt-text">@orblood can you ping me when the build is up?</div>
+        <div class="nt-actions">
+          <button class="nt-btn primary" type="button">JUMP TO CHANNEL</button>
+          <button class="nt-btn" type="button">MARK READ</button>
+        </div>
+      </div>
+      <button class="nt-close" type="button" aria-label="Dismiss">×</button>
+    </div>
+  </article>
+
+  <!-- 05 — Voice channel join -->
+  <article class="card">
+    <div class="card-h"><span>05</span><b>VOICE CHANNEL JOIN</b></div>
+    <div class="nt voice warn">
+      <div class="nt-av av-gold online">L</div>
+      <div class="nt-body">
+        <div class="nt-eyebrow gold"><span class="dot"></span>VOICE · NOX SERVER · LOUNGE</div>
+        <div class="nt-row">
+          <div class="nt-name">Luna joined</div>
+          <div class="nt-meta">now</div>
+        </div>
+        <div class="nt-text muted">2 of 4 members in this orbit are now live.</div>
+        <div class="nt-actions">
+          <button class="nt-btn success" type="button">JOIN ORBIT</button>
+          <button class="nt-btn" type="button">DISMISS</button>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- 06 — Image attachment -->
+  <article class="card">
+    <div class="card-h"><span>06</span><b>DM · IMAGE ATTACHMENT</b></div>
+    <div class="nt">
+      <div class="nt-av av-violet online">M</div>
+      <div class="nt-body">
+        <div class="nt-eyebrow"><span class="dot"></span>DIRECT MESSAGE · IMAGE</div>
+        <div class="nt-row">
+          <div class="nt-name">Murph</div>
+          <div class="nt-meta">5s</div>
+        </div>
+        <div class="nt-text">Look at this preview I made earlier.</div>
+        <div class="nt-image"><div class="nt-image-cap">IMG · 1.2MB</div></div>
+      </div>
+      <button class="nt-close" type="button" aria-label="Dismiss">×</button>
+    </div>
+  </article>
+
+  <!-- 07 — Quick reply -->
+  <article class="card">
+    <div class="card-h"><span>07</span><b>QUICK REPLY</b></div>
+    <div class="nt">
+      <div class="nt-av av-jade online">K</div>
+      <div class="nt-body">
+        <div class="nt-eyebrow"><span class="dot"></span>DIRECT MESSAGE</div>
+        <div class="nt-row">
+          <div class="nt-name">Kai</div>
+          <div class="nt-meta">just now</div>
+        </div>
+        <div class="nt-text">Are you still up for the call later tonight?</div>
+        <form class="nt-reply" onsubmit="event.preventDefault()">
+          <input type="text" placeholder="Reply to Kai...">
+          <button type="submit">SEND</button>
+        </form>
+      </div>
+      <button class="nt-close" type="button" aria-label="Dismiss">×</button>
+    </div>
+  </article>
+
+  <!-- 08 — Stacked group -->
+  <article class="card">
+    <div class="card-h"><span>08</span><b>STACKED · 3 MESSAGES</b></div>
+    <div class="nt-stack">
+      <div class="nt">
+        <div class="nt-av av-azure online">A</div>
+        <div class="nt-body">
+          <div class="nt-eyebrow"><span class="dot"></span>3 NEW MESSAGES · ARIA</div>
+          <div class="nt-row">
+            <div class="nt-name">Aria</div>
+            <div class="nt-meta">12s</div>
+          </div>
+          <div class="nt-text">Wait actually one more thing — can you check the merge?</div>
+          <div class="nt-actions">
+            <button class="nt-btn primary" type="button">OPEN CHAT</button>
+            <button class="nt-btn" type="button">MARK ALL READ</button>
+          </div>
+        </div>
+        <button class="nt-close" type="button" aria-label="Dismiss">×</button>
+      </div>
+      <div class="nt">
+        <div class="nt-av av-azure">A</div>
+        <div class="nt-body"><div class="nt-name">Aria</div></div>
+      </div>
+      <div class="nt">
+        <div class="nt-av av-azure">A</div>
+        <div class="nt-body"><div class="nt-name">Aria</div></div>
+      </div>
+    </div>
+  </article>
+
+</section>
+
+<footer class="footer">
+  8 of 8 · glass surface from QUICK TRANSMIT · concepts only · pick numbers to ship in the desktop build
+</footer>
+
+</body>
+</html>
