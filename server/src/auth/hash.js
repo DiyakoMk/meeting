@@ -1,6 +1,6 @@
-import bcrypt from 'bcrypt';
+import bcryptjs from 'bcryptjs';
 
 const ROUNDS = 10;
 
-export const hashPassword = (plain) => bcrypt.hash(plain, ROUNDS);
-export const verifyPassword = (plain, hash) => bcrypt.compare(plain, hash);
+export const hashPassword = (plain) => bcryptjs.hash(plain, ROUNDS);
+export const verifyPassword = (plain, hash) => bcryptjs.compare(plain, hash);
