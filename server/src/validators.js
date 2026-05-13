@@ -25,7 +25,7 @@ export const loginSchema = z.object({
 export const profilePatchSchema = z.object({
   name:        nameSchema.optional(),
   handle:      handleSchema.optional(),
-  bio:         z.string().max(500).optional(),
+  bio:         z.string().trim().max(500).optional(),
   baseColor:   z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   rank:        z.string().max(40).optional(),
   phone:       z.string().max(40).optional(),
