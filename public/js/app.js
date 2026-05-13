@@ -13,7 +13,7 @@
 
   // bundle or the fresh one.
 
-  console.log('[orblood] client build 2026-05-11-k (fix: skeleton loaders never clearing on already-signed-in reload; flip _initialHydrating on all auth entry points)');
+  console.log('[orblood] client build 2026-05-13-FIXED (WebRTC glare prevention, bio save fix, bcryptjs, local Lucide icons, web refresh/download buttons)');
 
   // Mobile-only: wire the FAB + scrim to slide the orbits drawer in / out.
 
@@ -22381,6 +22381,97 @@
     } catch(_){}
 
   });
+
+  // ============== WEB VERSION: REFRESH & DOWNLOAD BUTTONS ==============
+  // Add refresh and download buttons to the web version (similar to Electron app).
+  // These buttons appear in the bottom-left corner for both web and Electron.
+  
+  (function setupWebButtons(){
+    // Skip if we're in Electron (it has its own buttons)
+    if (window.electronAPI) return;
+    
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', setupWebButtons);
+      return;
+    }
+    
+    // Inject CSS for web buttons
+    const style = document.createElement('style');
+    style.textContent = `
+      .web-controls {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 999999;
+        display: flex;
+        gap: 10px;
+      }
+      
+      .web-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(20, 20, 30, 0.95);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+      
+      .web-btn:hover {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: rgba(139, 92, 246, 0.6);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
+      }
+      
+      .web-btn:active {
+        transform: translateY(0);
+      }
+      
+      .web-btn svg {
+        width: 18px;
+        height: 18px;
+        stroke: rgba(139, 92, 246, 0.9);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // Create controls container
+    const controls = document.createElement('div');
+    controls.className = 'web-controls';
+    
+    // Refresh button
+    const refreshBtn = document.createElement('button');
+    refreshBtn.className = 'web-btn';
+    refreshBtn.title = 'Refresh';
+    refreshBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>';
+    refreshBtn.onclick = () => {
+      location.reload();
+    };
+    
+    // Download button (opens GitHub releases page)
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'web-btn';
+    downloadBtn.title = 'Download Desktop App';
+    downloadBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>';
+    downloadBtn.onclick = () => {
+      window.open('https://github.com/DiyakoMk/meeting/releases/latest', '_blank');
+    };
+    
+    controls.appendChild(refreshBtn);
+    controls.appendChild(downloadBtn);
+    document.body.appendChild(controls);
+  })();
 
 })();
 
