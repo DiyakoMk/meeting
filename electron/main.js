@@ -1,112 +1,84 @@
-// Electron entry point for the ORBLOOD desktop wrapper.
+// Electron entry point for the ORBLOOD desktop app.
 //
-// This file does three things:
-//   1. Boots the existing Express + WebSocket backend in-process by
-//      requiring server/src/index.js. The server already reads its
-//      config from .env, so we plant a sensible default at app startup
-//      if one isn't present (uploads land inside userData, JWT secret
-//      is a generated per-install token).
-//   2. Opens a single BrowserWindow pointed at http://localhost:<port>
-//      once the backend is listening. We poll /api/healthz so the
-//      window doesn't show "Cannot reach server" on first boot.
-//   3. Tears the backend process down cleanly when the last window is
-//      closed so MariaDB connections aren't left dangling.
-//
-// We deliberately keep the server runtime untouched; this file only
-// orchestrates lifecycle. If you change anything in server/src, the
-// desktop app picks it up automatically.
+// Features:
+//   1. Direct connection to orblood.ir (no URL prompt)
+//   2. Native app feel with custom titlebar
+//   3. Refresh button in bottom-left
+//   4. Update checker with download button
+//   5. Auto-update from GitHub releases
 
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, dialog } = require('electron');
 const path = require('node:path');
-const fs   = require('node:fs');
-const http = require('node:http');
-const crypto = require('node:crypto');
+const https = require('node:https');
+const fs = require('node:fs');
 
-// Default port for the embedded backend. We let it differ from the dev
-// server port so a user with the dev tunnel running won't collide.
-const SERVER_PORT = 4567;
-
-// Resolve repo paths relative to this file. The packaged build extracts
-// the server folder under app.asar.unpacked/server (configured in the
-// builder section of package.json) so node_modules native binaries
-// stay loadable.
-function repoRoot() {
-  return app.isPackaged
-    ? path.join(process.resourcesPath, 'app.asar.unpacked')
-    : path.resolve(__dirname, '..');
-}
-
-function ensureEnv() {
-  const root = repoRoot();
-  const envPath = path.join(root, 'server', '.env');
-  if (fs.existsSync(envPath)) return envPath;
-
-  // First-run: generate a config that points uploads at userData and
-  // bakes a fresh JWT secret. The user is expected to have a local
-  // MariaDB / MySQL listening on 3306 with an `orblood` database;
-  // otherwise the server boots but rejects logins until they fix it.
-  const userData = app.getPath('userData');
-  const uploadsDir = path.join(userData, 'uploads');
-  try { fs.mkdirSync(uploadsDir, { recursive: true }); } catch (_) {}
-  const env = [
-    'DB_HOST=127.0.0.1',
-    'DB_PORT=3306',
-    'DB_USER=orblood',
-    'DB_PASSWORD=orbloodpw',
-    'DB_NAME=orblood',
-    'JWT_SECRET=' + crypto.randomBytes(24).toString('hex'),
-    'JWT_EXPIRES_IN=7d',
-    'PORT=' + SERVER_PORT,
-    'PUBLIC_ORIGIN=*',
-    'UPLOAD_DIR=' + uploadsDir.replace(/\\/g, '/'),
-    'PUBLIC_UPLOADS_BASE=/uploads',
-    ''
-  ].join('\n');
-  try {
-    fs.mkdirSync(path.join(root, 'server'), { recursive: true });
-    fs.writeFileSync(envPath, env, 'utf8');
-  } catch (e) {
-    console.warn('[electron] could not write .env:', e.message);
-  }
-  return envPath;
-}
-
-let backendStarted = false;
-function startBackend() {
-  if (backendStarted) return;
-  backendStarted = true;
-  ensureEnv();
-  // Inject PORT before the server reads its config.
-  process.env.PORT = String(SERVER_PORT);
-  // Resolve absolute path; require() needs it from the unpacked tree.
-  const serverEntry = path.join(repoRoot(), 'server', 'src', 'index.js');
-  // The backend is an ES module; load it via dynamic import so this
-  // CommonJS process can host it. We don't await the promise — once
-  // import() resolves the listener has been registered.
-  import(require('node:url').pathToFileURL(serverEntry).href).catch(err => {
-    console.error('[electron] backend boot failed:', err);
-  });
-}
-
-// Poll healthz until the backend is up, then resolve. Kept short so
-// the splash window doesn't sit white forever if the DB is missing.
-function waitForBackend(timeoutMs) {
-  const deadline = Date.now() + (timeoutMs || 8000);
-  return new Promise((resolve) => {
-    const tick = () => {
-      const req = http.get({ host: '127.0.0.1', port: SERVER_PORT, path: '/api/healthz', timeout: 800 }, res => {
-        // Even a 401 means the server is up; only network failure means "not yet".
-        res.resume();
-        resolve(true);
-      });
-      req.on('error',   () => Date.now() > deadline ? resolve(false) : setTimeout(tick, 250));
-      req.on('timeout', () => { req.destroy(); Date.now() > deadline ? resolve(false) : setTimeout(tick, 250); });
-    };
-    tick();
-  });
-}
+// Configuration
+const APP_URL = 'https://orblood.ir';
+const GITHUB_REPO = 'DiyakoMk/meeting';
+const UPDATE_CHECK_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 
 let mainWindow = null;
+let updateAvailable = false;
+let latestVersion = null;
+let downloadUrl = null;
+
+// Check for updates from GitHub releases
+async function checkForUpdates() {
+  return new Promise((resolve) => {
+    https.get(UPDATE_CHECK_URL, {
+      headers: { 'User-Agent': 'Orblood-Desktop' }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const release = JSON.parse(data);
+          const currentVersion = app.getVersion();
+          const remoteVersion = release.tag_name.replace(/^v/, '');
+          
+          if (remoteVersion !== currentVersion) {
+            // Find Windows executable in assets
+            const asset = release.assets.find(a => 
+              a.name.endsWith('.exe') || a.name.endsWith('-win.zip')
+            );
+            
+            if (asset) {
+              updateAvailable = true;
+              latestVersion = remoteVersion;
+              downloadUrl = asset.browser_download_url;
+              
+              if (mainWindow) {
+                mainWindow.webContents.send('update-available', {
+                  version: remoteVersion,
+                  url: downloadUrl
+                });
+              }
+            }
+          }
+          resolve({ available: updateAvailable, version: remoteVersion });
+        } catch (e) {
+          console.error('[update] Failed to parse release:', e);
+          resolve({ available: false });
+        }
+      });
+    }).on('error', (e) => {
+      console.error('[update] Check failed:', e);
+      resolve({ available: false });
+    });
+  });
+}
+
+// Download update
+function downloadUpdate() {
+  if (!downloadUrl) return;
+  
+  shell.openExternal(downloadUrl).catch(err => {
+    dialog.showErrorBox('Download Failed', 
+      'Could not open download link. Please visit:\n' + downloadUrl
+    );
+  });
+}
+
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -115,39 +87,176 @@ async function createWindow() {
     minHeight: 600,
     backgroundColor: '#020103',
     autoHideMenuBar: true,
+    frame: true, // Keep native frame for now, can be customized later
     title: 'ORBLOOD',
+    icon: path.join(__dirname, '../public/favicon.ico'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true
+      sandbox: false // Need this for IPC
     }
   });
 
-  // Open external links in the system browser instead of a new
-  // BrowserWindow — the SPA never expects to be navigated to a foreign
-  // origin, so any window.open() is for /api uploads or third-party
-  // links (e.g. avatar URLs the user pastes in chat).
+  // Open external links in system browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    try { shell.openExternal(url); } catch (_) {}
-    return { action: 'deny' };
+    if (!url.startsWith(APP_URL)) {
+      shell.openExternal(url).catch(() => {});
+      return { action: 'deny' };
+    }
+    return { action: 'allow' };
   });
 
-  await waitForBackend();
-  await mainWindow.loadURL('http://localhost:' + SERVER_PORT + '/');
-  if (!app.isPackaged) mainWindow.webContents.openDevTools({ mode: 'detach' });
+  // Inject custom CSS and controls after page loads
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.insertCSS(`
+      /* Desktop app custom controls */
+      .electron-controls {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 999999;
+        display: flex;
+        gap: 10px;
+      }
+      
+      .electron-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(20, 20, 30, 0.95);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+      
+      .electron-btn:hover {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: rgba(139, 92, 246, 0.6);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
+      }
+      
+      .electron-btn:active {
+        transform: translateY(0);
+      }
+      
+      .electron-btn svg {
+        width: 18px;
+        height: 18px;
+        stroke: rgba(139, 92, 246, 0.9);
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      
+      .electron-btn.update-available {
+        animation: pulse 2s ease-in-out infinite;
+      }
+      
+      @keyframes pulse {
+        0%, 100% { box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
+        50% { box-shadow: 0 4px 20px rgba(139, 92, 246, 0.6); }
+      }
+    `);
+
+    mainWindow.webContents.executeJavaScript(`
+      (function() {
+        // Remove existing controls if any
+        const existing = document.querySelector('.electron-controls');
+        if (existing) existing.remove();
+        
+        // Create controls container
+        const controls = document.createElement('div');
+        controls.className = 'electron-controls';
+        
+        // Refresh button
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'electron-btn';
+        refreshBtn.title = 'Refresh';
+        refreshBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>';
+        refreshBtn.onclick = () => window.electronAPI.refresh();
+        
+        // Update/Download button
+        const updateBtn = document.createElement('button');
+        updateBtn.className = 'electron-btn';
+        updateBtn.title = 'Check for updates';
+        updateBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>';
+        updateBtn.onclick = () => window.electronAPI.checkUpdate();
+        
+        controls.appendChild(refreshBtn);
+        controls.appendChild(updateBtn);
+        document.body.appendChild(controls);
+        
+        // Listen for update notifications
+        window.electronAPI.onUpdateAvailable((data) => {
+          updateBtn.classList.add('update-available');
+          updateBtn.title = 'Update available: v' + data.version + ' (click to download)';
+          updateBtn.onclick = () => window.electronAPI.downloadUpdate();
+        });
+      })();
+    `);
+  });
+
+  // Load the app
+  await mainWindow.loadURL(APP_URL);
+  
+  // Check for updates after 3 seconds
+  setTimeout(() => checkForUpdates(), 3000);
+  
+  // Open DevTools in development
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools({ mode: 'detach' });
+  }
 }
 
+// IPC handlers
+ipcMain.handle('refresh', () => {
+  if (mainWindow) {
+    mainWindow.reload();
+  }
+});
+
+ipcMain.handle('check-update', async () => {
+  const result = await checkForUpdates();
+  if (result.available) {
+    return { available: true, version: latestVersion, url: downloadUrl };
+  } else {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'No Updates',
+      message: 'You are running the latest version.',
+      buttons: ['OK']
+    });
+    return { available: false };
+  }
+});
+
+ipcMain.handle('download-update', () => {
+  downloadUpdate();
+});
+
 app.whenReady().then(() => {
-  startBackend();
   createWindow();
+  
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
   });
 });
 
 app.on('window-all-closed', () => {
-  // On macOS the convention is to keep the app alive until Cmd+Q,
-  // but we ship Windows-only so close == quit.
   app.quit();
+});
+
+// Handle app updates
+app.on('before-quit', () => {
+  // Cleanup if needed
 });

@@ -1,66 +1,122 @@
-# ORBLOOD desktop (Windows)
+# ORBLOOD Desktop App
 
-Thin Electron wrapper around the existing Express + WebSocket backend.
-The wrapper spawns the backend in the same process, opens a window
-pointed at it, and stores user data alongside the install instead of in
-the dev tunnel.
+نسخه دسکتاپ ORBLOOD با Electron - تجربه native app با قابلیت auto-update
 
-## How to run / build
+## ✨ ویژگی‌ها
 
-### Build the installer
+- 🚀 **اتصال مستقیم**: بدون نیاز به وارد کردن URL، مستقیماً به orblood.ir وصل می‌شود
+- 🔄 **دکمه Refresh**: رفرش سریع صفحه از پایین سمت چپ
+- 📥 **Auto Update**: چک کردن خودکار آپدیت‌های جدید از GitHub Releases
+- 🎨 **Native Feel**: حس و ظاهر یک اپلیکیشن واقعی، نه مرورگر
+- 🔒 **امن**: Sandbox mode فعال برای امنیت بیشتر
 
-The installer is built by GitHub Actions on a Windows runner.
+## 🛠️ نصب و توسعه
 
-1. Open the repo on GitHub.
-2. Actions tab → "Build Windows desktop" → Run workflow.
-3. When the run finishes, download the `orblood-windows` artifact.
-   Inside is `ORBLOOD-Setup-<version>.exe`.
-
-The same workflow auto-runs on any push to `orblood` / `orblood2` that
-touches `electron/`, `public/`, `server/` or the root `package.json`.
-
-### Local prerequisites on the user's machine
-
-Because the wrapper boots the existing backend untouched, the user
-needs a local MariaDB (or MySQL) database before the app can sign in.
-
-Default credentials baked into the auto-generated `server/.env`:
-
-| key            | value          |
-| -------------- | -------------- |
-| `DB_HOST`      | `127.0.0.1`    |
-| `DB_PORT`      | `3306`         |
-| `DB_USER`      | `orblood`      |
-| `DB_PASSWORD`  | `orbloodpw`    |
-| `DB_NAME`      | `orblood`      |
-
-One-time setup (Windows shell, after installing MariaDB):
-
-```sh
-mysql -u root -p
-> CREATE DATABASE orblood CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-> CREATE USER 'orblood'@'localhost' IDENTIFIED BY 'orbloodpw';
-> GRANT ALL ON orblood.* TO 'orblood'@'localhost';
-> FLUSH PRIVILEGES;
-> exit
+### پیش‌نیازها
+```bash
+npm install
 ```
 
-Then run the schema bootstrap once. The packaged app does NOT do this
-for you; we don't bundle a migration runner.
-
-```sh
-cd "%LOCALAPPDATA%\Programs\ORBLOOD\resources\app.asar.unpacked\server"
-npm run init-db
+### اجرای حالت توسعه
+```bash
+npm start
 ```
 
-After that, launch ORBLOOD from the Start menu and sign up like
-normal. Avatar / cover uploads land in
-`%APPDATA%\ORBLOOD\uploads\` (per-user, not shared with other users
-on the same machine).
+### ساخت نسخه Windows
+```bash
+npm run build:win
+```
 
-### Why isn't this fully self-contained?
+خروجی در پوشه `dist-electron/` ذخیره می‌شود.
 
-The current backend is hard-bound to MariaDB (JSON columns,
-`ON DUPLICATE KEY UPDATE`, `INTERVAL` syntax, WebSocket realtime
-fan-out). Rewriting it for embedded SQLite is a larger task that we
-left for later. For now: install MariaDB once, run the app, done.
+## 📦 انتشار نسخه جدید
+
+### 1. آپدیت نسخه
+در `package.json`:
+```json
+{
+  "version": "1.0.1"
+}
+```
+
+### 2. Commit و Tag
+```bash
+git add .
+git commit -m "Release v1.0.1"
+git tag v1.0.1
+git push origin orblood2-fixed --tags
+```
+
+### 3. ساخت و آپلود
+```bash
+npm run build:win
+```
+
+فایل `ORBLOOD-Setup-1.0.1.exe` در `dist-electron/` ساخته می‌شود.
+
+### 4. ایجاد GitHub Release
+
+1. برو به: https://github.com/DiyakoMk/meeting/releases/new
+2. Tag: `v1.0.1`
+3. Title: `ORBLOOD Desktop v1.0.1`
+4. Description: توضیحات تغییرات
+5. آپلود فایل `ORBLOOD-Setup-1.0.1.exe`
+6. Publish release
+
+### 5. Auto-Update
+
+کاربران با کلیک روی دکمه دانلود (پایین سمت چپ):
+- اگر آپدیت جدید باشه، دکمه می‌زنه و فایل جدید دانلود می‌شه
+- اگر آپدیتی نباشه، پیام "You are running the latest version" نمایش داده می‌شود
+
+## 🎮 دکمه‌های اپلیکیشن
+
+### پایین سمت چپ:
+- **🔄 Refresh**: رفرش کامل صفحه
+- **📥 Download**: چک کردن و دانلود آپدیت جدید
+
+وقتی آپدیت جدید موجود باشه، دکمه دانلود با انیمیشن pulse نمایش داده می‌شود.
+
+## 🔧 تنظیمات
+
+### تغییر URL سایت
+در `electron/main.js`:
+```javascript
+const APP_URL = 'https://orblood.ir';
+```
+
+### تغییر ریپوی GitHub
+در `electron/main.js`:
+```javascript
+const GITHUB_REPO = 'DiyakoMk/meeting';
+```
+
+## 📝 نکات مهم
+
+1. **Version**: همیشه version در `package.json` باید با tag در GitHub یکسان باشه
+2. **Release**: فایل `.exe` باید در GitHub Release آپلود بشه
+3. **Auto-Update**: فقط وقتی کار می‌کنه که release در GitHub منتشر شده باشه
+4. **Icon**: آیکون از `public/favicon.ico` استفاده می‌شود
+
+## 🐛 عیب‌یابی
+
+### دکمه‌ها نمایش داده نمی‌شوند
+- مطمئن شوید `preload.js` به درستی لود شده
+- DevTools را باز کنید و console را چک کنید
+
+### Auto-update کار نمی‌کند
+- مطمئن شوید GitHub Release منتشر شده
+- فایل `.exe` در assets موجود باشد
+- اتصال اینترنت فعال باشد
+
+### ساخت فایل نهایی خطا می‌دهد
+```bash
+# پاک کردن cache
+rm -rf dist-electron node_modules
+npm install
+npm run build:win
+```
+
+## 📄 لایسنس
+
+MIT

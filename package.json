@@ -1,48 +1,71 @@
 {
   "name": "orblood-desktop",
   "private": true,
-  "version": "0.1.0",
-  "description": "ORBLOOD desktop wrapper (Electron + embedded backend)",
+  "version": "1.0.0",
+  "description": "ORBLOOD - Voice-first space chat desktop app",
   "main": "electron/main.js",
+  "author": "Orblood Team",
+  "license": "MIT",
   "scripts": {
-    "postinstall": "cd server && npm install --omit=dev",
-    "electron":    "electron .",
-    "build:win":   "electron-builder --win --x64 --publish never"
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64",
+    "build:win:portable": "electron-builder --win portable",
+    "release": "electron-builder --win --publish always"
   },
   "devDependencies": {
-    "electron":         "^31.3.1",
+    "electron": "^31.3.1",
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId":       "io.orblood.desktop",
+    "appId": "ir.orblood.desktop",
     "productName": "ORBLOOD",
-    "asar":        true,
-    "asarUnpack":  ["server/**/*", "public/**/*"],
+    "asar": true,
     "files": [
       "electron/**/*",
       "public/**/*",
-      "server/**/*",
+      "!public/vendor/**/*",
       "package.json"
     ],
-    "extraResources": [],
+    "extraResources": [
+      {
+        "from": "public/vendor",
+        "to": "vendor",
+        "filter": ["**/*"]
+      }
+    ],
     "directories": {
       "output": "dist-electron",
       "buildResources": "electron/build-resources"
     },
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
       ],
-      "artifactName": "ORBLOOD-Setup-${version}.${ext}"
+      "icon": "public/favicon.ico",
+      "artifactName": "ORBLOOD-Setup-${version}.${ext}",
+      "publisherName": "Orblood"
     },
     "nsis": {
-      "oneClick":             false,
-      "perMachine":           false,
-      "allowElevation":       false,
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName":         "ORBLOOD"
+      "shortcutName": "ORBLOOD",
+      "installerIcon": "public/favicon.ico",
+      "uninstallerIcon": "public/favicon.ico",
+      "installerHeaderIcon": "public/favicon.ico",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "DiyakoMk",
+      "repo": "meeting",
+      "releaseType": "release"
     }
   }
 }

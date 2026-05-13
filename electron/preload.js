@@ -1,6 +1,15 @@
-// Empty preload — the app doesn't need any privileged bridge yet,
-// but Electron requires a real file path for `webPreferences.preload`
-// when contextIsolation is on. Leaving the file in place gives us a
-// place to expose ipcRenderer-backed helpers later without touching
-// the BrowserWindow config.
-'use strict';
+// Preload script for Electron IPC bridge
+const { contextBridge, ipcRenderer } = require('electron');
+
+// Expose safe IPC methods to the renderer
+contextBridge.exposeInMainWorld('electronAPI', {
+  refresh: () => ipcRenderer.invoke('refresh'),
+  checkUpdate: () => ipcRenderer.invoke('check-update'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  onUpdateAvailable: (callback) => {
+    ipcRenderer.on('update-available', (event, data) => callback(data));
+  }
+});
+
+// Mark as Electron environment
+contextBridge.exposeInMainWorld('isElectron', true);
